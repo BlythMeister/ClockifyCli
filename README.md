@@ -88,6 +88,33 @@ View detailed information about the current running timer.clockify-cli status**D
 - Beautiful panel-based layout
 - Helpful guidance when no timer is running
 
+#### `timer-monitor`
+Monitor timer status and show Windows notifications (ideal for scheduled tasks).
+# Basic monitoring with notification
+clockify-cli timer-monitor
+
+# Silent mode (no console output) - perfect for scheduled tasks
+clockify-cli timer-monitor --silent
+
+# Always show notifications (even when timer is running)
+clockify-cli timer-monitor --always-notify
+
+# Silent mode with status notifications
+clockify-cli timer-monitor --silent --always-notify
+**Options:**
+- `-s, --silent` - Suppress console output (useful for scheduled tasks)
+- `--always-notify` - Show notification even when timer is running
+
+**Features:**
+- Windows balloon notifications when no timer is running
+- Optional status notifications for running timers
+- Silent mode perfect for automated scheduled tasks
+- Cross-platform compatible (notifications only on Windows)
+- Exit codes for automation (0=timer running, 2=no timer, 1=error)
+
+**Scheduled Task Setup:**
+Create a Windows scheduled task to run every hour:Program: clockify-cli.exe
+Arguments: timer-monitor --silent
 #### `week-view`
 Comprehensive weekly time tracking overview.# View completed entries only
 clockify-cli week-view
@@ -208,6 +235,9 @@ clockify-cli start
 # Check current status (anytime)
 clockify-cli status --include-current
 
+# Monitor timer status (can be automated)
+clockify-cli timer-monitor
+
 # End of day: Stop timer and upload
 clockify-cli stop
 clockify-cli upload-to-tempo --days 1
@@ -224,6 +254,9 @@ clockify-cli upload-to-tempo --days 1
 
 # Weekly cleanup automation
 clockify-cli archive-completed-jiras
+
+# Hourly timer reminder (Windows scheduled task)
+clockify-cli timer-monitor --silent
 ## 🛠️ Development & Contributing
 
 ### 🔧 Development Setup

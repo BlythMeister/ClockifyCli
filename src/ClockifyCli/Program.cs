@@ -53,6 +53,13 @@ app.Configure(config =>
         .WithDescription("Start a new time entry by selecting from available tasks")
         .WithExample(new[] { "start" });
 
+    // Add the timer-monitor command
+    config.AddCommand<TimerMonitorCommand>("timer-monitor")
+        .WithDescription("Monitor timer status and show notifications (ideal for scheduled tasks)")
+        .WithExample(new[] { "timer-monitor" })
+        .WithExample(new[] { "timer-monitor", "--silent" })
+        .WithExample(new[] { "timer-monitor", "--always-notify" });
+
     // Add config branch with subcommands
     config.AddBranch("config", config =>
     {

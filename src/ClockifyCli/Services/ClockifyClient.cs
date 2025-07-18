@@ -7,20 +7,20 @@ namespace ClockifyCli.Services;
 
 public class ClockifyClient
 {
-    private readonly HttpClient _client;
+    private readonly HttpClient client;
 
     public ClockifyClient(string apiKey)
     {
-        _client = new HttpClient();
-        _client.BaseAddress = new Uri("https://api.clockify.me/api/v1/");
-        _client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+        client = new HttpClient();
+        client.BaseAddress = new Uri("https://api.clockify.me/api/v1/");
+        client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
     }
 
     public async Task<UserInfo> GetLoggedInUser()
     {
         try
         {
-            var response = await _client.GetAsync("user");
+            var response = await client.GetAsync("user");
             var responseContent = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<UserInfo>(responseContent)!;
         }
@@ -35,7 +35,7 @@ public class ClockifyClient
     {
         try
         {
-            var response = await _client.GetAsync("workspaces");
+            var response = await client.GetAsync("workspaces");
             var responseContent = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<List<WorkspaceInfo>>(responseContent)!;
         }
@@ -54,7 +54,7 @@ public class ClockifyClient
             var newTaskJson = JsonConvert.SerializeObject(newTask);
             var content = new StringContent(newTaskJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await _client.PostAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks", content);
+            var response = await client.PostAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks", content);
             response.EnsureSuccessStatusCode();
         }
         catch (Exception e)
@@ -67,15 +67,6 @@ public class ClockifyClient
     public async Task<List<TimeEntry>> GetTimeEntries(WorkspaceInfo workspace, UserInfo user, DateTime start, DateTime end)
     {
         return await GetPagedAsync<TimeEntry>($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?start={start:yyyy-MM-dd}T00:00:00Z&end={end:yyyy-MM-dd}T23:59:59Z&in-progress=false");
-    }
-
-    public async Task<List<TimeEntry>> GetCurrentWeekTimeEntries(WorkspaceInfo workspace, UserInfo user)
-    {
-        var today = DateTime.Today;
-        var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
-        var endOfWeek = startOfWeek.AddDays(6);
-        
-        return await GetTimeEntries(workspace, user, startOfWeek, endOfWeek.AddDays(1));
     }
 
     public async Task<List<ProjectInfo>> GetProjects(WorkspaceInfo workspace)
@@ -92,7 +83,7 @@ public class ClockifyClient
     {
         try
         {
-            var response = await _client.GetAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?in-progress=true");
+            var response = await client.GetAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?in-progress=true");
             var responseContent = await response.Content.ReadAsStringAsync();
             var entries = JsonConvert.DeserializeObject<List<TimeEntry>>(responseContent)!;
             return entries.FirstOrDefault();
@@ -115,7 +106,7 @@ public class ClockifyClient
             while (moreToGet)
             {
                 var pageInfo = baseUrl.Contains("?") ? $"&page={page}&page-size={pageSize}" : $"?page={page}&page-size={pageSize}";
-                var response = await _client.GetAsync($"{baseUrl}{pageInfo}");
+                var response = await client.GetAsync($"{baseUrl}{pageInfo}");
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var items = JsonConvert.DeserializeObject<List<T>>(responseContent)!;
 

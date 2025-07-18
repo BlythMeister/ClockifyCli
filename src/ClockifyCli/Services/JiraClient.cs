@@ -1,17 +1,17 @@
+using ClockifyCli.Models;
+using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
-using ClockifyCli.Models;
-using Newtonsoft.Json;
 
 namespace ClockifyCli.Services;
 
 public class JiraClient
 {
-    private readonly HttpClient _client;
-    private readonly Regex _taskInfoRegex;
-    private readonly Regex _projectInfoRegex;
-    private readonly ConcurrentDictionary<string, Task<JiraIssue>> _jiraIdMap;
+    private readonly HttpClient client;
+    private readonly Regex taskInfoRegex;
+    private readonly Regex projectInfoRegex;
+    private readonly ConcurrentDictionary<string, Task<JiraIssue>> jiraIdMap;
 
     public Lazy<Task<string>> UserId { get; }
 
@@ -19,21 +19,21 @@ public class JiraClient
     {
         var base64BasicAuthText = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user}:{apiKey}"));
 
-        _client = new HttpClient();
-        _client.BaseAddress = new Uri("https://15below.atlassian.net/rest/api/3/");
-        _client.DefaultRequestHeaders.Add("Authorization", $"Basic {base64BasicAuthText}");
-        _client.DefaultRequestHeaders.Add("Accept", "application/json");
+        client = new HttpClient();
+        client.BaseAddress = new Uri("https://15below.atlassian.net/rest/api/3/");
+        client.DefaultRequestHeaders.Add("Authorization", $"Basic {base64BasicAuthText}");
+        client.DefaultRequestHeaders.Add("Accept", "application/json");
 
-        _taskInfoRegex = new Regex(@"(?<jiraRef>\S*-\d*)(\s|-|).*");
-        _projectInfoRegex = new Regex(@"(?<projectRef>\S*)(\s|-|).*");
-        _jiraIdMap = new ConcurrentDictionary<string, Task<JiraIssue>>();
+        taskInfoRegex = new Regex(@"(?<jiraRef>\S*-\d*)(\s|-|).*");
+        projectInfoRegex = new Regex(@"(?<projectRef>\S*)(\s|-|).*");
+        jiraIdMap = new ConcurrentDictionary<string, Task<JiraIssue>>();
 
         UserId = new Lazy<Task<string>>(() => GetUser());
     }
 
     public async Task<JiraProject?> GetProject(ProjectInfo projectInfo)
     {
-        var projectMatches = _projectInfoRegex.Match(projectInfo.Name);
+        var projectMatches = projectInfoRegex.Match(projectInfo.Name);
         if (!projectMatches.Success || !projectMatches.Groups["projectRef"].Success)
         {
             return null;
@@ -42,7 +42,7 @@ public class JiraClient
 
         try
         {
-            var response = await _client.GetAsync($"project/{projectRef}");
+            var response = await client.GetAsync($"project/{projectRef}");
             var responseContent = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<JiraProject>(responseContent);
         }
@@ -55,7 +55,7 @@ public class JiraClient
 
     public async Task<JiraIssue?> GetIssue(TaskInfo taskInfo)
     {
-        var jiraRefMatches = _taskInfoRegex.Match(taskInfo.Name);
+        var jiraRefMatches = taskInfoRegex.Match(taskInfo.Name);
         if (!jiraRefMatches.Success || !jiraRefMatches.Groups["jiraRef"].Success)
         {
             return null;
@@ -69,11 +69,11 @@ public class JiraClient
     {
         try
         {
-            return await _jiraIdMap.GetOrAdd(jiraRef, async x =>
+            return await jiraIdMap.GetOrAdd(jiraRef, async x =>
             {
                 try
                 {
-                    var response = await _client.GetAsync($"issue/{jiraRef}");
+                    var response = await client.GetAsync($"issue/{jiraRef}");
                     var responseContent = await response.Content.ReadAsStringAsync();
                     return JsonConvert.DeserializeObject<JiraIssue>(responseContent)!;
                 }
@@ -95,7 +95,7 @@ public class JiraClient
     {
         try
         {
-            var response = await _client.GetAsync("myself");
+            var response = await client.GetAsync("myself");
             var responseContent = await response.Content.ReadAsStringAsync();
             var user = JsonConvert.DeserializeObject<JiraUser>(responseContent)!;
             return user.AccountId;

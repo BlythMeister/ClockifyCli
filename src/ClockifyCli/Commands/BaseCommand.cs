@@ -7,23 +7,23 @@ namespace ClockifyCli.Commands;
 
 public abstract class BaseCommand : AsyncCommand
 {
-    private AppConfiguration? _configuration;
+    private AppConfiguration? configuration;
 
     protected async Task<AppConfiguration> GetConfigurationAsync()
     {
-        if (_configuration == null)
+        if (configuration == null)
         {
             var configService = new ConfigurationService();
-            _configuration = await configService.LoadConfigurationAsync();
+            configuration = await configService.LoadConfigurationAsync();
 
-            if (!_configuration.IsComplete())
+            if (!configuration.IsComplete())
             {
                 ShowConfigurationIncompleteMessage();
                 throw new InvalidOperationException("Configuration is incomplete. Please run 'config set' first.");
             }
         }
 
-        return _configuration;
+        return configuration;
     }
 
     protected async Task<ClockifyClient> CreateClockifyClientAsync()
@@ -66,23 +66,23 @@ public abstract class BaseCommand : AsyncCommand
 public abstract class BaseCommand<TSettings> : AsyncCommand<TSettings>
     where TSettings : CommandSettings
 {
-    private AppConfiguration? _configuration;
+    private AppConfiguration? configuration;
 
     protected async Task<AppConfiguration> GetConfigurationAsync()
     {
-        if (_configuration == null)
+        if (configuration == null)
         {
             var configService = new ConfigurationService();
-            _configuration = await configService.LoadConfigurationAsync();
+            configuration = await configService.LoadConfigurationAsync();
 
-            if (!_configuration.IsComplete())
+            if (!configuration.IsComplete())
             {
                 ShowConfigurationIncompleteMessage();
                 throw new InvalidOperationException("Configuration is incomplete. Please run 'config set' first.");
             }
         }
 
-        return _configuration;
+        return configuration;
     }
 
     protected async Task<ClockifyClient> CreateClockifyClientAsync()

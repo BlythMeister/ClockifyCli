@@ -8,28 +8,28 @@ namespace ClockifyCli.Services;
 
 public class TempoClient
 {
-    private readonly HttpClient _client;
-    private readonly JiraClient _jiraClient;
-    private readonly Regex _descriptionRegex;
-    private readonly Regex _timeParseRegex;
+    private readonly HttpClient client;
+    private readonly JiraClient jiraClient;
+    private readonly Regex descriptionRegex;
+    private readonly Regex timeParseRegex;
 
     public TempoClient(string apiKey, JiraClient jiraClient)
     {
-        _jiraClient = jiraClient;
+        this.jiraClient = jiraClient;
 
-        _client = new HttpClient();
-        _client.BaseAddress = new Uri("https://api.tempo.io/4/");
-        _client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+        client = new HttpClient();
+        client.BaseAddress = new Uri("https://api.tempo.io/4/");
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
-        _descriptionRegex = new Regex(@".*(?<remBlock>\[rem:(?<remVal>.*)\]).*");
-        _timeParseRegex = new Regex(@"((?<week>(?:\d|\.)*)w)?((?<day>(?:\d|\.)*)d)?((?<hour>(?:\d|\.)*)h)?((?<minute>(?:\d|\.)*)m)?");
+        descriptionRegex = new Regex(@".*(?<remBlock>\[rem:(?<remVal>.*)\]).*");
+        timeParseRegex = new Regex(@"((?<week>(?:\d|\.)*)w)?((?<day>(?:\d|\.)*)d)?((?<hour>(?:\d|\.)*)h)?((?<minute>(?:\d|\.)*)m)?");
     }
 
     public async Task Delete(TempoTime tempoTime)
     {
         try
         {
-            var response = await _client.DeleteAsync($"worklogs/{tempoTime.TempoWorklogId}");
+            var response = await client.DeleteAsync($"worklogs/{tempoTime.TempoWorklogId}");
             response.EnsureSuccessStatusCode();
         }
         catch (Exception e)
@@ -41,20 +41,20 @@ public class TempoClient
 
     public async Task ExportTimeEntry(TimeEntry timeEntry, TaskInfo taskInfo)
     {
-        var jiraIssue = await _jiraClient.GetIssue(taskInfo);
+        var jiraIssue = await jiraClient.GetIssue(taskInfo);
         if (jiraIssue == null)
         {
             throw new InvalidOperationException($"Could not find Jira issue for task {taskInfo.Name}");
         }
 
-        var accountId = await _jiraClient.UserId.Value;
+        var accountId = await jiraClient.UserId.Value;
         var durationSeconds = (long)timeEntry.TimeInterval.DurationSpan.TotalSeconds;
         var description = $"Working on {jiraIssue.Key} [cid:{timeEntry.Id}]";
         long? remaining = null;
 
         if (!string.IsNullOrWhiteSpace(timeEntry.Description))
         {
-            var descriptionRegexMatch = _descriptionRegex.Match(timeEntry.Description);
+            var descriptionRegexMatch = descriptionRegex.Match(timeEntry.Description);
 
             if (descriptionRegexMatch.Groups["remBlock"].Success)
             {
@@ -90,7 +90,7 @@ public class TempoClient
         {
             var worklogJson = JsonConvert.SerializeObject(worklog);
             var content = new StringContent(worklogJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
-            var response = await _client.PostAsync($"worklogs", content);
+            var response = await client.PostAsync($"worklogs", content);
             if (!response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -106,13 +106,13 @@ public class TempoClient
 
     public async Task<List<TempoTime>> GetCurrentTime(DateTime startDate, DateTime endDate)
     {
-        var accountId = await _jiraClient.UserId.Value;
+        var accountId = await jiraClient.UserId.Value;
         return await GetPaged<TempoTime>($"worklogs/user/{accountId}?from={startDate:yyyy-MM-dd}&to={endDate:yyyy-MM-dd}");
     }
 
     public async Task<List<TempoApproval>> GetUnsubmittedPeriods()
     {
-        var accountId = await _jiraClient.UserId.Value;
+        var accountId = await jiraClient.UserId.Value;
         var periods = await GetPaged<TempoApproval>($"timesheet-approvals/waiting");
         return periods.Where(x => x.User.AccountId == accountId).ToList();
     }
@@ -125,7 +125,7 @@ public class TempoClient
         }
 
         double value = 0;
-        var match = _timeParseRegex.Match(timeString);
+        var match = timeParseRegex.Match(timeString);
 
         if (match.Success)
         {
@@ -162,7 +162,7 @@ public class TempoClient
             var moreToGet = true;
             while (moreToGet)
             {
-                var response = await _client.GetAsync(url);
+                var response = await client.GetAsync(url);
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var page = JsonConvert.DeserializeObject<TempoPage<T>>(responseContent)!;
 

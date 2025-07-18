@@ -27,6 +27,11 @@ app.Configure(config =>
         .WithDescription("List tasks that can be archived based on Jira status")
         .WithExample(new[] { "archive-list" });
 
+    // Add the week-view command
+    config.AddCommand<WeekViewCommand>("week-view")
+        .WithDescription("Display current week's time entries from Clockify")
+        .WithExample(new[] { "week-view" });
+
     // Add config branch with subcommands
     config.AddBranch("config", config =>
     {

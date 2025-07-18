@@ -69,6 +69,15 @@ public class ClockifyClient
         return await GetPagedAsync<TimeEntry>($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?start={start:yyyy-MM-dd}T00:00:00Z&end={end:yyyy-MM-dd}T23:59:59Z&in-progress=false");
     }
 
+    public async Task<List<TimeEntry>> GetCurrentWeekTimeEntries(WorkspaceInfo workspace, UserInfo user)
+    {
+        var today = DateTime.Today;
+        var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
+        var endOfWeek = startOfWeek.AddDays(6);
+        
+        return await GetTimeEntries(workspace, user, startOfWeek, endOfWeek.AddDays(1));
+    }
+
     public async Task<List<ProjectInfo>> GetProjects(WorkspaceInfo workspace)
     {
         return await GetPagedAsync<ProjectInfo>($"workspaces/{workspace.Id}/projects");

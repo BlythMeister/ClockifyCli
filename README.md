@@ -23,34 +23,18 @@ A powerful command-line interface for managing time entries between Clockify, Ji
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/ClockifyCli.git
+1. Clone the repository:git clone https://github.com/yourusername/ClockifyCli.git
 cd ClockifyCli
-```
-
-2. Build the project:
-```bash
-dotnet build src/ClockifyCli/ClockifyCli.csproj -c Release
-```
-
-3. Run the application:
-```bash
-dotnet run --project src/ClockifyCli/ClockifyCli.csproj
-```
-
+2. Build the project:dotnet build src/ClockifyCli/ClockifyCli.csproj -c Release
+3. Run the application:dotnet run --project src/ClockifyCli/ClockifyCli.csproj
 ### First-Time Setup
 
 Before using any commands, you need to configure your API credentials:
-
-```bash
 # Interactive setup - you'll be prompted for each credential
 clockify-cli config set
 
 # View current configuration
 clockify-cli config view
-```
-
 You'll need to provide:
 - **Clockify API Key** - From Clockify → Profile Settings → API
 - **Jira Username** - Your Jira email address
@@ -63,24 +47,23 @@ You'll need to provide:
 
 #### `config set`
 Interactive setup of API keys and credentials (required first step).
-
-```bash
 clockify-cli config set
-```
-
 #### `config view`
 Display current configuration with masked sensitive values.
-
-```bash
 clockify-cli config view
-```
-
 ### Time Management
+
+#### `week-view`
+Display current week's time entries from Clockify with totals and daily averages.
+clockify-cli week-view
+Shows a detailed table of time entries grouped by date for the current week (Monday-Sunday), including:
+- Daily breakdowns with project, task, and description
+- Duration for each entry
+- Daily totals and week total
+- Average hours per working day
 
 #### `upload-to-tempo`
 Upload time entries from Clockify to Tempo with smart deduplication.
-
-```bash
 # Upload last 14 days (default)
 clockify-cli upload-to-tempo
 
@@ -89,8 +72,6 @@ clockify-cli upload-to-tempo --days 7
 
 # Upload with orphaned entry cleanup (use with caution)
 clockify-cli upload-to-tempo --days 30 --cleanup-orphaned
-```
-
 **Options:**
 - `-d, --days <number>` - Number of days to upload (default: 14)
 - `--cleanup-orphaned` - Remove orphaned entries without Clockify IDs
@@ -99,11 +80,7 @@ clockify-cli upload-to-tempo --days 30 --cleanup-orphaned
 
 #### `add-task`
 Add a new task to Clockify from a Jira issue with interactive project selection.
-
-```bash
 clockify-cli add-task
-```
-
 This command will:
 1. Show available Clockify projects
 2. Prompt for Jira issue reference or URL
@@ -112,23 +89,15 @@ This command will:
 
 #### `archive-list`
 List tasks that can be archived based on their Jira status.
-
-```bash
 clockify-cli archive-list
-```
-
 Shows a table of tasks where the corresponding Jira issue is marked as "Done".
 
 ### Help
 
 Get help for any command:
-
-```bash
 clockify-cli --help
 clockify-cli upload-to-tempo --help
 clockify-cli config --help
-```
-
 ## 🔧 Configuration
 
 ### Secure Storage
@@ -156,8 +125,6 @@ All credentials are stored securely using AES-256 encryption in:
 ## 🏗️ Architecture
 
 ### Project Structure
-
-```
 ClockifyCli/
 ├── Commands/           # CLI command implementations
 │   ├── BaseCommand.cs
@@ -175,8 +142,6 @@ ClockifyCli/
 │   ├── TempoClient.cs
 │   └── ConfigurationService.cs
 └── Program.cs         # Application entry point
-```
-
 ### Dependencies
 
 - **.NET 8.0** - Runtime platform
@@ -204,35 +169,15 @@ ClockifyCli/
 
 ### Typical Workflow
 
-1. **Setup** (one-time):
-   ```bash
-   clockify-cli config set
-   ```
-
-2. **Daily/Weekly Upload**:
-   ```bash
-   clockify-cli upload-to-tempo --days 7
-   ```
-
-3. **Adding New Tasks**:
-   ```bash
-   clockify-cli add-task
-   ```
-
-4. **Cleanup** (periodic):
-   ```bash
-   clockify-cli archive-list
-   ```
-
+1. **Setup** (one-time):clockify-cli config set
+2. **Daily/Weekly Upload**:clockify-cli upload-to-tempo --days 7
+3. **Adding New Tasks**:clockify-cli add-task
+4. **Cleanup** (periodic):clockify-cli archive-list
 ### CI/CD Integration
 
 The CLI can be integrated into automation workflows:
-
-```bash
 # Upload time entries in a scheduled job
 clockify-cli upload-to-tempo --days 1
-```
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -242,8 +187,6 @@ clockify-cli upload-to-tempo --days 1
 5. Open a Pull Request
 
 ### Development Setup
-
-```bash
 # Clone and setup
 git clone https://github.com/yourusername/ClockifyCli.git
 cd ClockifyCli
@@ -259,8 +202,6 @@ dotnet test
 
 # Run locally
 dotnet run --project src/ClockifyCli/ClockifyCli.csproj -- --help
-```
-
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

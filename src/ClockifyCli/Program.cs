@@ -32,6 +32,11 @@ app.Configure(config =>
         .WithDescription("Display current week's time entries from Clockify")
         .WithExample(new[] { "week-view" });
 
+    // Add the status command
+    config.AddCommand<StatusCommand>("status")
+        .WithDescription("Display current in-progress time entry from Clockify")
+        .WithExample(new[] { "status" });
+
     // Add config branch with subcommands
     config.AddBranch("config", config =>
     {

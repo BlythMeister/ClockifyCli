@@ -88,6 +88,22 @@ public class ClockifyClient
         return await GetPagedAsync<TaskInfo>($"workspaces/{workspace.Id}/projects/{project.Id}/tasks");
     }
 
+    public async Task<TimeEntry?> GetCurrentTimeEntry(WorkspaceInfo workspace, UserInfo user)
+    {
+        try
+        {
+            var response = await _client.GetAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?in-progress=true");
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var entries = JsonConvert.DeserializeObject<List<TimeEntry>>(responseContent)!;
+            return entries.FirstOrDefault();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            throw;
+        }
+    }
+
     private async Task<List<T>> GetPagedAsync<T>(string baseUrl)
     {
         try

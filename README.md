@@ -7,6 +7,8 @@ A powerful command-line interface for managing time entries between Clockify, Ji
 - 🔄 **Upload time entries** from Clockify to Tempo with smart deduplication
 - 📝 **Add new tasks** to Clockify directly from Jira issues
 - 📊 **List archivable tasks** based on Jira status
+- ⏱️ **View current status** of in-progress time entries
+- 📅 **Weekly time tracking** overview with totals and averages
 - 🔐 **Secure configuration** with encrypted credential storage
 - 🎨 **Beautiful CLI** with colors, progress bars, and interactive prompts
 - 🛡️ **Safe operations** with confirmation prompts and validation
@@ -52,6 +54,18 @@ clockify-cli config set
 Display current configuration with masked sensitive values.
 clockify-cli config view
 ### Time Management
+
+#### `status`
+Display current in-progress time entry from Clockify.
+clockify-cli status
+Shows detailed information about the currently running time entry, including:
+- Project and task name
+- Description
+- Start time
+- Elapsed duration
+- Real-time updates
+
+If no time entry is currently running, displays a helpful message.
 
 #### `week-view`
 Display current week's time entries from Clockify with totals and daily averages.

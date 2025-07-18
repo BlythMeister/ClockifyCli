@@ -43,10 +43,14 @@ public class ConfigViewCommand : ConfigCommand
     private static string MaskSecret(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
+        {
             return "[dim]Not set[/]";
+        }
 
         if (value.Length <= 8)
+        {
             return new string('*', value.Length);
+        }
 
         return $"{value[..4]}{"*".PadRight(value.Length - 8, '*')}{value[^4..]}";
     }

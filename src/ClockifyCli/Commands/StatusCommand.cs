@@ -28,38 +28,36 @@ public class StatusCommand : BaseCommand
         }
 
         await AnsiConsole.Status()
-            .StartAsync("Getting current time entry...", async ctx =>
-            {
-                var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+                         .StartAsync("Getting current time entry...", async ctx =>
+                                                                      {
+                                                                          var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
 
-                if (currentEntry == null)
-                {
-                    AnsiConsole.MarkupLine("[yellow]⏸️  No time entry currently running[/]");
-                    AnsiConsole.MarkupLine("[dim]Start a new time entry by running 'clockify-cli start' to see it here.[/]");
-                    return;
-                }
+                                                                          if (currentEntry == null)
+                                                                          {
+                                                                              AnsiConsole.MarkupLine("[yellow]⏸️  No time entry currently running[/]");
+                                                                              AnsiConsole.MarkupLine("[dim]Start a new time entry by running 'clockify-cli start' to see it here.[/]");
+                                                                              return;
+                                                                          }
 
-                // Get project and task details
-                ctx.Status("Getting project and task details...");
-                var projects = await clockifyClient.GetProjects(workspace);
-                var project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
+                                                                          // Get project and task details
+                                                                          ctx.Status("Getting project and task details...");
+                                                                          var projects = await clockifyClient.GetProjects(workspace);
+                                                                          var project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
 
-                var task = project != null ?
-                    (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) :
-                    null;
+                                                                          var task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
 
-                // Calculate elapsed time
-                var startTime = currentEntry.TimeInterval.StartDate;
-                var elapsed = DateTime.UtcNow - startTime;
+                                                                          // Calculate elapsed time
+                                                                          var startTime = currentEntry.TimeInterval.StartDate;
+                                                                          var elapsed = DateTime.UtcNow - startTime;
 
-                // Create status panel
-                var panel = new Panel(CreateStatusContent(currentEntry, project, task, startTime, elapsed))
-                    .Header("[green]⏱️  Currently Running[/]")
-                    .BorderColor(Color.Green)
-                    .Padding(1, 1);
+                                                                          // Create status panel
+                                                                          var panel = new Panel(CreateStatusContent(currentEntry, project, task, startTime, elapsed))
+                                                                                      .Header("[green]⏱️  Currently Running[/]")
+                                                                                      .BorderColor(Color.Green)
+                                                                                      .Padding(1, 1);
 
-                AnsiConsole.Write(panel);
-            });
+                                                                          AnsiConsole.Write(panel);
+                                                                      });
     }
 
     private static string CreateStatusContent(

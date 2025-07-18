@@ -36,7 +36,9 @@ public static class TimeFormatter
         var minutes = duration.Minutes;
 
         if (totalHours == 0)
+        {
             return $"{minutes}m";
+        }
 
         return minutes == 0 ? $"{totalHours}h" : $"{totalHours}h {minutes}m";
     }

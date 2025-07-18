@@ -4,5 +4,5 @@ namespace ClockifyCli.Commands;
 
 public abstract class ConfigCommand : AsyncCommand
 {
-    public override abstract Task<int> ExecuteAsync(CommandContext context);
+    public abstract override Task<int> ExecuteAsync(CommandContext context);
 }

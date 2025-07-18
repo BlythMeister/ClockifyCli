@@ -38,6 +38,7 @@ public class JiraClient
         {
             return null;
         }
+
         var projectRef = projectMatches.Groups["projectRef"].Value;
 
         try
@@ -60,6 +61,7 @@ public class JiraClient
         {
             return null;
         }
+
         var jiraRef = jiraRefMatches.Groups["jiraRef"].Value;
 
         return await GetIssue(jiraRef);
@@ -70,19 +72,19 @@ public class JiraClient
         try
         {
             return await jiraIdMap.GetOrAdd(jiraRef, async x =>
-            {
-                try
-                {
-                    var response = await client.GetAsync($"issue/{jiraRef}");
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<JiraIssue>(responseContent)!;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.ToString());
-                    throw;
-                }
-            });
+                                                     {
+                                                         try
+                                                         {
+                                                             var response = await client.GetAsync($"issue/{jiraRef}");
+                                                             var responseContent = await response.Content.ReadAsStringAsync();
+                                                             return JsonConvert.DeserializeObject<JiraIssue>(responseContent)!;
+                                                         }
+                                                         catch (Exception e)
+                                                         {
+                                                             Console.WriteLine(e.ToString());
+                                                             throw;
+                                                         }
+                                                     });
         }
         catch (Exception e)
         {

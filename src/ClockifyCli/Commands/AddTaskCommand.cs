@@ -26,25 +26,22 @@ public class AddTaskCommand : BaseCommand
         var projects = await clockifyClient.GetProjects(workspace);
 
         var projectChoice = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Select a [green]project[/]:")
-                .PageSize(10)
-                .AddChoices(projects.Select(p => p.Name)));
+                                               new SelectionPrompt<string>()
+                                                   .Title("Select a [green]project[/]:")
+                                                   .PageSize(10)
+                                                   .AddChoices(projects.Select(p => p.Name)));
 
         var selectedProject = projects.First(p => p.Name == projectChoice);
 
         var jiraRefOrUrl = AnsiConsole.Ask<string>("Enter [blue]Jira Ref[/] or [blue]URL[/]:");
         var jiraRef = jiraRefOrUrl.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)
-            ? jiraRefOrUrl.Substring(jiraRefOrUrl.LastIndexOf("/") + 1)
-            : jiraRefOrUrl;
+                          ? jiraRefOrUrl.Substring(jiraRefOrUrl.LastIndexOf("/") + 1)
+                          : jiraRefOrUrl;
 
         // Load Jira issue data first (inside Status block)
         Models.JiraIssue? issue = null;
         await AnsiConsole.Status()
-            .StartAsync($"Finding jira: {jiraRef}...", async ctx =>
-            {
-                issue = await jiraClient.GetIssue(jiraRef);
-            });
+                         .StartAsync($"Finding jira: {jiraRef}...", async ctx => { issue = await jiraClient.GetIssue(jiraRef); });
 
         // Check if issue was found (outside Status block)
         if (issue == null)
@@ -61,10 +58,7 @@ public class AddTaskCommand : BaseCommand
         {
             // Add the task (inside Status block for feedback)
             await AnsiConsole.Status()
-                .StartAsync("Adding task...", async ctx =>
-                {
-                    await clockifyClient.AddTask(workspace, selectedProject, taskName);
-                });
+                             .StartAsync("Adding task...", async ctx => { await clockifyClient.AddTask(workspace, selectedProject, taskName); });
 
             AnsiConsole.MarkupLine("[green]Task added successfully![/]");
         }

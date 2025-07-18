@@ -8,11 +8,12 @@ namespace ClockifyCli.Services;
 public class ConfigurationService
 {
     private const string ConfigFileName = "clockify-config.dat";
+
     private static readonly string ConfigFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "ClockifyCli",
-        ConfigFileName
-    );
+                                                                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                                                                 "ClockifyCli",
+                                                                 ConfigFileName
+                                                                );
 
     private static readonly byte[] AdditionalEntropy =
         Encoding.UTF8.GetBytes("ClockifyCli-SecureConfig-2024");
@@ -71,11 +72,11 @@ public class ConfigurationService
         var currentConfig = await LoadConfigurationAsync();
 
         var updatedConfig = new AppConfiguration(
-            clockifyApiKey ?? currentConfig.ClockifyApiKey,
-            jiraUsername ?? currentConfig.JiraUsername,
-            jiraApiToken ?? currentConfig.JiraApiToken,
-            tempoApiKey ?? currentConfig.TempoApiKey
-        );
+                                                 clockifyApiKey ?? currentConfig.ClockifyApiKey,
+                                                 jiraUsername ?? currentConfig.JiraUsername,
+                                                 jiraApiToken ?? currentConfig.JiraApiToken,
+                                                 tempoApiKey ?? currentConfig.TempoApiKey
+                                                );
 
         await SaveConfigurationAsync(updatedConfig);
         return updatedConfig;

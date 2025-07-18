@@ -38,11 +38,12 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         {
             AnsiConsole.MarkupLine("[yellow]⚠ Orphaned entry cleanup is enabled[/]");
         }
+
         AnsiConsole.WriteLine();
 
         var today = DateTime.UtcNow.Date;
-        DateTime endDate = today.AddDays(days);
-        DateTime startDate = today.AddDays(days * -1);
+        var endDate = today.AddDays(days);
+        var startDate = today.AddDays(days * -1);
         var user = await clockifyClient.GetLoggedInUser();
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
@@ -53,28 +54,26 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
 
         // Check for running timer and warn user
         await AnsiConsole.Status()
-            .StartAsync("Checking for running timer...", async ctx =>
-            {
-                var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+                         .StartAsync("Checking for running timer...", async ctx =>
+                                                                      {
+                                                                          var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
 
-                if (currentEntry != null)
-                {
-                    // Get project and task details for display
-                    ctx.Status("Getting timer details...");
-                    var projects = await clockifyClient.GetProjects(workspace);
-                    var project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
-                    var task = project != null ?
-                        (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) :
-                        null;
+                                                                          if (currentEntry != null)
+                                                                          {
+                                                                              // Get project and task details for display
+                                                                              ctx.Status("Getting timer details...");
+                                                                              var projects = await clockifyClient.GetProjects(workspace);
+                                                                              var project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
+                                                                              var task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
 
-                    // Calculate elapsed time
-                    var startTime = currentEntry.TimeInterval.StartDate;
-                    var elapsed = DateTime.UtcNow - startTime;
+                                                                              // Calculate elapsed time
+                                                                              var startTime = currentEntry.TimeInterval.StartDate;
+                                                                              var elapsed = DateTime.UtcNow - startTime;
 
-                    // Show running timer details outside Status block
-                    ctx.Status("Timer running - showing details...");
-                }
-            });
+                                                                              // Show running timer details outside Status block
+                                                                              ctx.Status("Timer running - showing details...");
+                                                                          }
+                                                                      });
 
         // Handle running timer warning outside Status block
         var runningEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
@@ -82,9 +81,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         {
             var projects = await clockifyClient.GetProjects(workspace);
             var project = projects.FirstOrDefault(p => p.Id == runningEntry.ProjectId);
-            var task = project != null ?
-                (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == runningEntry.TaskId) :
-                null;
+            var task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == runningEntry.TaskId) : null;
 
             var startTime = runningEntry.TimeInterval.StartDate;
             var elapsed = DateTime.UtcNow - startTime;
@@ -100,7 +97,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
             AnsiConsole.MarkupLine($"  [bold]Project:[/] {projectName}");
             AnsiConsole.MarkupLine($"  [bold]Task:[/] {taskName}");
             AnsiConsole.MarkupLine($"  [bold]Description:[/] {description}");
-            AnsiConsole.MarkupLine($"  [bold]Elapsed:[/] {ClockifyCli.Utilities.TimeFormatter.FormatDuration(elapsed)}");
+            AnsiConsole.MarkupLine($"  [bold]Elapsed:[/] {Utilities.TimeFormatter.FormatDuration(elapsed)}");
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[yellow]Uploading while a timer is running may cause incomplete time entries to be uploaded.[/]");
@@ -121,88 +118,88 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         var results = new List<(string EntryId, string Date, bool Success, string? ErrorMessage)>();
 
         await AnsiConsole.Status()
-            .StartAsync("Loading data from Clockify and Tempo...", async ctx =>
-            {
-                ctx.Status("Getting time entries from Clockify...");
-                var timeEntries = await clockifyClient.GetTimeEntries(workspace, user, startDate, endDate);
+                         .StartAsync("Loading data from Clockify and Tempo...", async ctx =>
+                                                                                {
+                                                                                    ctx.Status("Getting time entries from Clockify...");
+                                                                                    var timeEntries = await clockifyClient.GetTimeEntries(workspace, user, startDate, endDate);
 
-                ctx.Status("Getting projects and tasks from Clockify...");
-                var projects = await clockifyClient.GetProjects(workspace);
-                var tasks = new List<TaskInfo>();
+                                                                                    ctx.Status("Getting projects and tasks from Clockify...");
+                                                                                    var projects = await clockifyClient.GetProjects(workspace);
+                                                                                    var tasks = new List<TaskInfo>();
 
-                foreach (var project in projects)
-                {
-                    var projectTasks = await clockifyClient.GetTasks(workspace, project);
-                    tasks.AddRange(projectTasks);
-                }
+                                                                                    foreach (var project in projects)
+                                                                                    {
+                                                                                        var projectTasks = await clockifyClient.GetTasks(workspace, project);
+                                                                                        tasks.AddRange(projectTasks);
+                                                                                    }
 
-                ctx.Status("Getting existing time entries from Tempo...");
-                var exportedTimes = await tempoClient.GetCurrentTime(startDate, endDate);
+                                                                                    ctx.Status("Getting existing time entries from Tempo...");
+                                                                                    var exportedTimes = await tempoClient.GetCurrentTime(startDate, endDate);
 
-                // Clean up orphaned entries in Tempo (entries without [cid:] identifier) only if explicitly requested
-                if (cleanupOrphaned)
-                {
-                    var orphanedEntries = exportedTimes.Where(et =>
-                        !et.Description.Contains("[cid:") &&
-                        et.StartDateTimeUtc >= startDate).ToList(); // Use the same date range as the query
+                                                                                    // Clean up orphaned entries in Tempo (entries without [cid:] identifier) only if explicitly requested
+                                                                                    if (cleanupOrphaned)
+                                                                                    {
+                                                                                        var orphanedEntries = exportedTimes.Where(et =>
+                                                                                                                                      !et.Description.Contains("[cid:") &&
+                                                                                                                                      et.StartDateTimeUtc >= startDate).ToList(); // Use the same date range as the query
 
-                    if (orphanedEntries.Any())
-                    {
-                        ctx.Status($"Cleaning up {orphanedEntries.Count} orphaned entries in Tempo...");
-                        foreach (var exportedTime in orphanedEntries)
-                        {
-                            await tempoClient.Delete(exportedTime);
-                            AnsiConsole.MarkupLine($"[red]Deleted orphaned entry {exportedTime.TempoWorklogId}[/]");
-                        }
-                    }
-                    else
-                    {
-                        AnsiConsole.MarkupLine("[green]✓ No orphaned entries found[/]");
-                    }
-                }
+                                                                                        if (orphanedEntries.Any())
+                                                                                        {
+                                                                                            ctx.Status($"Cleaning up {orphanedEntries.Count} orphaned entries in Tempo...");
+                                                                                            foreach (var exportedTime in orphanedEntries)
+                                                                                            {
+                                                                                                await tempoClient.Delete(exportedTime);
+                                                                                                AnsiConsole.MarkupLine($"[red]Deleted orphaned entry {exportedTime.TempoWorklogId}[/]");
+                                                                                            }
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            AnsiConsole.MarkupLine("[green]✓ No orphaned entries found[/]");
+                                                                                        }
+                                                                                    }
 
-                // Upload new time entries
-                var entriesToUpload = timeEntries.Where(e =>
-                    !exportedTimes.Any(et =>
-                        et.Description.Contains($"[cid:{e.Id}]") &&
-                        et.StartDateTimeUtc.Date == e.TimeInterval.StartDate.Date))
-                    .OrderBy(x => x.TimeInterval.StartDate)
-                    .ToList();
+                                                                                    // Upload new time entries
+                                                                                    var entriesToUpload = timeEntries.Where(e =>
+                                                                                                                                !exportedTimes.Any(et =>
+                                                                                                                                                       et.Description.Contains($"[cid:{e.Id}]") &&
+                                                                                                                                                       et.StartDateTimeUtc.Date == e.TimeInterval.StartDate.Date))
+                                                                                                                     .OrderBy(x => x.TimeInterval.StartDate)
+                                                                                                                     .ToList();
 
-                if (!entriesToUpload.Any())
-                {
-                    ctx.Status("No new time entries to upload.");
-                    AnsiConsole.MarkupLine("[green]✓ All time entries are already up to date in Tempo[/]");
-                    return;
-                }
+                                                                                    if (!entriesToUpload.Any())
+                                                                                    {
+                                                                                        ctx.Status("No new time entries to upload.");
+                                                                                        AnsiConsole.MarkupLine("[green]✓ All time entries are already up to date in Tempo[/]");
+                                                                                        return;
+                                                                                    }
 
-                ctx.Status($"Uploading {entriesToUpload.Count} time entries to Tempo...");
+                                                                                    ctx.Status($"Uploading {entriesToUpload.Count} time entries to Tempo...");
 
-                foreach (var timeEntry in entriesToUpload)
-                {
-                    try
-                    {
-                        var task = tasks.FirstOrDefault(x => x.Id == timeEntry.TaskId);
-                        if (task == null)
-                        {
-                            errorCount++;
-                            results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), false, "Unknown TaskId"));
-                            continue;
-                        }
+                                                                                    foreach (var timeEntry in entriesToUpload)
+                                                                                    {
+                                                                                        try
+                                                                                        {
+                                                                                            var task = tasks.FirstOrDefault(x => x.Id == timeEntry.TaskId);
+                                                                                            if (task == null)
+                                                                                            {
+                                                                                                errorCount++;
+                                                                                                results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), false, "Unknown TaskId"));
+                                                                                                continue;
+                                                                                            }
 
-                        await tempoClient.ExportTimeEntry(timeEntry, task);
-                        successCount++;
-                        results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), true, null));
-                    }
-                    catch (Exception e)
-                    {
-                        errorCount++;
-                        results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), false, e.Message));
-                    }
-                }
+                                                                                            await tempoClient.ExportTimeEntry(timeEntry, task);
+                                                                                            successCount++;
+                                                                                            results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), true, null));
+                                                                                        }
+                                                                                        catch (Exception e)
+                                                                                        {
+                                                                                            errorCount++;
+                                                                                            results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), false, e.Message));
+                                                                                        }
+                                                                                    }
 
-                ctx.Status("Upload completed.");
-            });
+                                                                                    ctx.Status("Upload completed.");
+                                                                                });
 
         // Display results after Status block
         foreach (var (entryId, date, success, errorMessage) in results)

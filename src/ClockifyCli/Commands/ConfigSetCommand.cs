@@ -16,37 +16,37 @@ public class ConfigSetCommand : ConfigCommand
 
         // Clockify API Key
         var clockifyApiKey = PromptForSecret(
-            "Clockify API Key",
-            currentConfig.ClockifyApiKey,
-            "Get this from Clockify → Profile Settings → API");
+                                             "Clockify API Key",
+                                             currentConfig.ClockifyApiKey,
+                                             "Get this from Clockify → Profile Settings → API");
 
         // Jira Username
         var jiraUsername = AnsiConsole.Prompt(
-            new TextPrompt<string>("Jira Username (email):")
-                .DefaultValue(currentConfig.JiraUsername ?? "")
-                .AllowEmpty());
+                                              new TextPrompt<string>("Jira Username (email):")
+                                                  .DefaultValue(currentConfig.JiraUsername ?? "")
+                                                  .AllowEmpty());
 
         // Jira API Token
         var jiraApiToken = PromptForSecret(
-            "Jira API Token",
-            currentConfig.JiraApiToken,
-            "Get this from Atlassian → Account Settings → Security → API tokens");
+                                           "Jira API Token",
+                                           currentConfig.JiraApiToken,
+                                           "Get this from Atlassian → Account Settings → Security → API tokens");
 
         // Tempo API Key
         var tempoApiKey = PromptForSecret(
-            "Tempo API Key",
-            currentConfig.TempoApiKey,
-            "Get this from Tempo → Settings → API Integration");
+                                          "Tempo API Key",
+                                          currentConfig.TempoApiKey,
+                                          "Get this from Tempo → Settings → API Integration");
 
         // Update configuration
         try
         {
             var updatedConfig = await configService.UpdateConfigurationAsync(
-                string.IsNullOrWhiteSpace(clockifyApiKey) ? null : clockifyApiKey,
-                string.IsNullOrWhiteSpace(jiraUsername) ? null : jiraUsername,
-                string.IsNullOrWhiteSpace(jiraApiToken) ? null : jiraApiToken,
-                string.IsNullOrWhiteSpace(tempoApiKey) ? null : tempoApiKey
-            );
+                                                                             string.IsNullOrWhiteSpace(clockifyApiKey) ? null : clockifyApiKey,
+                                                                             string.IsNullOrWhiteSpace(jiraUsername) ? null : jiraUsername,
+                                                                             string.IsNullOrWhiteSpace(jiraApiToken) ? null : jiraApiToken,
+                                                                             string.IsNullOrWhiteSpace(tempoApiKey) ? null : tempoApiKey
+                                                                            );
 
             AnsiConsole.MarkupLine("\n[green]✓ Configuration saved successfully![/]");
 
@@ -73,8 +73,8 @@ public class ConfigSetCommand : ConfigCommand
     {
         var hasCurrentValue = !string.IsNullOrWhiteSpace(currentValue);
         var prompt = new TextPrompt<string>($"{fieldName}:")
-            .Secret()
-            .AllowEmpty();
+                     .Secret()
+                     .AllowEmpty();
 
         if (hasCurrentValue)
         {
@@ -93,7 +93,9 @@ public class ConfigSetCommand : ConfigCommand
     private static string MaskValue(string value)
     {
         if (value.Length <= 8)
+        {
             return new string('*', value.Length);
+        }
 
         return $"{value[..4]}{"*".PadRight(value.Length - 8, '*')}{value[^4..]}";
     }

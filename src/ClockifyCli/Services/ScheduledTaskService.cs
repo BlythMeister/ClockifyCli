@@ -21,7 +21,10 @@ public static class ScheduledTaskService
             };
 
             using var process = Process.Start(startInfo);
-            if (process == null) return false;
+            if (process == null)
+            {
+                return false;
+            }
 
             var output = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
@@ -49,7 +52,10 @@ public static class ScheduledTaskService
             };
 
             using var process = Process.Start(startInfo);
-            if (process == null) return null;
+            if (process == null)
+            {
+                return null;
+            }
 
             var output = process.StandardOutput.ReadToEnd().Trim();
             process.WaitForExit();
@@ -92,7 +98,10 @@ public static class ScheduledTaskService
             };
 
             using var process = Process.Start(startInfo);
-            if (process == null) return false;
+            if (process == null)
+            {
+                return false;
+            }
 
             await process.WaitForExitAsync();
             return process.ExitCode == 0;
@@ -125,7 +134,10 @@ public static class ScheduledTaskService
             };
 
             using var process = Process.Start(startInfo);
-            if (process == null) return false;
+            if (process == null)
+            {
+                return false;
+            }
 
             await process.WaitForExitAsync();
             return process.ExitCode == 0;
@@ -159,7 +171,10 @@ public static class ScheduledTaskService
             };
 
             using var process = Process.Start(startInfo);
-            if (process == null) return false;
+            if (process == null)
+            {
+                return false;
+            }
 
             process.WaitForExit();
             return process.ExitCode == 0;
@@ -180,7 +195,7 @@ public static class ScheduledTaskService
         return interval switch
         {
             "15" => "Every 15 minutes",
-            "30" => "Every 30 minutes", 
+            "30" => "Every 30 minutes",
             "60" => "Every hour",
             "120" => "Every 2 hours",
             "240" => "Every 4 hours",

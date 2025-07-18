@@ -121,11 +121,11 @@ public class ClockifyClient
         try
         {
             var startTimeEntry = new StartTimeEntry(
-                DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                projectId,
-                string.IsNullOrEmpty(taskId) ? null : taskId,
-                string.IsNullOrWhiteSpace(description) ? null : description
-            );
+                                                    DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                                                    projectId,
+                                                    string.IsNullOrEmpty(taskId) ? null : taskId,
+                                                    string.IsNullOrWhiteSpace(description) ? null : description
+                                                   );
 
             var serializerSettings = new JsonSerializerSettings
             {
@@ -193,7 +193,7 @@ public class ClockifyClient
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
             var response = await client.PutAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();

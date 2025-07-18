@@ -154,14 +154,14 @@ public class ConfigScheduleCommand : AsyncCommand<ConfigScheduleCommand.Settings
         AnsiConsole.MarkupLine("[bold]Select monitoring interval:[/]");
 
         var choices = ScheduledTaskService.GetValidIntervals()
-            .Select(interval => $"{ScheduledTaskService.GetIntervalDescription(interval)} ({interval} minutes)")
-            .ToList();
+                                          .Select(interval => $"{ScheduledTaskService.GetIntervalDescription(interval)} ({interval} minutes)")
+                                          .ToList();
 
         var selection = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Choose how often to check for running timers:")
-                .AddChoices(choices)
-        );
+                                           new SelectionPrompt<string>()
+                                               .Title("Choose how often to check for running timers:")
+                                               .AddChoices(choices)
+                                          );
 
         // Extract the interval value from the selection
         var intervalStr = selection.Split('(')[1].Split(' ')[0];

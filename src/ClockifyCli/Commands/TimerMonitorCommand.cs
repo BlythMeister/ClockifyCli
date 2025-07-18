@@ -29,7 +29,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
         return await MonitorTimer(clockifyClient, settings);
     }
 
-    private async Task<int> MonitorTimer(Services.ClockifyClient clockifyClient, Settings settings)
+    private async Task<int> MonitorTimer(ClockifyClient clockifyClient, Settings settings)
     {
         if (!settings.Silent)
         {
@@ -53,6 +53,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
             {
                 AnsiConsole.MarkupLine("[red]No workspace found![/]");
             }
+
             return 1;
         }
 
@@ -63,20 +64,18 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
         if (!settings.Silent)
         {
             await AnsiConsole.Status()
-                .StartAsync("Checking timer status...", async ctx =>
-                {
-                    currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+                             .StartAsync("Checking timer status...", async ctx =>
+                                                                     {
+                                                                         currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
 
-                    if (currentEntry != null)
-                    {
-                        ctx.Status("Getting project and task details...");
-                        var projects = await clockifyClient.GetProjects(workspace);
-                        project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
-                        task = project != null ?
-                            (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) :
-                            null;
-                    }
-                });
+                                                                         if (currentEntry != null)
+                                                                         {
+                                                                             ctx.Status("Getting project and task details...");
+                                                                             var projects = await clockifyClient.GetProjects(workspace);
+                                                                             project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
+                                                                             task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
+                                                                         }
+                                                                     });
         }
         else
         {
@@ -87,9 +86,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
             {
                 var projects = await clockifyClient.GetProjects(workspace);
                 project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
-                task = project != null ?
-                    (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) :
-                    null;
+                task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
             }
         }
 

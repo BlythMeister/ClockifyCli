@@ -1,9 +1,9 @@
-using System.ComponentModel;
-using System.Globalization;
-using ClockifyCli.Models;
+﻿using ClockifyCli.Models;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
+using System.Globalization;
 
 namespace ClockifyCli.Commands;
 
@@ -50,23 +50,23 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         List<TaskInfo> allTasks = new();
 
         await AnsiConsole.Status()
-            .StartAsync("Loading time entries...", async ctx =>
-            {
-                ctx.Status("Getting time entries from Clockify...");
-                timeEntries = await clockifyClient.GetTimeEntries(workspace, user, startDate, endDate);
+                         .StartAsync("Loading time entries...", async ctx =>
+                                                                {
+                                                                    ctx.Status("Getting time entries from Clockify...");
+                                                                    timeEntries = await clockifyClient.GetTimeEntries(workspace, user, startDate, endDate);
 
-                // Filter out current running entries (they have no end time)
-                timeEntries = timeEntries.Where(e => !string.IsNullOrEmpty(e.TimeInterval.End)).ToList();
+                                                                    // Filter out current running entries (they have no end time)
+                                                                    timeEntries = timeEntries.Where(e => !string.IsNullOrEmpty(e.TimeInterval.End)).ToList();
 
-                ctx.Status("Getting projects and tasks from Clockify...");
-                projects = await clockifyClient.GetProjects(workspace);
+                                                                    ctx.Status("Getting projects and tasks from Clockify...");
+                                                                    projects = await clockifyClient.GetProjects(workspace);
 
-                foreach (var project in projects)
-                {
-                    var projectTasks = await clockifyClient.GetTasks(workspace, project);
-                    allTasks.AddRange(projectTasks);
-                }
-            });
+                                                                    foreach (var project in projects)
+                                                                    {
+                                                                        var projectTasks = await clockifyClient.GetTasks(workspace, project);
+                                                                        allTasks.AddRange(projectTasks);
+                                                                    }
+                                                                });
 
         if (!timeEntries.Any())
         {
@@ -77,38 +77,38 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         // Step 1: Select date
         var entriesByDate = timeEntries
-            .GroupBy(e => e.TimeInterval.StartDate.Date)
-            .OrderByDescending(g => g.Key)
-            .ToList();
+                            .GroupBy(e => e.TimeInterval.StartDate.Date)
+                            .OrderByDescending(g => g.Key)
+                            .ToList();
 
         var selectedDate = AnsiConsole.Prompt(
-            new SelectionPrompt<DateTime>()
-                .Title("Select a [green]date[/] to edit entries from:")
-                .PageSize(10)
-                .AddChoices(entriesByDate.Select(g => g.Key))
-                .UseConverter(date => Markup.Escape($"{date:ddd, MMM dd, yyyy} ({entriesByDate.First(g => g.Key == date).Count()} entries)")));
+                                              new SelectionPrompt<DateTime>()
+                                                  .Title("Select a [green]date[/] to edit entries from:")
+                                                  .PageSize(10)
+                                                  .AddChoices(entriesByDate.Select(g => g.Key))
+                                                  .UseConverter(date => Markup.Escape($"{date:ddd, MMM dd, yyyy} ({entriesByDate.First(g => g.Key == date).Count()} entries)")));
 
         // Step 2: Select specific time entry from that date
         var entriesForDate = entriesByDate.First(g => g.Key == selectedDate).OrderBy(e => e.TimeInterval.StartDate).ToList();
 
         var selectedEntry = AnsiConsole.Prompt(
-            new SelectionPrompt<TimeEntry>()
-                .Title($"Select a [green]time entry[/] from {Markup.Escape(selectedDate.ToString("MMM dd"))} to edit:")
-                .PageSize(15)
-                .AddChoices(entriesForDate)
-                .UseConverter(entry =>
-                {
-                    var project = projects.FirstOrDefault(p => p.Id == entry.ProjectId);
-                    var task = allTasks.FirstOrDefault(t => t.Id == entry.TaskId);
-                    var projectName = project?.Name ?? "Unknown Project";
-                    var taskName = task?.Name ?? "No Task";
-                    var startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
-                    var endTime = entry.TimeInterval.EndDate.ToLocalTime().ToString("HH:mm");
-                    var duration = TimeFormatter.FormatDurationCompact(entry.TimeInterval.DurationSpan);
-                    var description = string.IsNullOrWhiteSpace(entry.Description) ? "No description" : entry.Description;
-                    
-                    return Markup.Escape($"{startTime}-{endTime} ({duration}) | {projectName} > {taskName} | {description}");
-                }));
+                                               new SelectionPrompt<TimeEntry>()
+                                                   .Title($"Select a [green]time entry[/] from {Markup.Escape(selectedDate.ToString("MMM dd"))} to edit:")
+                                                   .PageSize(15)
+                                                   .AddChoices(entriesForDate)
+                                                   .UseConverter(entry =>
+                                                                 {
+                                                                     var project = projects.FirstOrDefault(p => p.Id == entry.ProjectId);
+                                                                     var task = allTasks.FirstOrDefault(t => t.Id == entry.TaskId);
+                                                                     var projectName = project?.Name ?? "Unknown Project";
+                                                                     var taskName = task?.Name ?? "No Task";
+                                                                     var startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
+                                                                     var endTime = entry.TimeInterval.EndDate.ToLocalTime().ToString("HH:mm");
+                                                                     var duration = TimeFormatter.FormatDurationCompact(entry.TimeInterval.DurationSpan);
+                                                                     var description = string.IsNullOrWhiteSpace(entry.Description) ? "No description" : entry.Description;
+
+                                                                     return Markup.Escape($"{startTime}-{endTime} ({duration}) | {projectName} > {taskName} | {description}");
+                                                                 }));
 
         // Step 3: Show current details and edit
         await EditSelectedEntry(clockifyClient, workspace, selectedEntry, projects, allTasks);
@@ -146,10 +146,10 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         // Get new start time
         var newStartTimeStr = AnsiConsole.Ask<string>(
-            $"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):",
-            defaultValue: string.Empty);
+                                                      $"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):",
+                                                      string.Empty);
 
-        DateTime newStartTime = currentStartTime;
+        var newStartTime = currentStartTime;
         if (!string.IsNullOrWhiteSpace(newStartTimeStr))
         {
             if (TimeSpan.TryParseExact(newStartTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var startTimeSpan))
@@ -164,16 +164,16 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         // Get new end time
         var newEndTimeStr = AnsiConsole.Ask<string>(
-            $"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):",
-            defaultValue: string.Empty);
+                                                    $"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):",
+                                                    string.Empty);
 
-        DateTime newEndTime = currentEndTime;
+        var newEndTime = currentEndTime;
         if (!string.IsNullOrWhiteSpace(newEndTimeStr))
         {
             if (TimeSpan.TryParseExact(newEndTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var endTimeSpan))
             {
                 newEndTime = newStartTime.Date.Add(endTimeSpan);
-                
+
                 // Handle case where end time is next day
                 if (newEndTime <= newStartTime)
                 {
@@ -195,8 +195,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         // Get new description (optional)
         var newDescription = AnsiConsole.Ask<string>(
-            "Enter new [green]description[/] (or leave blank to keep current):",
-            defaultValue: string.Empty);
+                                                     "Enter new [green]description[/] (or leave blank to keep current):",
+                                                     string.Empty);
 
         if (string.IsNullOrWhiteSpace(newDescription))
         {
@@ -215,21 +215,21 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         var newDuration = TimeFormatter.FormatDurationCompact(newEndTime - newStartTime);
 
         summaryTable.AddRow(
-            "Start Time",
-            currentStartTime.ToString("HH:mm"),
-            newStartTime.ToString("HH:mm"));
+                            "Start Time",
+                            currentStartTime.ToString("HH:mm"),
+                            newStartTime.ToString("HH:mm"));
         summaryTable.AddRow(
-            "End Time",
-            currentEndTime.ToString("HH:mm"),
-            newEndTime.ToString("HH:mm"));
+                            "End Time",
+                            currentEndTime.ToString("HH:mm"),
+                            newEndTime.ToString("HH:mm"));
         summaryTable.AddRow(
-            "Duration",
-            currentDuration,
-            newDuration);
+                            "Duration",
+                            currentDuration,
+                            newDuration);
         summaryTable.AddRow(
-            "Description",
-            string.IsNullOrWhiteSpace(timeEntry.Description) ? "[dim]No description[/]" : Markup.Escape(timeEntry.Description),
-            string.IsNullOrWhiteSpace(newDescription) ? "[dim]No description[/]" : Markup.Escape(newDescription));
+                            "Description",
+                            string.IsNullOrWhiteSpace(timeEntry.Description) ? "[dim]No description[/]" : Markup.Escape(timeEntry.Description),
+                            string.IsNullOrWhiteSpace(newDescription) ? "[dim]No description[/]" : Markup.Escape(newDescription));
 
         AnsiConsole.Write(summaryTable);
         AnsiConsole.WriteLine();
@@ -238,12 +238,9 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         if (AnsiConsole.Confirm("Apply these changes?"))
         {
             await AnsiConsole.Status()
-                .StartAsync("Updating time entry...", async ctx =>
-                {
-                    await clockifyClient.UpdateTimeEntry(workspace, timeEntry, newStartTime.ToUniversalTime(), newEndTime.ToUniversalTime(), newDescription);
-                });
+                             .StartAsync("Updating time entry...", async ctx => { await clockifyClient.UpdateTimeEntry(workspace, timeEntry, newStartTime.ToUniversalTime(), newEndTime.ToUniversalTime(), newDescription); });
 
-            AnsiConsole.MarkupLine("[green]? Time entry updated successfully![/]");
+            AnsiConsole.MarkupLine("[green]✓ Time entry updated successfully![/]");
         }
         else
         {

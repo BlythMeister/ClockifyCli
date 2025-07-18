@@ -60,7 +60,7 @@ public abstract class BaseCommand : AsyncCommand
         AnsiConsole.MarkupLine("");
     }
 
-    public override abstract Task<int> ExecuteAsync(CommandContext context);
+    public abstract override Task<int> ExecuteAsync(CommandContext context);
 }
 
 public abstract class BaseCommand<TSettings> : AsyncCommand<TSettings>
@@ -119,5 +119,5 @@ public abstract class BaseCommand<TSettings> : AsyncCommand<TSettings>
         AnsiConsole.MarkupLine("");
     }
 
-    public override abstract Task<int> ExecuteAsync(CommandContext context, TSettings settings);
+    public abstract override Task<int> ExecuteAsync(CommandContext context, TSettings settings);
 }

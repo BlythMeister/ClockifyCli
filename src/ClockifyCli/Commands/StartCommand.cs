@@ -39,38 +39,38 @@ public class StartCommand : BaseCommand
         // Load data first (inside Status block)
         List<TaskWithProject> allOptions = new();
         await AnsiConsole.Status()
-            .StartAsync("Loading projects and tasks...", async ctx =>
-            {
-                ctx.Status("Getting projects from Clockify...");
-                var projects = await clockifyClient.GetProjects(workspace);
+                         .StartAsync("Loading projects and tasks...", async ctx =>
+                                                                      {
+                                                                          ctx.Status("Getting projects from Clockify...");
+                                                                          var projects = await clockifyClient.GetProjects(workspace);
 
-                if (!projects.Any())
-                {
-                    return;
-                }
+                                                                          if (!projects.Any())
+                                                                          {
+                                                                              return;
+                                                                          }
 
-                // Collect all tasks with their project information
-                ctx.Status("Getting tasks from all projects...");
-                var tasksWithProjects = new List<TaskWithProject>();
+                                                                          // Collect all tasks with their project information
+                                                                          ctx.Status("Getting tasks from all projects...");
+                                                                          var tasksWithProjects = new List<TaskWithProject>();
 
-                foreach (var project in projects)
-                {
-                    var projectTasks = await clockifyClient.GetTasks(workspace, project);
-                    foreach (var task in projectTasks.Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase)))
-                    {
-                        tasksWithProjects.Add(new TaskWithProject(
-                            task.Id,
-                            task.Name,
-                            project.Id,
-                            project.Name
-                        ));
-                    }
-                }
+                                                                          foreach (var project in projects)
+                                                                          {
+                                                                              var projectTasks = await clockifyClient.GetTasks(workspace, project);
+                                                                              foreach (var task in projectTasks.Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase)))
+                                                                              {
+                                                                                  tasksWithProjects.Add(new TaskWithProject(
+                                                                                                                            task.Id,
+                                                                                                                            task.Name,
+                                                                                                                            project.Id,
+                                                                                                                            project.Name
+                                                                                                                           ));
+                                                                              }
+                                                                          }
 
-                allOptions.AddRange(tasksWithProjects
-                    .OrderBy(t => t.ProjectName)
-                    .ThenBy(t => t.TaskName));
-            });
+                                                                          allOptions.AddRange(tasksWithProjects
+                                                                                              .OrderBy(t => t.ProjectName)
+                                                                                              .ThenBy(t => t.TaskName));
+                                                                      });
 
         // Check if we have options after loading
         if (!allOptions.Any())
@@ -82,25 +82,25 @@ public class StartCommand : BaseCommand
 
         // Now do user interaction (outside Status block)
         var selectedOption = AnsiConsole.Prompt(
-            new SelectionPrompt<TaskWithProject>()
-                .Title("Select a [green]task[/] to start timing:")
-                .PageSize(15)
-                .AddChoices(allOptions)
-                .UseConverter(task => task.SafeDisplayName));
+                                                new SelectionPrompt<TaskWithProject>()
+                                                    .Title("Select a [green]task[/] to start timing:")
+                                                    .PageSize(15)
+                                                    .AddChoices(allOptions)
+                                                    .UseConverter(task => task.SafeDisplayName));
 
         // Prompt for optional description
         var description = AnsiConsole.Ask<string>(
-            "[blue]Description[/] (optional):",
-            defaultValue: string.Empty);
+                                                  "[blue]Description[/] (optional):",
+                                                  string.Empty);
 
         // Show confirmation
         var projectName = Markup.Escape(selectedOption.ProjectName);
         var taskName = selectedOption.TaskName == "No specific task"
-            ? "[dim]No specific task[/]"
-            : Markup.Escape(selectedOption.TaskName);
+                           ? "[dim]No specific task[/]"
+                           : Markup.Escape(selectedOption.TaskName);
         var descriptionDisplay = string.IsNullOrWhiteSpace(description)
-            ? "[dim]No description[/]"
-            : Markup.Escape(description);
+                                     ? "[dim]No description[/]"
+                                     : Markup.Escape(description);
 
         AnsiConsole.MarkupLine($"[yellow]About to start timer for:[/]");
         AnsiConsole.MarkupLine($"  [bold]Project:[/] {projectName}");
@@ -112,17 +112,17 @@ public class StartCommand : BaseCommand
         {
             // Start the timer (inside Status block for feedback)
             await AnsiConsole.Status()
-                .StartAsync("Starting timer...", async ctx =>
-                {
-                    var taskId = string.IsNullOrEmpty(selectedOption.TaskId) ? null : selectedOption.TaskId;
-                    var finalDescription = string.IsNullOrWhiteSpace(description) ? null : description;
+                             .StartAsync("Starting timer...", async ctx =>
+                                                              {
+                                                                  var taskId = string.IsNullOrEmpty(selectedOption.TaskId) ? null : selectedOption.TaskId;
+                                                                  var finalDescription = string.IsNullOrWhiteSpace(description) ? null : description;
 
-                    var startedEntry = await clockifyClient.StartTimeEntry(
-                        workspace,
-                        selectedOption.ProjectId,
-                        taskId,
-                        finalDescription);
-                });
+                                                                  var startedEntry = await clockifyClient.StartTimeEntry(
+                                                                                                                         workspace,
+                                                                                                                         selectedOption.ProjectId,
+                                                                                                                         taskId,
+                                                                                                                         finalDescription);
+                                                              });
 
             AnsiConsole.MarkupLine("[green]✓ Timer started successfully![/]");
             AnsiConsole.MarkupLine($"[dim]Started at: {DateTime.Now:HH:mm:ss}[/]");

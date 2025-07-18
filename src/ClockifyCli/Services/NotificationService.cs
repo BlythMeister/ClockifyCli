@@ -37,6 +37,7 @@ $notifyIcon.Dispose()
             };
 
             using var process = System.Diagnostics.Process.Start(startInfo);
+
             // Don't wait for completion to avoid blocking
         }
         catch (Exception ex)
@@ -81,6 +82,7 @@ $notifyIcon.Dispose()
             };
 
             using var process = System.Diagnostics.Process.Start(startInfo);
+
             // Don't wait for completion to avoid blocking
         }
         catch (Exception ex)

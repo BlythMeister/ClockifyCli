@@ -31,30 +31,28 @@ public class StopCommand : BaseCommand
         Models.TimeEntry? currentEntry = null;
         Models.ProjectInfo? project = null;
         Models.TaskInfo? task = null;
-        TimeSpan elapsed = TimeSpan.Zero;
+        var elapsed = TimeSpan.Zero;
 
         await AnsiConsole.Status()
-            .StartAsync("Checking current time entry...", async ctx =>
-            {
-                currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+                         .StartAsync("Checking current time entry...", async ctx =>
+                                                                       {
+                                                                           currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
 
-                if (currentEntry == null)
-                {
-                    return;
-                }
+                                                                           if (currentEntry == null)
+                                                                           {
+                                                                               return;
+                                                                           }
 
-                // Get project and task details for display
-                ctx.Status("Getting project and task details...");
-                var projects = await clockifyClient.GetProjects(workspace);
-                project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
-                task = project != null ?
-                    (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) :
-                    null;
+                                                                           // Get project and task details for display
+                                                                           ctx.Status("Getting project and task details...");
+                                                                           var projects = await clockifyClient.GetProjects(workspace);
+                                                                           project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
+                                                                           task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
 
-                // Calculate elapsed time before stopping
-                var startTime = currentEntry.TimeInterval.StartDate;
-                elapsed = DateTime.UtcNow - startTime;
-            });
+                                                                           // Calculate elapsed time before stopping
+                                                                           var startTime = currentEntry.TimeInterval.StartDate;
+                                                                           elapsed = DateTime.UtcNow - startTime;
+                                                                       });
 
         // Check if there's a timer running (outside Status block)
         if (currentEntry == null)
@@ -81,10 +79,10 @@ public class StopCommand : BaseCommand
         {
             // Stop the timer (inside Status block for feedback)
             await AnsiConsole.Status()
-                .StartAsync("Stopping timer...", async ctx =>
-                {
-                    var stoppedEntry = await clockifyClient.StopCurrentTimeEntry(workspace, user);
-                });
+                             .StartAsync("Stopping timer...", async ctx =>
+                                                              {
+                                                                  var stoppedEntry = await clockifyClient.StopCurrentTimeEntry(workspace, user);
+                                                              });
 
             AnsiConsole.MarkupLine("[green]✓ Timer stopped successfully![/]");
             AnsiConsole.MarkupLine($"[dim]Final duration: {TimeFormatter.FormatDuration(elapsed)}[/]");

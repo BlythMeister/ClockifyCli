@@ -45,13 +45,13 @@ public class AddTaskCommand : BaseCommand
 
                 if (issue == null)
                 {
-                    AnsiConsole.MarkupLine($"[red]Unknown Issue '{jiraRefOrUrl}'[/]");
+                    AnsiConsole.MarkupLine($"[red]Unknown Issue '{Markup.Escape(jiraRefOrUrl)}'[/]");
                     return;
                 }
 
                 var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
 
-                AnsiConsole.MarkupLine($"Will Add Task '[yellow]{taskName}[/]' Into Project '[green]{selectedProject.Name}[/]'");
+                AnsiConsole.MarkupLine($"Will Add Task '[yellow]{Markup.Escape(taskName)}[/]' Into Project '[green]{Markup.Escape(selectedProject.Name)}[/]'");
 
                 if (AnsiConsole.Confirm("Confirm?"))
                 {

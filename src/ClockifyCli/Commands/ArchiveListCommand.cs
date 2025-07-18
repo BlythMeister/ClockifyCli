@@ -37,11 +37,11 @@ public class ArchiveListCommand : BaseCommand
                 var issue = await jiraClient.GetIssue(projectTask);
                 if (issue is null)
                 {
-                    table.AddRow(project.Name, projectTask.Name, "[red]Unknown Jira[/]");
+                    table.AddRow(Markup.Escape(project.Name), Markup.Escape(projectTask.Name), "[red]Unknown Jira[/]");
                 }
                 else if (issue.Fields.Status.StatusCategory.Name.Equals("Done", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    table.AddRow(project.Name, projectTask.Name, "[yellow]Ready to Archive[/]");
+                    table.AddRow(Markup.Escape(project.Name), Markup.Escape(projectTask.Name), "[yellow]Ready to Archive[/]");
                 }
             }
         }

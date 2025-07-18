@@ -37,6 +37,11 @@ app.Configure(config =>
         .WithDescription("Display current in-progress time entry from Clockify")
         .WithExample(new[] { "status" });
 
+    // Add the stop command
+    config.AddCommand<StopCommand>("stop")
+        .WithDescription("Stop the currently running time entry in Clockify")
+        .WithExample(new[] { "stop" });
+
     // Add config branch with subcommands
     config.AddBranch("config", config =>
     {

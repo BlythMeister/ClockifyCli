@@ -95,6 +95,27 @@ public class ClockifyClient
         }
     }
 
+    public async Task<TimeEntry> StopCurrentTimeEntry(WorkspaceInfo workspace, UserInfo user)
+    {
+        try
+        {
+            var stopTimeData = new { end = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") };
+            var stopTimeJson = JsonConvert.SerializeObject(stopTimeData);
+            var content = new StringContent(stopTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+
+            var response = await client.PatchAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries", content);
+            response.EnsureSuccessStatusCode();
+            
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<TimeEntry>(responseContent)!;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            throw;
+        }
+    }
+
     private async Task<List<T>> GetPagedAsync<T>(string baseUrl)
     {
         try

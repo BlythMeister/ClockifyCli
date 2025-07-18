@@ -8,6 +8,7 @@ A powerful command-line interface for managing time entries between Clockify, Ji
 - 📝 **Add new tasks** to Clockify directly from Jira issues
 - 📊 **List archivable tasks** based on Jira status
 - ⏱️ **View current status** of in-progress time entries
+- ⏹️ **Stop running timers** with confirmation and feedback
 - 📅 **Weekly time tracking** overview with totals and averages
 - 🔐 **Secure configuration** with encrypted credential storage
 - 🎨 **Beautiful CLI** with colors, progress bars, and interactive prompts
@@ -54,6 +55,16 @@ clockify-cli config set
 Display current configuration with masked sensitive values.
 clockify-cli config view
 ### Time Management
+
+#### `stop`
+Stop the currently running time entry in Clockify.
+clockify-cli stop
+Features:
+- Shows details of the currently running timer before stopping
+- Displays project, task, description, and elapsed time
+- Requires confirmation before stopping
+- Shows final duration after stopping
+- Gracefully handles when no timer is running
 
 #### `status`
 Display current in-progress time entry from Clockify.

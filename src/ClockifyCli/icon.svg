@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="clockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F0F8FF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="terminalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D3748;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A202C;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#bgGradient)" stroke="#2D3748" stroke-width="2"/>
+  
+  <!-- Terminal window representation -->
+  <rect x="20" y="45" width="88" height="50" rx="6" fill="url(#terminalGradient)" stroke="#4A5568" stroke-width="1"/>
+  
+  <!-- Terminal header bar -->
+  <rect x="20" y="45" width="88" height="12" rx="6" fill="#4A5568"/>
+  <circle cx="28" cy="51" r="2" fill="#FF6B6B"/>
+  <circle cx="36" cy="51" r="2" fill="#FFE66D"/>
+  <circle cx="44" cy="51" r="2" fill="#4ECDC4"/>
+  
+  <!-- Terminal text lines (representing CLI) -->
+  <rect x="26" y="62" width="30" height="2" fill="#4ECDC4"/>
+  <rect x="60" y="62" width="20" height="2" fill="#FFFFFF"/>
+  <rect x="26" y="68" width="45" height="2" fill="#FFFFFF"/>
+  <rect x="26" y="74" width="25" height="2" fill="#4ECDC4"/>
+  <rect x="55" y="74" width="15" height="2" fill="#FFFFFF"/>
+  <rect x="26" y="80" width="40" height="2" fill="#FFFFFF"/>
+  <rect x="26" y="86" width="10" height="2" fill="#4ECDC4"/>
+  <rect x="40" y="86" width="6" height="2" fill="#4ECDC4" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" repeatCount="indefinite"/>
+  </rect>
+  
+  <!-- Clock face -->
+  <circle cx="64" cy="32" r="16" fill="url(#clockGradient)" stroke="#357ABD" stroke-width="2"/>
+  
+  <!-- Clock numbers (12, 3, 6, 9) -->
+  <text x="64" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#357ABD">12</text>
+  <text x="76" y="36" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#357ABD">3</text>
+  <text x="64" y="46" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#357ABD">6</text>
+  <text x="52" y="36" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#357ABD">9</text>
+  
+  <!-- Clock hands pointing to 2:30 (active time tracking) -->
+  <line x1="64" y1="32" x2="64" y2="22" stroke="#2D3748" stroke-width="2" stroke-linecap="round"/>
+  <line x1="64" y1="32" x2="72" y2="38" stroke="#2D3748" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Center dot -->
+  <circle cx="64" cy="32" r="2" fill="#2D3748"/>
+  
+  <!-- Integration arrows showing data flow -->
+  <path d="M 32 102 Q 48 110 64 102 Q 80 110 96 102" stroke="#4ECDC4" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <polygon points="94,100 96,102 94,104" fill="#4ECDC4"/>
+  <polygon points="34,100 32,102 34,104" fill="#4ECDC4"/>
+  
+  <!-- Small integration icons representing Jira, Clockify, Tempo -->
+  <circle cx="32" cy="108" r="6" fill="#0052CC" opacity="0.8"/>
+  <text x="32" y="112" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="white">J</text>
+  
+  <circle cx="64" cy="108" r="6" fill="#03A9F4" opacity="0.8"/>
+  <text x="64" y="112" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="white">C</text>
+  
+  <circle cx="96" cy="108" r="6" fill="#2684FF" opacity="0.8"/>
+  <text x="96" y="112" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="white">T</text>
+</svg>

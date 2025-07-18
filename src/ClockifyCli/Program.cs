@@ -60,6 +60,11 @@ app.Configure(config =>
         .WithExample(new[] { "timer-monitor", "--silent" })
         .WithExample(new[] { "timer-monitor", "--always-notify" });
 
+    // Add the full-view command
+    config.AddCommand<FullViewCommand>("full-view")
+        .WithDescription("Open Clockify web app in your default browser")
+        .WithExample(new[] { "full-view" });
+
     // Add config branch with subcommands
     config.AddBranch("config", config =>
     {

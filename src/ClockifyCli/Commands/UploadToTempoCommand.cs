@@ -51,6 +51,71 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
             return;
         }
 
+        // Check for running timer and warn user
+        await AnsiConsole.Status()
+            .StartAsync("Checking for running timer...", async ctx =>
+            {
+                var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+
+                if (currentEntry != null)
+                {
+                    // Get project and task details for display
+                    ctx.Status("Getting timer details...");
+                    var projects = await clockifyClient.GetProjects(workspace);
+                    var project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
+                    var task = project != null ?
+                        (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) :
+                        null;
+
+                    // Calculate elapsed time
+                    var startTime = currentEntry.TimeInterval.StartDate;
+                    var elapsed = DateTime.UtcNow - startTime;
+
+                    // Show running timer details outside Status block
+                    ctx.Status("Timer running - showing details...");
+                }
+            });
+
+        // Handle running timer warning outside Status block
+        var runningEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+        if (runningEntry != null)
+        {
+            var projects = await clockifyClient.GetProjects(workspace);
+            var project = projects.FirstOrDefault(p => p.Id == runningEntry.ProjectId);
+            var task = project != null ?
+                (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == runningEntry.TaskId) :
+                null;
+
+            var startTime = runningEntry.TimeInterval.StartDate;
+            var elapsed = DateTime.UtcNow - startTime;
+
+            AnsiConsole.MarkupLine("[yellow]⚠️  Warning: A timer is currently running![/]");
+            AnsiConsole.WriteLine();
+
+            var projectName = project != null ? Markup.Escape(project.Name) : "Unknown Project";
+            var taskName = task != null ? Markup.Escape(task.Name) : "No Task";
+            var description = string.IsNullOrWhiteSpace(runningEntry.Description) ? "No description" : Markup.Escape(runningEntry.Description);
+
+            AnsiConsole.MarkupLine($"[bold]Currently running timer:[/]");
+            AnsiConsole.MarkupLine($"  [bold]Project:[/] {projectName}");
+            AnsiConsole.MarkupLine($"  [bold]Task:[/] {taskName}");
+            AnsiConsole.MarkupLine($"  [bold]Description:[/] {description}");
+            AnsiConsole.MarkupLine($"  [bold]Elapsed:[/] {ClockifyCli.Utilities.TimeFormatter.FormatDuration(elapsed)}");
+            AnsiConsole.WriteLine();
+
+            AnsiConsole.MarkupLine("[yellow]Uploading while a timer is running may cause incomplete time entries to be uploaded.[/]");
+            AnsiConsole.MarkupLine("[dim]Consider stopping the timer first with 'clockify-cli stop' for accurate time tracking.[/]");
+            AnsiConsole.WriteLine();
+
+            if (!AnsiConsole.Confirm("Do you want to proceed with the upload anyway?"))
+            {
+                AnsiConsole.MarkupLine("[yellow]Upload cancelled.[/]");
+                return;
+            }
+
+            AnsiConsole.WriteLine();
+        }
+
         var successCount = 0;
         var errorCount = 0;
         var results = new List<(string EntryId, string Date, bool Success, string? ErrorMessage)>();

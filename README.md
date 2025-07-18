@@ -28,17 +28,17 @@ A powerful command-line interface for managing time entries between Clockify, Ji
 ### Installation
 
 1. Clone the repository:git clone https://github.com/yourusername/ClockifyCli.git
-cd ClockifyCli
+   cd ClockifyCli
 2. Build the project:dotnet build src/ClockifyCli/ClockifyCli.csproj -c Release
 3. Run the application:dotnet run --project src/ClockifyCli/ClockifyCli.csproj
 ### First-Time Setup
 
 Before using any commands, you need to configure your API credentials:
 # Interactive setup - you'll be prompted for each credential
-clockify-cli config set
+`clockify-cli config set`
 
 # View current configuration
-clockify-cli config view
+`clockify-cli config view`
 You'll need to provide:
 - **Clockify API Key** - From Clockify → Profile Settings → API
 - **Jira Username** - Your Jira email address
@@ -51,15 +51,13 @@ You'll need to provide:
 
 #### `config set`
 Interactive setup of API keys and credentials (required first step).
-clockify-cli config set
 #### `config view`
 Display current configuration with masked sensitive values.
-clockify-cli config view
+
 ### Time Management
 
 #### `start`
 Start a new time entry by selecting from available tasks across all projects.
-clockify-cli start
 Features:
 - Lists all available tasks organized by project
 - Includes option to start timer without a specific task (project-only)
@@ -70,7 +68,6 @@ Features:
 
 #### `stop`
 Stop the currently running time entry in Clockify.
-clockify-cli stop
 Features:
 - Shows details of the currently running timer before stopping
 - Displays project, task, description, and elapsed time
@@ -80,7 +77,6 @@ Features:
 
 #### `status`
 Display current in-progress time entry from Clockify.
-clockify-cli status
 Shows detailed information about the currently running time entry, including:
 - Project and task name
 - Description
@@ -92,7 +88,6 @@ If no time entry is currently running, displays a helpful message.
 
 #### `week-view`
 Display current week's time entries from Clockify with totals and daily averages.
-clockify-cli week-view
 Shows a detailed table of time entries grouped by date for the current week (Monday-Sunday), including:
 - Daily breakdowns with project, task, and description
 - Duration for each entry
@@ -101,23 +96,22 @@ Shows a detailed table of time entries grouped by date for the current week (Mon
 
 #### `upload-to-tempo`
 Upload time entries from Clockify to Tempo with smart deduplication.
-# Upload last 14 days (default)
-clockify-cli upload-to-tempo
 
-# Upload specific number of days
-clockify-cli upload-to-tempo --days 7
-
-# Upload with orphaned entry cleanup (use with caution)
-clockify-cli upload-to-tempo --days 30 --cleanup-orphaned
 **Options:**
 - `-d, --days <number>` - Number of days to upload (default: 14)
 - `--cleanup-orphaned` - Remove orphaned entries without Clockify IDs
+
+**Features:**
+- Smart deduplication prevents duplicate entries
+- Running timer detection with warning and confirmation
+- Progress tracking and detailed error reporting
+- Safe operation with rollback capabilities
+- Automatic orphaned entry cleanup (when enabled)
 
 ### Task Management
 
 #### `add-task`
 Add a new task to Clockify from a Jira issue with interactive project selection.
-clockify-cli add-task
 This command will:
 1. Show available Clockify projects
 2. Prompt for Jira issue reference or URL
@@ -125,14 +119,15 @@ This command will:
 4. Create the task with format: `{IssueKey} [{Summary}]`
 
 #### `archive-completed-jiras`
-Archive tasks in Clockify that have completed Jira status.clockify-cli archive-completed-jirasThis command will:
+Archive tasks in Clockify that have completed Jira status.
+This command will:
 1. Scan all projects and tasks in your Clockify workspace
 2. Check the corresponding Jira status for each task
 3. Display a table of tasks where the Jira issue is marked as "Done"
 4. Offer to archive these tasks by updating their status to "DONE" in Clockify
 5. Show progress and results of the archiving operation
 
-Features:
+**Features:**
 - Interactive confirmation before archiving
 - Progress tracking during the operation
 - Summary of successful and failed operations
@@ -140,8 +135,7 @@ Features:
 
 ### Help
 
-Get help for any command:
-clockify-cli --help
+Get help for any command:clockify-cli --help
 clockify-cli upload-to-tempo --help
 clockify-cli config --help
 clockify-cli archive-completed-jiras --help
@@ -172,27 +166,7 @@ All credentials are stored securely using AES-256 encryption in:
 
 ## 🏗️ Architecture
 
-### Project Structure
-
-ClockifyCli/
-├── Commands/           # CLI command implementations
-│   ├── BaseCommand.cs
-│   ├── ConfigCommand.cs
-│   ├── UploadToTempoCommand.cs
-│   ├── AddTaskCommand.cs
-│   └── ArchiveCompletedJirasCommand.cs
-├── Models/            # Data models for APIs
-│   ├── Clockify/      # Clockify API models
-│   ├── Jira/          # Jira API models
-│   └── Tempo/         # Tempo API models
-├── Services/          # API clients and business logic
-│   ├── ClockifyClient.cs
-│   ├── JiraClient.cs
-│   ├── TempoClient.cs
-│   └── ConfigurationService.cs
-└── Program.cs         # Application entry point
-
-### Dependencies
+## Dependencies
 
 - **.NET 8.0** - Runtime platform
 - **Spectre.Console** - Rich terminal UI framework
@@ -227,7 +201,8 @@ ClockifyCli/
 ### CI/CD Integration
 
 The CLI can be integrated into automation workflows:
-# Upload time entries in a scheduled job
+
+#### Upload time entries in a scheduled job
 clockify-cli upload-to-tempo --days 1
 
 ## 🤝 Contributing
@@ -238,22 +213,23 @@ clockify-cli upload-to-tempo --days 1
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-### Development Setup
-# Clone and setup
+## Development Setup
+### Clone and setup
 git clone https://github.com/yourusername/ClockifyCli.git
 cd ClockifyCli
 
-# Restore dependencies
+### Restore dependencies
 dotnet restore
 
-# Build
+### Build
 dotnet build
 
-# Run tests (if available)
+### Run tests (if available)
 dotnet test
 
-# Run locally
+### Run locally
 dotnet run --project src/ClockifyCli/ClockifyCli.csproj -- --help
+
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

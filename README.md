@@ -197,36 +197,6 @@ All credentials are encrypted using **AES-256** encryption and stored locally:
 - **Newtonsoft.Json** - Robust JSON serialization
 - **System.Security.Cryptography** - AES-256 encryption
 
-### 📁 Project Structure
-ClockifyCli/
-├── Commands/              # CLI command implementations
-│   ├── BaseCommand.cs     # Shared command functionality
-│   ├── Config/            # Configuration commands
-│   ├── TimeManagement/    # Timer and tracking commands
-│   └── Integration/       # Jira/Tempo integration
-├── Models/                # Data models for all APIs
-│   ├── Clockify/          # Clockify API models
-│   ├── Jira/              # Jira API models
-│   └── Tempo/             # Tempo API models
-├── Services/              # API clients and business logic
-│   ├── ClockifyClient.cs  # Clockify API integration
-│   ├── JiraClient.cs      # Jira API integration
-│   ├── TempoClient.cs     # Tempo API integration
-│   └── ConfigurationService.cs # Secure config management
-├── Utilities/             # Shared utility functions
-└── Program.cs             # Application entry point
-### 🔄 Integration Flow
-graph LR
-    A[Clockify] --> B[CLI Tool]
-    C[Jira] --> B
-    B --> D[Tempo]
-    B --> E[Local Config]
-    
-    subgraph "CLI Operations"
-        F[Time Tracking]
-        G[Task Management]
-        H[Sync & Upload]
-    end
 ## 🎯 Usage Scenarios & Workflows
 
 ### 📈 Daily Workflow# Morning: Check yesterday's work

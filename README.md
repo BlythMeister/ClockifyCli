@@ -15,7 +15,7 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - **🔄 Sync time entries** from Clockify to Tempo automatically
 - **📋 Manage tasks** directly from Jira issues in Clockify
 - **⏱️ Start/Stop timers** with an intuitive command-line interface
-- **📊 View time reports** for current week and specific periods
+- **📊 View time reports** for current week and specific periods with optional detailed breakdown
 - **🔔 Monitor timers** with desktop notifications
 - **🗂️ Archive completed** Jira tasks automatically
 - **⚙️ Easy configuration** management for API keys
@@ -69,6 +69,10 @@ This shows your current configuration status and masks sensitive values for secu
 `clockify-cli week-view` - Display current week's logged time
 
 `clockify-cli week-view --include-current` - Include currently running timer in the view
+
+`clockify-cli week-view --detailed` - Show detailed view with start time, end time, and duration
+
+`clockify-cli week-view --include-current --detailed` - Detailed view including current timer
 
 ### Task Management
 
@@ -137,7 +141,7 @@ The configuration is stored securely in your user profile:
 | `start` | Start a new timer by selecting from available tasks | `clockify-cli start` |
 | `stop` | Stop the currently running timer | `clockify-cli stop` |
 | `status` | Display current in-progress time entry | `clockify-cli status` |
-| `week-view` | Display current week's time entries | `clockify-cli week-view --include-current` |
+| `week-view` | Display current week's time entries | `clockify-cli week-view --include-current --detailed` |
 
 ### Task Management Commands
 

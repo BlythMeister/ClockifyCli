@@ -1,8 +1,8 @@
-﻿using ClockifyCli.Services;
+﻿using System.ComponentModel;
+using System.Runtime.InteropServices;
+using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
 
 namespace ClockifyCli.Commands;
 

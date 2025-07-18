@@ -2,16 +2,16 @@
 
 A powerful command-line interface for managing time entries between Clockify, Jira, and Tempo. Built with .NET 8 and featuring a beautiful, interactive terminal experience powered by Spectre.Console.
 
-## ? Features
+## ✨ Features
 
-- ?? **Upload time entries** from Clockify to Tempo with smart deduplication
-- ?? **Add new tasks** to Clockify directly from Jira issues
-- ?? **List archivable tasks** based on Jira status
-- ?? **Secure configuration** with encrypted credential storage
-- ?? **Beautiful CLI** with colors, progress bars, and interactive prompts
-- ??? **Safe operations** with confirmation prompts and validation
+- 🔄 **Upload time entries** from Clockify to Tempo with smart deduplication
+- 📝 **Add new tasks** to Clockify directly from Jira issues
+- 📊 **List archivable tasks** based on Jira status
+- 🔐 **Secure configuration** with encrypted credential storage
+- 🎨 **Beautiful CLI** with colors, progress bars, and interactive prompts
+- 🛡️ **Safe operations** with confirmation prompts and validation
 
-## ?? Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -52,12 +52,12 @@ clockify-cli config view
 ```
 
 You'll need to provide:
-- **Clockify API Key** - From Clockify ? Profile Settings ? API
+- **Clockify API Key** - From Clockify → Profile Settings → API
 - **Jira Username** - Your Jira email address
-- **Jira API Token** - From Atlassian ? Account Settings ? Security ? API tokens
-- **Tempo API Key** - From Tempo ? Settings ? API Integration
+- **Jira API Token** - From Atlassian → Account Settings → Security → API tokens
+- **Tempo API Key** - From Tempo → Settings → API Integration
 
-## ?? Commands
+## 📋 Commands
 
 ### Configuration Management
 
@@ -129,7 +129,7 @@ clockify-cli upload-to-tempo --help
 clockify-cli config --help
 ```
 
-## ?? Configuration
+## 🔧 Configuration
 
 ### Secure Storage
 
@@ -141,7 +141,7 @@ All credentials are stored securely using AES-256 encryption in:
 ### API Keys Setup
 
 #### Clockify API Key
-1. Go to Clockify ? Profile Settings ? API
+1. Go to Clockify → Profile Settings → API
 2. Copy your API key
 
 #### Jira API Token
@@ -150,31 +150,31 @@ All credentials are stored securely using AES-256 encryption in:
 3. Use your Jira email as username
 
 #### Tempo API Key
-1. Go to Tempo ? Settings ? API Integration
+1. Go to Tempo → Settings → API Integration
 2. Generate a new API token
 
-## ??? Architecture
+## 🏗️ Architecture
 
 ### Project Structure
 
 ```
 ClockifyCli/
-??? Commands/           # CLI command implementations
-?   ??? BaseCommand.cs
-?   ??? ConfigCommand.cs
-?   ??? UploadToTempoCommand.cs
-?   ??? AddTaskCommand.cs
-?   ??? ArchiveListCommand.cs
-??? Models/            # Data models for APIs
-?   ??? Clockify/      # Clockify API models
-?   ??? Jira/          # Jira API models
-?   ??? Tempo/         # Tempo API models
-??? Services/          # API clients and business logic
-?   ??? ClockifyClient.cs
-?   ??? JiraClient.cs
-?   ??? TempoClient.cs
-?   ??? ConfigurationService.cs
-??? Program.cs         # Application entry point
+├── Commands/           # CLI command implementations
+│   ├── BaseCommand.cs
+│   ├── ConfigCommand.cs
+│   ├── UploadToTempoCommand.cs
+│   ├── AddTaskCommand.cs
+│   └── ArchiveListCommand.cs
+├── Models/            # Data models for APIs
+│   ├── Clockify/      # Clockify API models
+│   ├── Jira/          # Jira API models
+│   └── Tempo/         # Tempo API models
+├── Services/          # API clients and business logic
+│   ├── ClockifyClient.cs
+│   ├── JiraClient.cs
+│   ├── TempoClient.cs
+│   └── ConfigurationService.cs
+└── Program.cs         # Application entry point
 ```
 
 ### Dependencies
@@ -184,7 +184,7 @@ ClockifyCli/
 - **Spectre.Console.Cli** - Command-line interface framework
 - **Newtonsoft.Json** - JSON serialization
 
-## ?? Security Features
+## 🔐 Security Features
 
 - **Encrypted Configuration**: All API keys stored with AES-256 encryption
 - **Masked Display**: Sensitive values are masked in output
@@ -192,7 +192,7 @@ ClockifyCli/
 - **User-Scoped**: Configuration encrypted per user account
 - **No Hardcoded Values**: All credentials configurable
 
-## ?? User Experience
+## 🎨 User Experience
 
 - **Rich Terminal UI**: Colors, tables, and progress indicators
 - **Interactive Prompts**: Select projects, confirm actions
@@ -200,7 +200,7 @@ ClockifyCli/
 - **Error Handling**: Clear error messages and recovery guidance
 - **Validation**: Input validation and helpful error messages
 
-## ?? Workflow Integration
+## 🔄 Workflow Integration
 
 ### Typical Workflow
 
@@ -233,7 +233,7 @@ The CLI can be integrated into automation workflows:
 clockify-cli upload-to-tempo --days 1
 ```
 
-## ?? Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -261,11 +261,11 @@ dotnet test
 dotnet run --project src/ClockifyCli/ClockifyCli.csproj -- --help
 ```
 
-## ?? License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ?? Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
@@ -289,12 +289,12 @@ Ensure your Clockify API key is valid and you have access to at least one worksp
 
 For detailed error information, check the console output or enable verbose logging in your development environment.
 
-## ?? Support
+## 📞 Support
 
-- ?? **Bug Reports**: [GitHub Issues](https://github.com/yourusername/ClockifyCli/issues)
-- ?? **Feature Requests**: [GitHub Discussions](https://github.com/yourusername/ClockifyCli/discussions)
-- ?? **Documentation**: [Wiki](https://github.com/yourusername/ClockifyCli/wiki)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/yourusername/ClockifyCli/issues)
+- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/yourusername/ClockifyCli/discussions)
+- 📖 **Documentation**: [Wiki](https://github.com/yourusername/ClockifyCli/wiki)
 
 ---
 
-Made with ?? using .NET 8 and Spectre.Console
+Made with ❤️ using .NET 8 and Spectre.Console

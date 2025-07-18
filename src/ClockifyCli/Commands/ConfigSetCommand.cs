@@ -1,4 +1,4 @@
-using ClockifyCli.Services;
+﻿using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -18,7 +18,7 @@ public class ConfigSetCommand : ConfigCommand
         var clockifyApiKey = PromptForSecret(
             "Clockify API Key",
             currentConfig.ClockifyApiKey,
-            "Get this from Clockify ? Profile Settings ? API");
+            "Get this from Clockify → Profile Settings → API");
 
         // Jira Username
         var jiraUsername = AnsiConsole.Prompt(
@@ -30,13 +30,13 @@ public class ConfigSetCommand : ConfigCommand
         var jiraApiToken = PromptForSecret(
             "Jira API Token",
             currentConfig.JiraApiToken,
-            "Get this from Atlassian ? Account Settings ? Security ? API tokens");
+            "Get this from Atlassian → Account Settings → Security → API tokens");
 
         // Tempo API Key
         var tempoApiKey = PromptForSecret(
             "Tempo API Key",
             currentConfig.TempoApiKey,
-            "Get this from Tempo ? Settings ? API Integration");
+            "Get this from Tempo → Settings → API Integration");
 
         // Update configuration
         try
@@ -48,15 +48,15 @@ public class ConfigSetCommand : ConfigCommand
                 string.IsNullOrWhiteSpace(tempoApiKey) ? null : tempoApiKey
             );
 
-            AnsiConsole.MarkupLine("\n[green]? Configuration saved successfully![/]");
+            AnsiConsole.MarkupLine("\n[green]✓ Configuration saved successfully![/]");
 
             if (updatedConfig.IsComplete())
             {
-                AnsiConsole.MarkupLine("[green]? All required configuration values are now set[/]");
+                AnsiConsole.MarkupLine("[green]✓ All required configuration values are now set[/]");
             }
             else
             {
-                AnsiConsole.MarkupLine("[yellow]? Some configuration values are still missing[/]");
+                AnsiConsole.MarkupLine("[yellow]⚠ Some configuration values are still missing[/]");
                 AnsiConsole.MarkupLine("Run '[green]config view[/]' to see what's missing.");
             }
 
@@ -64,7 +64,7 @@ public class ConfigSetCommand : ConfigCommand
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red]? Failed to save configuration: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[red]✗ Failed to save configuration: {ex.Message}[/]");
             return 1;
         }
     }

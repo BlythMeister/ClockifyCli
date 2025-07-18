@@ -1,4 +1,4 @@
-using ClockifyCli.Services;
+﻿using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -29,11 +29,11 @@ public class ConfigViewCommand : ConfigCommand
 
         if (config.IsComplete())
         {
-            AnsiConsole.MarkupLine("\n[green]? All configuration values are set[/]");
+            AnsiConsole.MarkupLine("\n[green]✓ All configuration values are set[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("\n[yellow]? Some configuration values are missing[/]");
+            AnsiConsole.MarkupLine("\n[yellow]⚠ Some configuration values are missing[/]");
             AnsiConsole.MarkupLine("Use '[green]config set[/]' to configure missing values.");
         }
 

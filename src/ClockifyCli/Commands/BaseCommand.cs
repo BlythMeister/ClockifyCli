@@ -1,4 +1,4 @@
-using ClockifyCli.Models;
+﻿using ClockifyCli.Models;
 using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -47,13 +47,13 @@ public abstract class BaseCommand : AsyncCommand
     private static void ShowConfigurationIncompleteMessage()
     {
         AnsiConsole.MarkupLine("");
-        AnsiConsole.MarkupLine("[red]? Configuration is incomplete![/]");
+        AnsiConsole.MarkupLine("[red]✗ Configuration is incomplete![/]");
         AnsiConsole.MarkupLine("");
         AnsiConsole.MarkupLine("The application requires the following API keys and credentials:");
-        AnsiConsole.MarkupLine("� [yellow]Clockify API Key[/] - Get from Clockify ? Profile Settings ? API");
-        AnsiConsole.MarkupLine("� [yellow]Jira Username[/] - Your Jira email address");
-        AnsiConsole.MarkupLine("� [yellow]Jira API Token[/] - Get from Atlassian ? Account Settings ? Security ? API tokens");
-        AnsiConsole.MarkupLine("� [yellow]Tempo API Key[/] - Get from Tempo ? Settings ? API Integration");
+        AnsiConsole.MarkupLine("• [yellow]Clockify API Key[/] - Get from Clockify → Profile Settings → API");
+        AnsiConsole.MarkupLine("• [yellow]Jira Username[/] - Your Jira email address");
+        AnsiConsole.MarkupLine("• [yellow]Jira API Token[/] - Get from Atlassian → Account Settings → Security → API tokens");
+        AnsiConsole.MarkupLine("• [yellow]Tempo API Key[/] - Get from Tempo → Settings → API Integration");
         AnsiConsole.MarkupLine("");
         AnsiConsole.MarkupLine("Run '[green]clockify-cli config set[/]' to configure these values.");
         AnsiConsole.MarkupLine("Run '[green]clockify-cli config view[/]' to check current configuration.");
@@ -106,13 +106,13 @@ public abstract class BaseCommand<TSettings> : AsyncCommand<TSettings>
     private static void ShowConfigurationIncompleteMessage()
     {
         AnsiConsole.MarkupLine("");
-        AnsiConsole.MarkupLine("[red]? Configuration is incomplete![/]");
+        AnsiConsole.MarkupLine("[red]✗ Configuration is incomplete![/]");
         AnsiConsole.MarkupLine("");
         AnsiConsole.MarkupLine("The application requires the following API keys and credentials:");
-        AnsiConsole.MarkupLine("� [yellow]Clockify API Key[/] - Get from Clockify ? Profile Settings ? API");
-        AnsiConsole.MarkupLine("� [yellow]Jira Username[/] - Your Jira email address");
-        AnsiConsole.MarkupLine("� [yellow]Jira API Token[/] - Get from Atlassian ? Account Settings ? Security ? API tokens");
-        AnsiConsole.MarkupLine("� [yellow]Tempo API Key[/] - Get from Tempo ? Settings ? API Integration");
+        AnsiConsole.MarkupLine("• [yellow]Clockify API Key[/] - Get from Clockify → Profile Settings → API");
+        AnsiConsole.MarkupLine("• [yellow]Jira Username[/] - Your Jira email address");
+        AnsiConsole.MarkupLine("• [yellow]Jira API Token[/] - Get from Atlassian → Account Settings → Security → API tokens");
+        AnsiConsole.MarkupLine("• [yellow]Tempo API Key[/] - Get from Tempo → Settings → API Integration");
         AnsiConsole.MarkupLine("");
         AnsiConsole.MarkupLine("Run '[green]clockify-cli config set[/]' to configure these values.");
         AnsiConsole.MarkupLine("Run '[green]clockify-cli config view[/]' to check current configuration.");

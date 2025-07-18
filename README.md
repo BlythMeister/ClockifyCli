@@ -29,11 +29,11 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) or later
 
 ### Install as Global Tool
-dotnet tool install --global ClockifyCli
+`dotnet tool install --global ClockifyCli`
 ### Update to Latest Version
-dotnet tool update --global ClockifyCli
+`dotnet tool update --global ClockifyCli`
 ### Uninstall
-dotnet tool uninstall --global ClockifyCli
+`dotnet tool uninstall --global ClockifyCli`
 ## ⚙️ Initial Setup
 
 Before using the CLI, you need to configure your API credentials for the services you want to integrate.

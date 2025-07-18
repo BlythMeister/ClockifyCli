@@ -1,280 +1,356 @@
-# Clockify CLI
+# 🕒 Clockify CLI
 
-A powerful command-line interface for managing time entries between Clockify, Jira, and Tempo. Built with .NET 8 and featuring a beautiful, interactive terminal experience powered by Spectre.Console.
+[![AppVeyor branch](https://img.shields.io/appveyor/ci/blythmeister/clockifycli)](https://ci.appveyor.com/project/BlythMeister/ClockifyCli)
+[![NuGet](https://img.shields.io/nuget/v/ClockifyCli?style=flat-square)](https://www.nuget.org/packages/ClockifyCli)
+[![Downloads](https://img.shields.io/nuget/dt/ClockifyCli?style=flat-square)](https://www.nuget.org/packages/ClockifyCli)
+[![License](https://img.shields.io/github/license/BlythMeister/ClockifyCli?style=flat-square)](https://github.com/BlythMeister/ClockifyCli/blob/main/LICENSE)
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-blue?style=flat-square)](https://dotnet.microsoft.com/download/dotnet/8.0)
 
-## ✨ Features
+A powerful cross-platform command-line tool for seamless time tracking integration between **Clockify**, **Jira**, and **Tempo**. Built with .NET 8 and featuring a beautiful, interactive terminal experience powered by Spectre.Console.
 
-- 🔄 **Upload time entries** from Clockify to Tempo with smart deduplication
-- 📝 **Add new tasks** to Clockify directly from Jira issues
-- 📊 **Archive completed tasks** automatically based on Jira status
-- ⏱️ **View current status** of in-progress time entries
-- ▶️ **Start timers** with task selection and descriptions
-- ⏹️ **Stop running timers** with confirmation and feedback
-- 📅 **Weekly time tracking** overview with totals and averages
-- 🔐 **Secure configuration** with encrypted credential storage
-- 🎨 **Beautiful CLI** with colors, progress bars, and interactive prompts
-- 🛡️ **Safe operations** with confirmation prompts and validation
+## ✨ Key Features
+
+🔄 **Smart Time Sync** - Upload time entries from Clockify to Tempo with intelligent deduplication  
+📝 **Jira Integration** - Create Clockify tasks directly from Jira issues  
+📊 **Auto Archiving** - Archive completed tasks based on Jira status  
+⏱️ **Real-time Status** - View current timer with live duration updates  
+▶️ **Interactive Timer** - Start/stop timers with guided task selection  
+📅 **Weekly Reports** - Comprehensive time tracking with totals and averages  
+🔐 **Secure Storage** - AES-256 encrypted API key management  
+🎨 **Rich UI** - Beautiful terminal interface with colors and progress indicators  
+🛡️ **Safe Operations** - Confirmation prompts and validation for all destructive actions  
+🚀 **Cross-platform** - Works on Windows, macOS, and Linux
 
 ## 🚀 Quick Start
 
+### Installation
+
+#### Option 1: .NET Global Tool (Recommended)dotnet tool install --global ClockifyCli
+#### Option 2: From Sourcegit clone https://github.com/BlythMeister/ClockifyCli.git
+cd ClockifyCli
+dotnet build -c Release
+dotnet tool install --global --add-source ./src/ClockifyCli/nupkg ClockifyCli
+### First Run Setup
+
+1. **Configure your API credentials** (required first step):clockify-cli config set
+2. **Verify your configuration**:clockify-cli config view
+3. **Start tracking time**:clockify-cli start
 ### Prerequisites
 
 - [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) or later
 - Access to:
-  - Clockify workspace
-  - Jira instance (with API access)
-  - Tempo (for time tracking)
+  - Clockify workspace (free account works)
+  - Jira instance with API access
+  - Tempo (for time logging integration)
 
-### Installation
+## 📋 Complete Command Reference
 
-1. Clone the repository:git clone https://github.com/yourusername/ClockifyCli.git
-   cd ClockifyCli
-2. Build the project:dotnet build src/ClockifyCli/ClockifyCli.csproj -c Release
-3. Run the application:dotnet run --project src/ClockifyCli/ClockifyCli.csproj
-### First-Time Setup
-
-Before using any commands, you need to configure your API credentials:
-# Interactive setup - you'll be prompted for each credential
-`clockify-cli config set`
-
-# View current configuration
-`clockify-cli config view`
-You'll need to provide:
-- **Clockify API Key** - From Clockify → Profile Settings → API
-- **Jira Username** - Your Jira email address
-- **Jira API Token** - From Atlassian → Account Settings → Security → API tokens
-- **Tempo API Key** - From Tempo → Settings → API Integration
-
-## 📋 Commands
-
-### Configuration Management
+### ⚙️ Configuration Management
 
 #### `config set`
-Interactive setup of API keys and credentials (required first step).
-#### `config view`
-Display current configuration with masked sensitive values.
+Interactive setup wizard for API credentials.clockify-cli config set**Features:**
+- Secure prompts for API keys (masked input)
+- Validation and testing of credentials
+- Incremental updates (modify only specific keys)
+- Helpful setup guidance and links
 
-### Time Management
+#### `config view`
+Display current configuration with masked sensitive values.clockify-cli config view**Shows:**
+- Configuration completeness status
+- Masked API keys for security
+- Configuration file location
+- Missing credential warnings
+
+### ⏱️ Time Management
 
 #### `start`
-Start a new time entry by selecting from available tasks across all projects.
-Features:
-- Lists all available tasks organized by project
-- Includes option to start timer without a specific task (project-only)
-- Allows adding optional description
-- Prevents starting if a timer is already running
-- Shows confirmation before starting
-- Displays sorted list of projects and tasks for easy selection
+Start a new time entry with interactive task selection.clockify-cli start**Features:**
+- Browse all available tasks across projects
+- Project-only time tracking option
+- Optional description entry
+- Running timer detection and prevention
+- Confirmation before starting
+- Sorted project and task display
 
 #### `stop`
-Stop the currently running time entry in Clockify.
-Features:
-- Shows details of the currently running timer before stopping
-- Displays project, task, description, and elapsed time
-- Requires confirmation before stopping
-- Shows final duration after stopping
-- Gracefully handles when no timer is running
+Stop the currently running time entry.clockify-cli stop**Features:**
+- Shows current timer details before stopping
+- Elapsed time calculation
+- Confirmation prompt
+- Final duration display
+- Graceful handling when no timer is running
 
 #### `status`
-Display current in-progress time entry from Clockify.
-Shows detailed information about the currently running time entry, including:
-- Project and task name
-- Description
-- Start time
-- Elapsed duration
-- Real-time updates
-
-If no time entry is currently running, displays a helpful message.
+View detailed information about the current running timer.clockify-cli status**Displays:**
+- Project and task information
+- Description and start time
+- Real-time elapsed duration
+- Beautiful panel-based layout
+- Helpful guidance when no timer is running
 
 #### `week-view`
-Display current week's time entries from Clockify with totals and daily averages.
+Comprehensive weekly time tracking overview.# View completed entries only
+clockify-cli week-view
 
-**Options:**
-- `--include-current` - Include the currently running time entry with real-time duration
-
-Shows a detailed table of time entries grouped by date for the current week (Monday-Sunday), including:
+# Include currently running timer with live duration
+clockify-cli week-view --include-current**Features:**
+- Current week view (Monday-Sunday)
 - Daily breakdowns with project, task, and description
-- Duration for each entry (real-time for running entries)
-- Status indicator (Running vs Completed)
+- Running vs completed entry status indicators
+- Real-time duration for active timers
 - Daily totals and week total
 - Average hours per working day
+- Optional inclusion of in-progress work
 
-**Features:**
-- Real-time duration calculation for running timers
-- Clear status indicators for active vs completed entries
-- Accurate weekly totals including current work
-- Option to view only completed entries or include active work
+### 🔄 Integration & Automation
 
 #### `upload-to-tempo`
-Upload time entries from Clockify to Tempo with smart deduplication.
+Intelligent time entry synchronization with Tempo.# Upload last 14 days (default)
+clockify-cli upload-to-tempo
 
-**Options:**
+# Upload specific timeframe
+clockify-cli upload-to-tempo --days 7
+
+# Advanced: cleanup orphaned entries
+clockify-cli upload-to-tempo --days 30 --cleanup-orphaned**Options:**
 - `-d, --days <number>` - Number of days to upload (default: 14)
-- `--cleanup-orphaned` - Remove orphaned entries without Clockify IDs
+- `--cleanup-orphaned` - Remove entries without Clockify IDs (use with caution)
 
-**Features:**
+**Safety Features:**
 - Smart deduplication prevents duplicate entries
-- Running timer detection with warning and confirmation
+- Running timer detection with warning
 - Progress tracking and detailed error reporting
-- Safe operation with rollback capabilities
-- Automatic orphaned entry cleanup (when enabled)
+- Rollback capabilities for failed operations
+- Confirmation prompts for destructive actions
 
-### Task Management
+### 📊 Task Management
 
 #### `add-task`
-Add a new task to Clockify from a Jira issue with interactive project selection.
-This command will:
-1. Show available Clockify projects
-2. Prompt for Jira issue reference or URL
-3. Fetch issue details from Jira
-4. Create the task with format: `{IssueKey} [{Summary}]`
+Create Clockify tasks from Jira issues seamlessly.clockify-cli add-task**Workflow:**
+1. Select target Clockify project
+2. Enter Jira issue reference or URL
+3. Automatic Jira issue lookup and validation
+4. Task creation with format: `{IssueKey} [{Summary}]`
+5. Confirmation and success feedback
 
 #### `archive-completed-jiras`
-Archive tasks in Clockify that have completed Jira status.
-This command will:
-1. Scan all projects and tasks in your Clockify workspace
-2. Check the corresponding Jira status for each task
-3. Display a table of tasks where the Jira issue is marked as "Done"
-4. Offer to archive these tasks by updating their status to "DONE" in Clockify
-5. Show progress and results of the archiving operation
+Automatically archive tasks based on Jira completion status.clockify-cli archive-completed-jiras**Process:**
+1. Scan all Clockify projects and tasks
+2. Cross-reference with Jira issue status
+3. Identify tasks with "Done" Jira status
+4. Display archivable tasks in organized table
+5. Batch archive with progress tracking
+6. Detailed success/failure reporting
 
 **Features:**
 - Interactive confirmation before archiving
-- Progress tracking during the operation
-- Summary of successful and failed operations
-- Safe operation with detailed error reporting
+- Real-time progress tracking
+- Individual task status reporting
+- Safe operation with detailed error handling
 
-### Help
+### 📚 Help & Documentation
 
-Get help for any command:clockify-cli --help
-clockify-cli upload-to-tempo --help
-clockify-cli config --help
-clockify-cli archive-completed-jiras --help
-clockify-cli week-view --help
-## 🔧 Configuration
+Get comprehensive help for any command:clockify-cli --help                    # General help
+clockify-cli [command] --help          # Command-specific help
+clockify-cli config --help             # Configuration help
+clockify-cli week-view --help          # Week view options
+## 🔧 Configuration & Setup
 
-### Secure Storage
-
-All credentials are stored securely using AES-256 encryption in:
-- **Windows**: `%APPDATA%\ClockifyCli\clockify-config.dat`
-- **macOS**: `~/.config/ClockifyCli/clockify-config.dat`
-- **Linux**: `~/.config/ClockifyCli/clockify-config.dat`
-
-### API Keys Setup
+### 🔐 API Keys Required
 
 #### Clockify API Key
-1. Go to Clockify → Profile Settings → API
-2. Copy your API key
+1. Navigate to [Clockify Profile Settings](https://clockify.me/user/settings) → API
+2. Copy your personal API key
+3. Provides access to workspaces, projects, tasks, and time entries
 
 #### Jira API Token
-1. Go to [Atlassian Account Settings](https://id.atlassian.com/manage-profile/security/api-tokens)
+1. Visit [Atlassian Account Security](https://id.atlassian.com/manage-profile/security/api-tokens)
 2. Create a new API token
-3. Use your Jira email as username
+3. Use your Jira email address as the username
+4. Enables Jira issue lookup and status checking
 
 #### Tempo API Key
 1. Go to Tempo → Settings → API Integration
 2. Generate a new API token
+3. Required for time entry synchronization
 
-## 🏗️ Architecture
+### 🔒 Secure Storage
 
-## Dependencies
+All credentials are encrypted using **AES-256** encryption and stored locally:
+- **Windows**: `%APPDATA%\ClockifyCli\clockify-config.dat`
+- **macOS**: `~/.config/ClockifyCli/clockify-config.dat`
+- **Linux**: `~/.config/ClockifyCli/clockify-config.dat`
 
-- **.NET 8.0** - Runtime platform
+**Security Features:**
+- User-scoped encryption with unique keys
+- No credentials stored in plain text
+- Secure prompts with masked input
+- Local storage only (no cloud sync)
+
+## 🏗️ Architecture & Technical Details
+
+### 🛠️ Built With
+
+- **.NET 8.0** - Modern cross-platform runtime
 - **Spectre.Console** - Rich terminal UI framework
 - **Spectre.Console.Cli** - Command-line interface framework
-- **Newtonsoft.Json** - JSON serialization
+- **Newtonsoft.Json** - Robust JSON serialization
+- **System.Security.Cryptography** - AES-256 encryption
 
-## 🔐 Security Features
+### 📁 Project Structure
+ClockifyCli/
+├── Commands/              # CLI command implementations
+│   ├── BaseCommand.cs     # Shared command functionality
+│   ├── Config/            # Configuration commands
+│   ├── TimeManagement/    # Timer and tracking commands
+│   └── Integration/       # Jira/Tempo integration
+├── Models/                # Data models for all APIs
+│   ├── Clockify/          # Clockify API models
+│   ├── Jira/              # Jira API models
+│   └── Tempo/             # Tempo API models
+├── Services/              # API clients and business logic
+│   ├── ClockifyClient.cs  # Clockify API integration
+│   ├── JiraClient.cs      # Jira API integration
+│   ├── TempoClient.cs     # Tempo API integration
+│   └── ConfigurationService.cs # Secure config management
+├── Utilities/             # Shared utility functions
+└── Program.cs             # Application entry point
+### 🔄 Integration Flow
+graph LR
+    A[Clockify] --> B[CLI Tool]
+    C[Jira] --> B
+    B --> D[Tempo]
+    B --> E[Local Config]
+    
+    subgraph "CLI Operations"
+        F[Time Tracking]
+        G[Task Management]
+        H[Sync & Upload]
+    end
+## 🎯 Usage Scenarios & Workflows
 
-- **Encrypted Configuration**: All API keys stored with AES-256 encryption
-- **Masked Display**: Sensitive values are masked in output
-- **Secure Prompts**: API keys hidden during input
-- **User-Scoped**: Configuration encrypted per user account
-- **No Hardcoded Values**: All credentials configurable
+### 📈 Daily Workflow# Morning: Check yesterday's work
+clockify-cli week-view
 
-## 🎨 User Experience
+# Start new task
+clockify-cli start
 
-- **Rich Terminal UI**: Colors, tables, and progress indicators
-- **Interactive Prompts**: Select projects, confirm actions
-- **Progress Feedback**: Real-time status during operations
-- **Error Handling**: Clear error messages and recovery guidance
-- **Validation**: Input validation and helpful error messages
+# Check current status (anytime)
+clockify-cli status --include-current
 
-## 🔄 Workflow Integration
+# End of day: Stop timer and upload
+clockify-cli stop
+clockify-cli upload-to-tempo --days 1
+### 🗂️ Project Management# Add new tasks from Jira
+clockify-cli add-task
 
-### Typical Workflow
+# Weekly cleanup
+clockify-cli archive-completed-jiras
 
-1. **Setup** (one-time):clockify-cli config set
-2. **Daily/Weekly Upload**:clockify-cli upload-to-tempo --days 7
-3. **Adding New Tasks**:clockify-cli add-task
-4. **Cleanup** (periodic):clockify-cli archive-completed-jiras
-
-### CI/CD Integration
-
-The CLI can be integrated into automation workflows:
-
-#### Upload time entries in a scheduled job
+# Weekly report
+clockify-cli week-view --include-current
+### 🤖 CI/CD Integration# Automated daily sync (cron job)
 clockify-cli upload-to-tempo --days 1
 
-## 🤝 Contributing
+# Weekly cleanup automation
+clockify-cli archive-completed-jiras
+## 🛠️ Development & Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Development Setup
-### Clone and setup
-git clone https://github.com/yourusername/ClockifyCli.git
+### 🔧 Development Setup
+# Clone and setup
+git clone https://github.com/BlythMeister/ClockifyCli.git
 cd ClockifyCli
 
-### Restore dependencies
+# Restore dependencies
 dotnet restore
 
-### Build
+# Build
 dotnet build
 
-### Run tests (if available)
-dotnet test
-
-### Run locally
+# Run locally
 dotnet run --project src/ClockifyCli/ClockifyCli.csproj -- --help
 
-## 📝 License
+# Install as global tool for testing
+dotnet pack -c Release
+dotnet tool install --global --add-source ./src/ClockifyCli/nupkg ClockifyCli
+### 🤝 Contributing
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+We welcome contributions! Please follow these steps:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** with tests
+4. **Commit your changes**: `git commit -m 'Add amazing feature'`
+5. **Push to the branch**: `git push origin feature/amazing-feature`
+6. **Open a Pull Request**
+
+### 📋 Contribution Guidelines
+
+- Follow existing code style and patterns
+- Add tests for new functionality
+- Update documentation as needed
+- Ensure cross-platform compatibility
+- Test on multiple operating systems
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-#### "Configuration is incomplete"
-Run `clockify-cli config set` to set up all required API credentials.
+#### Configuration Problems
+| Issue | Solution |
+|-------|----------|
+| "Configuration is incomplete" | Run `clockify-cli config set` to configure missing API keys |
+| "No workspace found" | Verify Clockify API key and workspace access |
+| "Invalid credentials" | Check API key validity and permissions |
 
-#### "No workspace found"
-Ensure your Clockify API key is valid and you have access to at least one workspace.
+#### Connection Issues
+| Issue | Solution |
+|-------|----------|
+| Network timeouts | Check internet connection and firewall settings |
+| API rate limits | Wait and retry, or reduce frequency of operations |
+| SSL/TLS errors | Update .NET runtime or check system certificates |
 
-#### Connection errors
-- Check your internet connection
-- Verify API keys are correct and not expired
-- Ensure API endpoints are accessible
+#### Permission Issues
+| Issue | Solution |
+|-------|----------|
+| Jira access denied | Verify user permissions and API token scope |
+| Tempo sync failures | Check Tempo API key permissions |
+| Clockify write errors | Ensure workspace admin or project permissions |
 
-#### Permission errors
-- Verify your Jira user has necessary permissions
-- Check Tempo API key permissions
-- Ensure Clockify workspace access
+### 📊 Debug Mode
 
-### Debug Mode
+For detailed troubleshooting:# Enable verbose logging (if implemented)
+clockify-cli --verbose [command]
 
-For detailed error information, check the console output or enable verbose logging in your development environment.
+# Check configuration status
+clockify-cli config view
+## 📄 License & Legal
 
-## 📞 Support
+This project is licensed under the **MIT License** - see the [LICENSE](https://github.com/BlythMeister/ClockifyCli/blob/main/LICENSE) file for details.
 
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/yourusername/ClockifyCli/issues)
-- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/yourusername/ClockifyCli/discussions)
-- 📖 **Documentation**: [Wiki](https://github.com/yourusername/ClockifyCli/wiki)
+### Third-Party Acknowledgments
+- [Spectre.Console](https://spectreconsole.net/) - Terminal UI framework
+- [Newtonsoft.Json](https://www.newtonsoft.com/json) - JSON serialization
+- [.NET Foundation](https://dotnetfoundation.org/) - Runtime platform
+
+## 📞 Support & Community
+
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/BlythMeister/ClockifyCli/issues)
+- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/BlythMeister/ClockifyCli/discussions)
+- 📖 **Documentation**: [GitHub Wiki](https://github.com/BlythMeister/ClockifyCli/wiki)
+- 📧 **Direct Contact**: [Repository Owner](https://github.com/BlythMeister)
+
+### 🌟 Show Your Support
+
+If this tool helps your workflow, please consider:
+- ⭐ Starring the repository
+- 🐛 Reporting issues and bugs
+- 💡 Suggesting new features
+- 🤝 Contributing code improvements
+- 📢 Sharing with your team
 
 ---
 
-Made with ❤️ using Copilot, .NET 8 and Spectre.Console
+**Made with ❤️ by [Chris Blyth](https://github.com/BlythMeister) using Copilot, .NET 8 and Spectre.Console**
+
+*Streamline your time tracking workflow today!* 🚀

@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackAsTool>true</PackAsTool>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
     <ToolCommandName>clockify-cli</ToolCommandName>
     <PackageId>ClockifyCli</PackageId>
     <Version>1.0.0</Version>

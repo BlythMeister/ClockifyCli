@@ -22,10 +22,10 @@ app.Configure(config =>
         .WithDescription("Add a new task to Clockify from a Jira issue")
         .WithExample(new[] { "add-task" });
 
-    // Add the archive-list command
-    config.AddCommand<ArchiveListCommand>("archive-list")
-        .WithDescription("List tasks that can be archived based on Jira status")
-        .WithExample(new[] { "archive-list" });
+    // Add the archive-completed-jiras command
+    config.AddCommand<ArchiveCompletedJirasCommand>("archive-completed-jiras")
+        .WithDescription("List tasks that can be archived based on completed Jira status")
+        .WithExample(new[] { "archive-completed-jiras" });
 
     // Add the week-view command
     config.AddCommand<WeekViewCommand>("week-view")
@@ -41,6 +41,11 @@ app.Configure(config =>
     config.AddCommand<StopCommand>("stop")
         .WithDescription("Stop the currently running time entry in Clockify")
         .WithExample(new[] { "stop" });
+
+    // Add the start command
+    config.AddCommand<StartCommand>("start")
+        .WithDescription("Start a new time entry by selecting from available tasks")
+        .WithExample(new[] { "start" });
 
     // Add config branch with subcommands
     config.AddBranch("config", config =>

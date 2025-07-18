@@ -38,30 +38,39 @@ public class AddTaskCommand : BaseCommand
             ? jiraRefOrUrl.Substring(jiraRefOrUrl.LastIndexOf("/") + 1)
             : jiraRefOrUrl;
 
+        // Load Jira issue data first (inside Status block)
+        ClockifyCli.Models.JiraIssue? issue = null;
         await AnsiConsole.Status()
             .StartAsync($"Finding jira: {jiraRef}...", async ctx =>
             {
-                var issue = await jiraClient.GetIssue(jiraRef);
+                issue = await jiraClient.GetIssue(jiraRef);
+            });
 
-                if (issue == null)
-                {
-                    AnsiConsole.MarkupLine($"[red]Unknown Issue '{Markup.Escape(jiraRefOrUrl)}'[/]");
-                    return;
-                }
+        // Check if issue was found (outside Status block)
+        if (issue == null)
+        {
+            AnsiConsole.MarkupLine($"[red]Unknown Issue '{Markup.Escape(jiraRefOrUrl)}'[/]");
+            return;
+        }
 
-                var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
+        // Show confirmation (outside Status block)
+        var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
+        AnsiConsole.MarkupLine($"Will Add Task '[yellow]{Markup.Escape(taskName)}[/]' Into Project '[green]{Markup.Escape(selectedProject.Name)}[/]'");
 
-                AnsiConsole.MarkupLine($"Will Add Task '[yellow]{Markup.Escape(taskName)}[/]' Into Project '[green]{Markup.Escape(selectedProject.Name)}[/]'");
-
-                if (AnsiConsole.Confirm("Confirm?"))
+        if (AnsiConsole.Confirm("Confirm?"))
+        {
+            // Add the task (inside Status block for feedback)
+            await AnsiConsole.Status()
+                .StartAsync("Adding task...", async ctx =>
                 {
                     await clockifyClient.AddTask(workspace, selectedProject, taskName);
-                    AnsiConsole.MarkupLine("[green]Task added successfully![/]");
-                }
-                else
-                {
-                    AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
-                }
-            });
+                });
+
+            AnsiConsole.MarkupLine("[green]Task added successfully![/]");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+        }
     }
 }

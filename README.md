@@ -6,8 +6,9 @@ A powerful command-line interface for managing time entries between Clockify, Ji
 
 - 🔄 **Upload time entries** from Clockify to Tempo with smart deduplication
 - 📝 **Add new tasks** to Clockify directly from Jira issues
-- 📊 **List archivable tasks** based on Jira status
+- 📊 **List archivable tasks** based on completed Jira status
 - ⏱️ **View current status** of in-progress time entries
+- ▶️ **Start timers** with task selection and descriptions
 - ⏹️ **Stop running timers** with confirmation and feedback
 - 📅 **Weekly time tracking** overview with totals and averages
 - 🔐 **Secure configuration** with encrypted credential storage
@@ -55,6 +56,17 @@ clockify-cli config set
 Display current configuration with masked sensitive values.
 clockify-cli config view
 ### Time Management
+
+#### `start`
+Start a new time entry by selecting from available tasks across all projects.
+clockify-cli start
+Features:
+- Lists all available tasks organized by project
+- Includes option to start timer without a specific task (project-only)
+- Allows adding optional description
+- Prevents starting if a timer is already running
+- Shows confirmation before starting
+- Displays sorted list of projects and tasks for easy selection
 
 #### `stop`
 Stop the currently running time entry in Clockify.
@@ -112,9 +124,9 @@ This command will:
 3. Fetch issue details from Jira
 4. Create the task with format: `{IssueKey} [{Summary}]`
 
-#### `archive-list`
-List tasks that can be archived based on their Jira status.
-clockify-cli archive-list
+#### `archive-completed-jiras`
+List tasks that can be archived based on their completed Jira status.
+clockify-cli archive-completed-jiras
 Shows a table of tasks where the corresponding Jira issue is marked as "Done".
 
 ### Help
@@ -123,6 +135,8 @@ Get help for any command:
 clockify-cli --help
 clockify-cli upload-to-tempo --help
 clockify-cli config --help
+clockify-cli archive-completed-jiras --help
+
 ## 🔧 Configuration
 
 ### Secure Storage
@@ -149,14 +163,13 @@ All credentials are stored securely using AES-256 encryption in:
 
 ## 🏗️ Architecture
 
-### Project Structure
-ClockifyCli/
+### Project StructureClockifyCli/
 ├── Commands/           # CLI command implementations
 │   ├── BaseCommand.cs
 │   ├── ConfigCommand.cs
 │   ├── UploadToTempoCommand.cs
 │   ├── AddTaskCommand.cs
-│   └── ArchiveListCommand.cs
+│   └── ArchiveCompletedJirasCommand.cs
 ├── Models/            # Data models for APIs
 │   ├── Clockify/      # Clockify API models
 │   ├── Jira/          # Jira API models
@@ -167,6 +180,7 @@ ClockifyCli/
 │   ├── TempoClient.cs
 │   └── ConfigurationService.cs
 └── Program.cs         # Application entry point
+
 ### Dependencies
 
 - **.NET 8.0** - Runtime platform
@@ -197,12 +211,14 @@ ClockifyCli/
 1. **Setup** (one-time):clockify-cli config set
 2. **Daily/Weekly Upload**:clockify-cli upload-to-tempo --days 7
 3. **Adding New Tasks**:clockify-cli add-task
-4. **Cleanup** (periodic):clockify-cli archive-list
+4. **Cleanup** (periodic):clockify-cli archive-completed-jiras
+
 ### CI/CD Integration
 
 The CLI can be integrated into automation workflows:
 # Upload time entries in a scheduled job
 clockify-cli upload-to-tempo --days 1
+
 ## 🤝 Contributing
 
 1. Fork the repository

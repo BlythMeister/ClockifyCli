@@ -179,16 +179,14 @@ We welcome contributions! Here's how you can help improve Clockify CLI:
 ### Getting Started
 
 1. **Fork the repository** on GitHub
-2. **Clone your fork** locally:git clone https://github.com/yourusername/ClockifyCli.git
-cd ClockifyCli
-3. **Set up development environment**:# Restore dependencies
-dotnet restore
+2. **Clone your fork** locally `git clone https://github.com/yourusername/ClockifyCli.git` & `cd ClockifyCli`
+3. **Set up development environment**: Restore dependencies with `dotnet restore`
 
 ### Build the project
-dotnet build
+`dotnet build`
 
-### Run tests (if available)
-   dotnet test
+### Run tests (Coming soon)
+`dotnet test`
 
 ### Development Guidelines
 

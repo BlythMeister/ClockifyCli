@@ -88,11 +88,22 @@ If no time entry is currently running, displays a helpful message.
 
 #### `week-view`
 Display current week's time entries from Clockify with totals and daily averages.
+
+**Options:**
+- `--include-current` - Include the currently running time entry with real-time duration
+
 Shows a detailed table of time entries grouped by date for the current week (Monday-Sunday), including:
 - Daily breakdowns with project, task, and description
-- Duration for each entry
+- Duration for each entry (real-time for running entries)
+- Status indicator (Running vs Completed)
 - Daily totals and week total
 - Average hours per working day
+
+**Features:**
+- Real-time duration calculation for running timers
+- Clear status indicators for active vs completed entries
+- Accurate weekly totals including current work
+- Option to view only completed entries or include active work
 
 #### `upload-to-tempo`
 Upload time entries from Clockify to Tempo with smart deduplication.
@@ -139,7 +150,7 @@ Get help for any command:clockify-cli --help
 clockify-cli upload-to-tempo --help
 clockify-cli config --help
 clockify-cli archive-completed-jiras --help
-
+clockify-cli week-view --help
 ## 🔧 Configuration
 
 ### Secure Storage

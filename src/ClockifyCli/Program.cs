@@ -35,7 +35,8 @@ app.Configure(config =>
     // Add the week-view command
     config.AddCommand<WeekViewCommand>("week-view")
         .WithDescription("Display current week's time entries from Clockify")
-        .WithExample(new[] { "week-view" });
+        .WithExample(new[] { "week-view" })
+        .WithExample(new[] { "week-view", "--include-current" });
 
     // Add the status command
     config.AddCommand<StatusCommand>("status")

@@ -1,24 +1,37 @@
-﻿using ClockifyCli.Models;
+﻿using System.ComponentModel;
+using System.Globalization;
+using ClockifyCli.Models;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using System.Globalization;
 
 namespace ClockifyCli.Commands;
 
-public class WeekViewCommand : BaseCommand
+public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
 {
-    public override async Task<int> ExecuteAsync(CommandContext context)
+    public class Settings : CommandSettings
+    {
+        [Description("Include the currently running time entry in the view")]
+        [CommandOption("--include-current")]
+        [DefaultValue(false)]
+        public bool IncludeCurrent { get; init; } = false;
+    }
+
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         var clockifyClient = await CreateClockifyClientAsync();
 
-        await ShowCurrentWeekTimeEntries(clockifyClient);
+        await ShowCurrentWeekTimeEntries(clockifyClient, settings.IncludeCurrent);
         return 0;
     }
 
-    private async Task ShowCurrentWeekTimeEntries(Services.ClockifyClient clockifyClient)
+    private async Task ShowCurrentWeekTimeEntries(Services.ClockifyClient clockifyClient, bool includeCurrent)
     {
         AnsiConsole.MarkupLine("[bold]Current Week Time Entries[/]");
+        if (includeCurrent)
+        {
+            AnsiConsole.MarkupLine("[dim]Including in-progress time entry[/]");
+        }
         AnsiConsole.WriteLine();
 
         var user = await clockifyClient.GetLoggedInUser();
@@ -43,6 +56,14 @@ public class WeekViewCommand : BaseCommand
                 ctx.Status("Getting time entries from Clockify...");
                 var timeEntries = await clockifyClient.GetTimeEntries(workspace, user, startOfWeek, endOfWeek.AddDays(1));
 
+                // Get current running entry if requested
+                TimeEntry? currentEntry = null;
+                if (includeCurrent)
+                {
+                    ctx.Status("Getting current running time entry...");
+                    currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+                }
+
                 ctx.Status("Getting projects and tasks from Clockify...");
                 var projects = await clockifyClient.GetProjects(workspace);
                 var allTasks = new List<TaskInfo>();
@@ -60,9 +81,44 @@ public class WeekViewCommand : BaseCommand
                     .OrderBy(g => g.Key)
                     .ToList();
 
+                // Add current entry to today's entries if it exists and is within the week
+                if (currentEntry != null && currentEntry.TimeInterval.StartDate.Date >= startOfWeek && currentEntry.TimeInterval.StartDate.Date <= endOfWeek)
+                {
+                    var currentDate = currentEntry.TimeInterval.StartDate.Date;
+                    var existingDateGroup = entriesByDate.FirstOrDefault(g => g.Key == currentDate);
+                    
+                    if (existingDateGroup != null)
+                    {
+                        // Add to existing date group
+                        var updatedEntries = existingDateGroup.ToList();
+                        updatedEntries.Add(currentEntry);
+                        
+                        // Remove old group and add updated one
+                        entriesByDate.RemoveAll(g => g.Key == currentDate);
+                        entriesByDate.Add(updatedEntries.GroupBy(e => e.TimeInterval.StartDate.Date).First());
+                    }
+                    else
+                    {
+                        // Create new date group for current entry
+                        var newEntries = new List<TimeEntry> { currentEntry };
+                        entriesByDate.Add(newEntries.GroupBy(e => e.TimeInterval.StartDate.Date).First());
+                    }
+                    
+                    // Re-sort by date
+                    entriesByDate = entriesByDate.OrderBy(g => g.Key).ToList();
+                }
+
                 if (!entriesByDate.Any())
                 {
-                    AnsiConsole.MarkupLine("[yellow]No time entries found for the current week.[/]");
+                    if (currentEntry != null && (currentEntry.TimeInterval.StartDate.Date < startOfWeek || currentEntry.TimeInterval.StartDate.Date > endOfWeek))
+                    {
+                        AnsiConsole.MarkupLine("[yellow]No time entries found for the current week.[/]");
+                        AnsiConsole.MarkupLine("[dim]Current running entry is from a different week.[/]");
+                    }
+                    else
+                    {
+                        AnsiConsole.MarkupLine("[yellow]No time entries found for the current week.[/]");
+                    }
                     return;
                 }
 
@@ -73,6 +129,7 @@ public class WeekViewCommand : BaseCommand
                 table.AddColumn("Task");
                 table.AddColumn("Description");
                 table.AddColumn("Duration", c => c.RightAligned());
+                table.AddColumn("Status");
 
                 var weekTotal = TimeSpan.Zero;
 
@@ -87,7 +144,23 @@ public class WeekViewCommand : BaseCommand
                         var entry = dayEntries[i];
                         var project = projects.FirstOrDefault(p => p.Id == entry.ProjectId);
                         var task = allTasks.FirstOrDefault(t => t.Id == entry.TaskId);
-                        var duration = entry.TimeInterval.DurationSpan;
+                        
+                        var isCurrentEntry = currentEntry != null && entry.Id == currentEntry.Id;
+                        TimeSpan duration;
+                        string status;
+
+                        if (isCurrentEntry)
+                        {
+                            // For current entry, calculate elapsed time
+                            duration = DateTime.UtcNow - entry.TimeInterval.StartDate;
+                            status = "[green]⏱️ Running[/]";
+                        }
+                        else
+                        {
+                            // For completed entries, use actual duration
+                            duration = entry.TimeInterval.DurationSpan;
+                            status = "[dim]Completed[/]";
+                        }
 
                         dayTotal += duration;
                         weekTotal += duration;
@@ -105,7 +178,8 @@ public class WeekViewCommand : BaseCommand
                             projectName,
                             taskName,
                             description,
-                            TimeFormatter.FormatDurationCompact(duration)
+                            TimeFormatter.FormatDurationCompact(duration),
+                            status
                         );
                     }
 
@@ -117,7 +191,8 @@ public class WeekViewCommand : BaseCommand
                             "",
                             "",
                             $"[bold dim]Day Total[/]",
-                            $"[bold]{TimeFormatter.FormatDurationCompact(dayTotal)}[/]"
+                            $"[bold]{TimeFormatter.FormatDurationCompact(dayTotal)}[/]",
+                            ""
                         );
                     }
 
@@ -138,6 +213,13 @@ public class WeekViewCommand : BaseCommand
                 {
                     var averagePerDay = TimeSpan.FromTicks(weekTotal.Ticks / workingDaysWithEntries);
                     AnsiConsole.MarkupLine($"[dim]Average per day ({workingDaysWithEntries} days): {TimeFormatter.FormatDurationCompact(averagePerDay)}[/]");
+                }
+
+                // Show note about current entry if included
+                if (includeCurrent && currentEntry != null)
+                {
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine("[dim]Note: Running timer duration is calculated in real-time and will continue to increase.[/]");
                 }
             });
     }

@@ -55,6 +55,13 @@ app.Configure(config =>
         .WithDescription("Start a new time entry by selecting from available tasks")
         .WithExample(new[] { "start" });
 
+    // Add the edit-timer command
+    config.AddCommand<EditTimerCommand>("edit-timer")
+        .WithDescription("Edit start/end times of existing time entries")
+        .WithExample(new[] { "edit-timer" })
+        .WithExample(new[] { "edit-timer", "--days", "3" })
+        .WithExample(new[] { "edit-timer", "--days", "14" });
+
     // Add the timer-monitor command
     config.AddCommand<TimerMonitorCommand>("timer-monitor")
         .WithDescription("Monitor timer status and show notifications (ideal for scheduled tasks)")

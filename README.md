@@ -6,7 +6,7 @@ A powerful command-line interface for managing time entries between Clockify, Ji
 
 - 🔄 **Upload time entries** from Clockify to Tempo with smart deduplication
 - 📝 **Add new tasks** to Clockify directly from Jira issues
-- 📊 **List archivable tasks** based on completed Jira status
+- 📊 **Archive completed tasks** automatically based on Jira status
 - ⏱️ **View current status** of in-progress time entries
 - ▶️ **Start timers** with task selection and descriptions
 - ⏹️ **Stop running timers** with confirmation and feedback
@@ -125,9 +125,18 @@ This command will:
 4. Create the task with format: `{IssueKey} [{Summary}]`
 
 #### `archive-completed-jiras`
-List tasks that can be archived based on their completed Jira status.
-clockify-cli archive-completed-jiras
-Shows a table of tasks where the corresponding Jira issue is marked as "Done".
+Archive tasks in Clockify that have completed Jira status.clockify-cli archive-completed-jirasThis command will:
+1. Scan all projects and tasks in your Clockify workspace
+2. Check the corresponding Jira status for each task
+3. Display a table of tasks where the Jira issue is marked as "Done"
+4. Offer to archive these tasks by updating their status to "DONE" in Clockify
+5. Show progress and results of the archiving operation
+
+Features:
+- Interactive confirmation before archiving
+- Progress tracking during the operation
+- Summary of successful and failed operations
+- Safe operation with detailed error reporting
 
 ### Help
 

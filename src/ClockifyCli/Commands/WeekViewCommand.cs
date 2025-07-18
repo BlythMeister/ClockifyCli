@@ -1,7 +1,8 @@
-﻿using System.Globalization;
-using ClockifyCli.Models;
+﻿using ClockifyCli.Models;
+using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.Globalization;
 
 namespace ClockifyCli.Commands;
 
@@ -15,7 +16,7 @@ public class WeekViewCommand : BaseCommand
         return 0;
     }
 
-    private async Task ShowCurrentWeekTimeEntries(ClockifyCli.Services.ClockifyClient clockifyClient)
+    private async Task ShowCurrentWeekTimeEntries(Services.ClockifyClient clockifyClient)
     {
         AnsiConsole.MarkupLine("[bold]Current Week Time Entries[/]");
         AnsiConsole.WriteLine();
@@ -104,7 +105,7 @@ public class WeekViewCommand : BaseCommand
                             projectName,
                             taskName,
                             description,
-                            FormatDuration(duration)
+                            TimeFormatter.FormatDurationCompact(duration)
                         );
                     }
 
@@ -116,7 +117,7 @@ public class WeekViewCommand : BaseCommand
                             "",
                             "",
                             $"[bold dim]Day Total[/]",
-                            $"[bold]{FormatDuration(dayTotal)}[/]"
+                            $"[bold]{TimeFormatter.FormatDurationCompact(dayTotal)}[/]"
                         );
                     }
 
@@ -129,26 +130,15 @@ public class WeekViewCommand : BaseCommand
 
                 AnsiConsole.Write(table);
                 AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine($"[bold green]Week Total: {FormatDuration(weekTotal)}[/]");
+                AnsiConsole.MarkupLine($"[bold green]Week Total: {TimeFormatter.FormatDurationCompact(weekTotal)}[/]");
 
                 // Show daily averages
                 var workingDaysWithEntries = entriesByDate.Count;
                 if (workingDaysWithEntries > 0)
                 {
                     var averagePerDay = TimeSpan.FromTicks(weekTotal.Ticks / workingDaysWithEntries);
-                    AnsiConsole.MarkupLine($"[dim]Average per day ({workingDaysWithEntries} days): {FormatDuration(averagePerDay)}[/]");
+                    AnsiConsole.MarkupLine($"[dim]Average per day ({workingDaysWithEntries} days): {TimeFormatter.FormatDurationCompact(averagePerDay)}[/]");
                 }
             });
-    }
-
-    private static string FormatDuration(TimeSpan duration)
-    {
-        var totalHours = (int)duration.TotalHours;
-        var minutes = duration.Minutes;
-
-        if (totalHours == 0)
-            return $"{minutes}m";
-
-        return minutes == 0 ? $"{totalHours}h" : $"{totalHours}h {minutes}m";
     }
 }

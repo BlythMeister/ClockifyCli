@@ -153,6 +153,24 @@ public class ClockifyClient
         }
     }
 
+    public async Task UpdateTaskStatus(WorkspaceInfo workspace, ProjectInfo project, TaskInfo task, string status)
+    {
+        try
+        {
+            var updateData = new { status = status };
+            var updateJson = JsonConvert.SerializeObject(updateData);
+            var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+
+            var response = await client.PutAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks/{task.Id}", content);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            throw;
+        }
+    }
+
     private async Task<List<T>> GetPagedAsync<T>(string baseUrl)
     {
         try

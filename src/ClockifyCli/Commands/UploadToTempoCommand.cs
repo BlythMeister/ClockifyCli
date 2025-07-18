@@ -1,7 +1,7 @@
-﻿using System.ComponentModel;
-using ClockifyCli.Models;
+﻿using ClockifyCli.Models;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
 
 namespace ClockifyCli.Commands;
 
@@ -30,7 +30,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         return 0;
     }
 
-    private async Task UploadTimeEntriesToTempo(ClockifyCli.Services.ClockifyClient clockifyClient, ClockifyCli.Services.TempoClient tempoClient, int days, bool cleanupOrphaned)
+    private async Task UploadTimeEntriesToTempo(Services.ClockifyClient clockifyClient, Services.TempoClient tempoClient, int days, bool cleanupOrphaned)
     {
         AnsiConsole.MarkupLine($"[bold]Uploading time entries from Clockify to Tempo[/]");
         AnsiConsole.MarkupLine($"[dim]Processing last {days} days...[/]");
@@ -50,6 +50,10 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
             AnsiConsole.MarkupLine("[red]No workspace found![/]");
             return;
         }
+
+        var successCount = 0;
+        var errorCount = 0;
+        var results = new List<(string EntryId, string Date, bool Success, string? ErrorMessage)>();
 
         await AnsiConsole.Status()
             .StartAsync("Loading data from Clockify and Tempo...", async ctx =>
@@ -88,7 +92,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                     }
                     else
                     {
-                        AnsiConsole.MarkupLine("[green]? No orphaned entries found[/]");
+                        AnsiConsole.MarkupLine("[green]✓ No orphaned entries found[/]");
                     }
                 }
 
@@ -108,8 +112,6 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                 }
 
                 ctx.Status($"Uploading {entriesToUpload.Count} time entries to Tempo...");
-                var successCount = 0;
-                var errorCount = 0;
 
                 foreach (var timeEntry in entriesToUpload)
                 {
@@ -118,29 +120,44 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                         var task = tasks.FirstOrDefault(x => x.Id == timeEntry.TaskId);
                         if (task == null)
                         {
-                            AnsiConsole.MarkupLine($"[yellow]⚠ Unknown TaskId for entry {timeEntry.Id}[/]");
                             errorCount++;
+                            results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), false, "Unknown TaskId"));
                             continue;
                         }
 
                         await tempoClient.ExportTimeEntry(timeEntry, task);
-                        AnsiConsole.MarkupLine($"[green]✓ Uploaded entry {timeEntry.Id}[/] [dim]({timeEntry.TimeInterval.StartDate:yyyy-MM-dd})[/]");
                         successCount++;
+                        results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), true, null));
                     }
                     catch (Exception e)
                     {
-                        AnsiConsole.MarkupLine($"[red]✗ Error uploading entry {timeEntry.Id}: {e.Message}[/]");
                         errorCount++;
+                        results.Add((timeEntry.Id, timeEntry.TimeInterval.StartDate.ToString("yyyy-MM-dd"), false, e.Message));
                     }
                 }
 
-                AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine($"[bold]Upload Summary:[/]");
-                AnsiConsole.MarkupLine($"[green]✓ Successfully uploaded: {successCount} entries[/]");
-                if (errorCount > 0)
-                {
-                    AnsiConsole.MarkupLine($"[red]✗ Failed to upload: {errorCount} entries[/]");
-                }
+                ctx.Status("Upload completed.");
             });
+
+        // Display results after Status block
+        foreach (var (entryId, date, success, errorMessage) in results)
+        {
+            if (success)
+            {
+                AnsiConsole.MarkupLine($"[green]✓ Uploaded entry {entryId}[/] [dim]({date})[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[red]✗ Failed to upload entry {entryId}: {Markup.Escape(errorMessage ?? "Unknown error")}[/]");
+            }
+        }
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[bold]Upload Summary:[/]");
+        AnsiConsole.MarkupLine($"[green]✓ Successfully uploaded: {successCount} entries[/]");
+        if (errorCount > 0)
+        {
+            AnsiConsole.MarkupLine($"[red]✗ Failed to upload: {errorCount} entries[/]");
+        }
     }
 }

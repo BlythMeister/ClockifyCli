@@ -14,7 +14,7 @@ public class AddTaskCommand : BaseCommand
         return 0;
     }
 
-    private async Task AddTask(ClockifyCli.Services.ClockifyClient clockifyClient, ClockifyCli.Services.JiraClient jiraClient)
+    private async Task AddTask(Services.ClockifyClient clockifyClient, Services.JiraClient jiraClient)
     {
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
@@ -39,7 +39,7 @@ public class AddTaskCommand : BaseCommand
             : jiraRefOrUrl;
 
         // Load Jira issue data first (inside Status block)
-        ClockifyCli.Models.JiraIssue? issue = null;
+        Models.JiraIssue? issue = null;
         await AnsiConsole.Status()
             .StartAsync($"Finding jira: {jiraRef}...", async ctx =>
             {

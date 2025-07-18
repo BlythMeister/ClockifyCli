@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using ClockifyCli.Utilities;
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace ClockifyCli.Commands;
@@ -13,7 +14,7 @@ public class StatusCommand : BaseCommand
         return 0;
     }
 
-    private async Task ShowCurrentStatus(ClockifyCli.Services.ClockifyClient clockifyClient)
+    private async Task ShowCurrentStatus(Services.ClockifyClient clockifyClient)
     {
         AnsiConsole.MarkupLine("[bold]Current Clockify Status[/]");
         AnsiConsole.WriteLine();
@@ -62,9 +63,9 @@ public class StatusCommand : BaseCommand
     }
 
     private static string CreateStatusContent(
-        ClockifyCli.Models.TimeEntry entry,
-        ClockifyCli.Models.ProjectInfo? project,
-        ClockifyCli.Models.TaskInfo? task,
+        Models.TimeEntry entry,
+        Models.ProjectInfo? project,
+        Models.TaskInfo? task,
         DateTime startTime,
         TimeSpan elapsed)
     {
@@ -82,28 +83,8 @@ public class StatusCommand : BaseCommand
 
         // Timing information
         content.AppendLine($"[bold]Started:[/] {startTime.ToLocalTime():HH:mm:ss (ddd, MMM dd)}");
-        content.AppendLine($"[bold]Elapsed:[/] {FormatDuration(elapsed)}");
+        content.AppendLine($"[bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
 
         return content.ToString().TrimEnd();
-    }
-
-    private static string FormatDuration(TimeSpan duration)
-    {
-        var totalHours = (int)duration.TotalHours;
-        var minutes = duration.Minutes;
-        var seconds = duration.Seconds;
-
-        if (totalHours > 0)
-        {
-            return $"{totalHours}h {minutes}m {seconds}s";
-        }
-        else if (minutes > 0)
-        {
-            return $"{minutes}m {seconds}s";
-        }
-        else
-        {
-            return $"{seconds}s";
-        }
     }
 }

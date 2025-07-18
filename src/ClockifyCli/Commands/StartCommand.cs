@@ -14,7 +14,7 @@ public class StartCommand : BaseCommand
         return 0;
     }
 
-    private async Task StartNewTimer(ClockifyCli.Services.ClockifyClient clockifyClient)
+    private async Task StartNewTimer(Services.ClockifyClient clockifyClient)
     {
         AnsiConsole.MarkupLine("[bold]Start New Timer[/]");
         AnsiConsole.WriteLine();

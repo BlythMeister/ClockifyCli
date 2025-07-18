@@ -29,7 +29,7 @@ app.Configure(config =>
 
     // Add the archive-completed-jiras command
     config.AddCommand<ArchiveCompletedJirasCommand>("archive-completed-jiras")
-        .WithDescription("List tasks that can be archived based on completed Jira status")
+        .WithDescription("Archive tasks in Clockify that have completed Jira status")
         .WithExample(new[] { "archive-completed-jiras" });
 
     // Add the week-view command

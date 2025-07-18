@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using ClockifyCli.Utilities;
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace ClockifyCli.Commands;
@@ -13,7 +14,7 @@ public class StopCommand : BaseCommand
         return 0;
     }
 
-    private async Task StopCurrentTimer(ClockifyCli.Services.ClockifyClient clockifyClient)
+    private async Task StopCurrentTimer(Services.ClockifyClient clockifyClient)
     {
         AnsiConsole.MarkupLine("[bold]Stop Current Timer[/]");
         AnsiConsole.WriteLine();
@@ -27,9 +28,9 @@ public class StopCommand : BaseCommand
         }
 
         // Load current time entry data first (inside Status block)
-        ClockifyCli.Models.TimeEntry? currentEntry = null;
-        ClockifyCli.Models.ProjectInfo? project = null;
-        ClockifyCli.Models.TaskInfo? task = null;
+        Models.TimeEntry? currentEntry = null;
+        Models.ProjectInfo? project = null;
+        Models.TaskInfo? task = null;
         TimeSpan elapsed = TimeSpan.Zero;
 
         await AnsiConsole.Status()
@@ -72,7 +73,7 @@ public class StopCommand : BaseCommand
         AnsiConsole.MarkupLine($"  [bold]Project:[/] {projectName}");
         AnsiConsole.MarkupLine($"  [bold]Task:[/] {taskName}");
         AnsiConsole.MarkupLine($"  [bold]Description:[/] {description}");
-        AnsiConsole.MarkupLine($"  [bold]Elapsed:[/] {FormatDuration(elapsed)}");
+        AnsiConsole.MarkupLine($"  [bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
         AnsiConsole.WriteLine();
 
         // User confirmation (outside Status block)
@@ -86,31 +87,11 @@ public class StopCommand : BaseCommand
                 });
 
             AnsiConsole.MarkupLine("[green]✓ Timer stopped successfully![/]");
-            AnsiConsole.MarkupLine($"[dim]Final duration: {FormatDuration(elapsed)}[/]");
+            AnsiConsole.MarkupLine($"[dim]Final duration: {TimeFormatter.FormatDuration(elapsed)}[/]");
         }
         else
         {
             AnsiConsole.MarkupLine("[yellow]Timer stop cancelled.[/]");
-        }
-    }
-
-    private static string FormatDuration(TimeSpan duration)
-    {
-        var totalHours = (int)duration.TotalHours;
-        var minutes = duration.Minutes;
-        var seconds = duration.Seconds;
-
-        if (totalHours > 0)
-        {
-            return $"{totalHours}h {minutes}m {seconds}s";
-        }
-        else if (minutes > 0)
-        {
-            return $"{minutes}m {seconds}s";
-        }
-        else
-        {
-            return $"{seconds}s";
         }
     }
 }

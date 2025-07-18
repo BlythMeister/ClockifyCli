@@ -163,7 +163,9 @@ All credentials are stored securely using AES-256 encryption in:
 
 ## 🏗️ Architecture
 
-### Project StructureClockifyCli/
+### Project Structure
+
+ClockifyCli/
 ├── Commands/           # CLI command implementations
 │   ├── BaseCommand.cs
 │   ├── ConfigCommand.cs

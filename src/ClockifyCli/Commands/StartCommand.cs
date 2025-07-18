@@ -9,7 +9,7 @@ public class StartCommand : BaseCommand
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
         var clockifyClient = await CreateClockifyClientAsync();
-        
+
         await StartNewTimer(clockifyClient);
         return 0;
     }
@@ -31,7 +31,7 @@ public class StartCommand : BaseCommand
         var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
         if (currentEntry != null)
         {
-            AnsiConsole.MarkupLine("[yellow]??  A timer is already running![/]");
+            AnsiConsole.MarkupLine("[yellow]⚠️  A timer is already running![/]");
             AnsiConsole.MarkupLine("[dim]Stop the current timer first with 'clockify-cli stop' or use 'clockify-cli status' to see what's running.[/]");
             return;
         }
@@ -56,7 +56,7 @@ public class StartCommand : BaseCommand
                 foreach (var project in projects)
                 {
                     var projectTasks = await clockifyClient.GetTasks(workspace, project);
-                    foreach (var task in projectTasks)
+                    foreach (var task in projectTasks.Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase)))
                     {
                         tasksWithProjects.Add(new TaskWithProject(
                             task.Id,
@@ -67,15 +67,7 @@ public class StartCommand : BaseCommand
                     }
                 }
 
-                // Add option to start without a specific task (project-only)
-                var projectOnlyOptions = projects.Select(p => new TaskWithProject(
-                    "", // No task ID
-                    "No specific task",
-                    p.Id,
-                    p.Name
-                )).ToList();
-
-                allOptions.AddRange(tasksWithProjects.Concat(projectOnlyOptions)
+                allOptions.AddRange(tasksWithProjects
                     .OrderBy(t => t.ProjectName)
                     .ThenBy(t => t.TaskName));
             });
@@ -98,16 +90,16 @@ public class StartCommand : BaseCommand
 
         // Prompt for optional description
         var description = AnsiConsole.Ask<string>(
-            "[blue]Description[/] (optional):", 
+            "[blue]Description[/] (optional):",
             defaultValue: string.Empty);
 
         // Show confirmation
         var projectName = Markup.Escape(selectedOption.ProjectName);
-        var taskName = selectedOption.TaskName == "No specific task" 
-            ? "[dim]No specific task[/]" 
+        var taskName = selectedOption.TaskName == "No specific task"
+            ? "[dim]No specific task[/]"
             : Markup.Escape(selectedOption.TaskName);
-        var descriptionDisplay = string.IsNullOrWhiteSpace(description) 
-            ? "[dim]No description[/]" 
+        var descriptionDisplay = string.IsNullOrWhiteSpace(description)
+            ? "[dim]No description[/]"
             : Markup.Escape(description);
 
         AnsiConsole.MarkupLine($"[yellow]About to start timer for:[/]");
@@ -124,15 +116,15 @@ public class StartCommand : BaseCommand
                 {
                     var taskId = string.IsNullOrEmpty(selectedOption.TaskId) ? null : selectedOption.TaskId;
                     var finalDescription = string.IsNullOrWhiteSpace(description) ? null : description;
-                    
+
                     var startedEntry = await clockifyClient.StartTimeEntry(
-                        workspace, 
-                        selectedOption.ProjectId, 
-                        taskId, 
+                        workspace,
+                        selectedOption.ProjectId,
+                        taskId,
                         finalDescription);
                 });
 
-            AnsiConsole.MarkupLine("[green]? Timer started successfully![/]");
+            AnsiConsole.MarkupLine("[green]✓ Timer started successfully![/]");
             AnsiConsole.MarkupLine($"[dim]Started at: {DateTime.Now:HH:mm:ss}[/]");
             AnsiConsole.MarkupLine("[dim]Use 'clockify-cli status' to see the running timer or 'clockify-cli stop' to stop it.[/]");
         }

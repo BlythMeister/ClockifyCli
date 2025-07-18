@@ -36,7 +36,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         AnsiConsole.MarkupLine($"[dim]Processing last {days} days...[/]");
         if (cleanupOrphaned)
         {
-            AnsiConsole.MarkupLine("[yellow]? Orphaned entry cleanup is enabled[/]");
+            AnsiConsole.MarkupLine("[yellow]⚠ Orphaned entry cleanup is enabled[/]");
         }
         AnsiConsole.WriteLine();
 
@@ -103,7 +103,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                 if (!entriesToUpload.Any())
                 {
                     ctx.Status("No new time entries to upload.");
-                    AnsiConsole.MarkupLine("[green]? All time entries are already up to date in Tempo[/]");
+                    AnsiConsole.MarkupLine("[green]✓ All time entries are already up to date in Tempo[/]");
                     return;
                 }
 
@@ -118,28 +118,28 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                         var task = tasks.FirstOrDefault(x => x.Id == timeEntry.TaskId);
                         if (task == null)
                         {
-                            AnsiConsole.MarkupLine($"[yellow]? Unknown TaskId for entry {timeEntry.Id}[/]");
+                            AnsiConsole.MarkupLine($"[yellow]⚠ Unknown TaskId for entry {timeEntry.Id}[/]");
                             errorCount++;
                             continue;
                         }
 
                         await tempoClient.ExportTimeEntry(timeEntry, task);
-                        AnsiConsole.MarkupLine($"[green]? Uploaded entry {timeEntry.Id}[/] [dim]({timeEntry.TimeInterval.StartDate:yyyy-MM-dd})[/]");
+                        AnsiConsole.MarkupLine($"[green]✓ Uploaded entry {timeEntry.Id}[/] [dim]({timeEntry.TimeInterval.StartDate:yyyy-MM-dd})[/]");
                         successCount++;
                     }
                     catch (Exception e)
                     {
-                        AnsiConsole.MarkupLine($"[red]? Error uploading entry {timeEntry.Id}: {e.Message}[/]");
+                        AnsiConsole.MarkupLine($"[red]✗ Error uploading entry {timeEntry.Id}: {e.Message}[/]");
                         errorCount++;
                     }
                 }
 
                 AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine($"[bold]Upload Summary:[/]");
-                AnsiConsole.MarkupLine($"[green]? Successfully uploaded: {successCount} entries[/]");
+                AnsiConsole.MarkupLine($"[green]✓ Successfully uploaded: {successCount} entries[/]");
                 if (errorCount > 0)
                 {
-                    AnsiConsole.MarkupLine($"[red]? Failed to upload: {errorCount} entries[/]");
+                    AnsiConsole.MarkupLine($"[red]✗ Failed to upload: {errorCount} entries[/]");
                 }
             });
     }

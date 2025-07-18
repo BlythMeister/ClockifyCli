@@ -1,6 +1,11 @@
 ﻿using ClockifyCli.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.Text;
+
+// Ensure console supports Unicode output
+Console.OutputEncoding = Encoding.UTF8;
+Console.InputEncoding = Encoding.UTF8;
 
 var app = new CommandApp();
 

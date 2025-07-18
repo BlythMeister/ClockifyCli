@@ -8,7 +8,7 @@ public class StopCommand : BaseCommand
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
         var clockifyClient = await CreateClockifyClientAsync();
-        
+
         await StopCurrentTimer(clockifyClient);
         return 0;
     }
@@ -46,8 +46,8 @@ public class StopCommand : BaseCommand
                 ctx.Status("Getting project and task details...");
                 var projects = await clockifyClient.GetProjects(workspace);
                 project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
-                task = project != null ? 
-                    (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : 
+                task = project != null ?
+                    (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) :
                     null;
 
                 // Calculate elapsed time before stopping
@@ -58,7 +58,7 @@ public class StopCommand : BaseCommand
         // Check if there's a timer running (outside Status block)
         if (currentEntry == null)
         {
-            AnsiConsole.MarkupLine("[yellow]??  No time entry is currently running[/]");
+            AnsiConsole.MarkupLine("[yellow]⏸️  No time entry is currently running[/]");
             AnsiConsole.MarkupLine("[dim]There's nothing to stop.[/]");
             return;
         }
@@ -85,7 +85,7 @@ public class StopCommand : BaseCommand
                     var stoppedEntry = await clockifyClient.StopCurrentTimeEntry(workspace, user);
                 });
 
-            AnsiConsole.MarkupLine("[green]? Timer stopped successfully![/]");
+            AnsiConsole.MarkupLine("[green]✓ Timer stopped successfully![/]");
             AnsiConsole.MarkupLine($"[dim]Final duration: {FormatDuration(elapsed)}[/]");
         }
         else
@@ -99,7 +99,7 @@ public class StopCommand : BaseCommand
         var totalHours = (int)duration.TotalHours;
         var minutes = duration.Minutes;
         var seconds = duration.Seconds;
-        
+
         if (totalHours > 0)
         {
             return $"{totalHours}h {minutes}m {seconds}s";

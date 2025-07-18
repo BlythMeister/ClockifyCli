@@ -1,7 +1,7 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
-using ClockifyCli.Models;
+﻿using ClockifyCli.Models;
 using Newtonsoft.Json;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace ClockifyCli.Services;
 
@@ -105,7 +105,7 @@ public class ClockifyClient
 
             var response = await client.PatchAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries", content);
             response.EnsureSuccessStatusCode();
-            
+
             var responseContent = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<TimeEntry>(responseContent)!;
         }
@@ -126,23 +126,23 @@ public class ClockifyClient
                 string.IsNullOrEmpty(taskId) ? null : taskId,
                 string.IsNullOrWhiteSpace(description) ? null : description
             );
-            
+
             var serializerSettings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore
             };
-            
+
             var startTimeJson = JsonConvert.SerializeObject(startTimeEntry, serializerSettings);
             var content = new StringContent(startTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
             var response = await client.PostAsync($"workspaces/{workspace.Id}/time-entries", content);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 throw new HttpRequestException($"Failed to start time entry. Status: {response.StatusCode}, Response: {errorContent}");
             }
-            
+
             var responseContent = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<TimeEntry>(responseContent)!;
         }

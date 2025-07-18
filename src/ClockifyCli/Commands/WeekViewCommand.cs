@@ -10,7 +10,7 @@ public class WeekViewCommand : BaseCommand
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
         var clockifyClient = await CreateClockifyClientAsync();
-        
+
         await ShowCurrentWeekTimeEntries(clockifyClient);
         return 0;
     }
@@ -93,7 +93,7 @@ public class WeekViewCommand : BaseCommand
 
                         // Only show date on first entry of the day
                         var dateDisplay = i == 0 ? $"[bold]{date.ToString("ddd, MMM dd", CultureInfo.InvariantCulture)}[/]" : "";
-                        
+
                         // Escape markup characters in dynamic content from Clockify API
                         var projectName = project?.Name != null ? Markup.Escape(project.Name) : "[dim]Unknown Project[/]";
                         var taskName = task?.Name != null ? Markup.Escape(task.Name) : "[dim]No Task[/]";
@@ -130,7 +130,7 @@ public class WeekViewCommand : BaseCommand
                 AnsiConsole.Write(table);
                 AnsiConsole.WriteLine();
                 AnsiConsole.MarkupLine($"[bold green]Week Total: {FormatDuration(weekTotal)}[/]");
-                
+
                 // Show daily averages
                 var workingDaysWithEntries = entriesByDate.Count;
                 if (workingDaysWithEntries > 0)
@@ -145,10 +145,10 @@ public class WeekViewCommand : BaseCommand
     {
         var totalHours = (int)duration.TotalHours;
         var minutes = duration.Minutes;
-        
+
         if (totalHours == 0)
             return $"{minutes}m";
-        
+
         return minutes == 0 ? $"{totalHours}h" : $"{totalHours}h {minutes}m";
     }
 }

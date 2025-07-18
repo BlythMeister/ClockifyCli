@@ -34,7 +34,7 @@ public class StatusCommand : BaseCommand
                 if (currentEntry == null)
                 {
                     AnsiConsole.MarkupLine("[yellow]⏸️  No time entry currently running[/]");
-                    AnsiConsole.MarkupLine("[dim]Start a new time entry in Clockify to see it here.[/]");
+                    AnsiConsole.MarkupLine("[dim]Start a new time entry by running 'clockify-cli start' to see it here.[/]");
                     return;
                 }
 

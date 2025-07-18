@@ -3,8 +3,8 @@
 namespace ClockifyCli.Models;
 
 public record StartTimeEntry(
-    [JsonProperty("start")] string Start,
-    [JsonProperty("projectId")] string ProjectId,
-    [JsonProperty("taskId")] string? TaskId,
-    [JsonProperty("description")] string? Description
+    [property: JsonProperty("start")] string Start,
+    [property: JsonProperty("projectId")] string ProjectId,
+    [property: JsonProperty("taskId")] string? TaskId,
+    [property: JsonProperty("description")] string? Description
 );

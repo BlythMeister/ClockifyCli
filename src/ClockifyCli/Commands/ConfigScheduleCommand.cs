@@ -1,12 +1,12 @@
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-using ClockifyCli.Services;
+﻿using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace ClockifyCli.Commands;
 
-public class ConfigScheduleCommand : ConfigCommand
+public class ConfigScheduleCommand : AsyncCommand<ConfigScheduleCommand.Settings>
 {
     public class Settings : CommandSettings
     {
@@ -20,12 +20,7 @@ public class ConfigScheduleCommand : ConfigCommand
         public bool Remove { get; init; } = false;
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context)
-    {
-        return await ExecuteAsync(context, new Settings());
-    }
-
-    public async Task<int> ExecuteAsync(CommandContext context, Settings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         const string taskName = "ClockifyCli Timer Monitor";
 
@@ -50,7 +45,7 @@ public class ConfigScheduleCommand : ConfigCommand
         // Check if tool is installed as global tool
         if (!ScheduledTaskService.IsToolInstalledAsGlobalTool())
         {
-            AnsiConsole.MarkupLine("[red]? ClockifyCli is not installed as a global .NET tool[/]");
+            AnsiConsole.MarkupLine("[red]✗ ClockifyCli is not installed as a global .NET tool[/]");
             AnsiConsole.WriteLine();
             AnsiConsole.MarkupLine("[yellow]To install as a global tool, run:[/]");
             AnsiConsole.MarkupLine("[green]dotnet tool install --global ClockifyCli[/]");
@@ -59,13 +54,13 @@ public class ConfigScheduleCommand : ConfigCommand
             return 1;
         }
 
-        AnsiConsole.MarkupLine("[green]? ClockifyCli is installed as a global tool[/]");
+        AnsiConsole.MarkupLine("[green]✓ ClockifyCli is installed as a global tool[/]");
 
         // Check if task already exists
         if (ScheduledTaskService.TaskExists(taskName))
         {
-            AnsiConsole.MarkupLine($"[yellow]?? Scheduled task '{taskName}' already exists[/]");
-            
+            AnsiConsole.MarkupLine($"[yellow]⚠ Scheduled task '{taskName}' already exists[/]");
+
             if (!AnsiConsole.Confirm("Do you want to replace the existing task?"))
             {
                 AnsiConsole.MarkupLine("[yellow]Setup cancelled[/]");
@@ -100,19 +95,19 @@ public class ConfigScheduleCommand : ConfigCommand
 
         if (success)
         {
-            AnsiConsole.MarkupLine("[green]? Scheduled task created successfully![/]");
+            AnsiConsole.MarkupLine("[green]✓ Scheduled task created successfully![/]");
             AnsiConsole.WriteLine();
             AnsiConsole.MarkupLine("[bold]Task Details:[/]");
-            AnsiConsole.MarkupLine($"� [green]Name:[/] {taskName}");
-            AnsiConsole.MarkupLine($"� [green]Frequency:[/] {ScheduledTaskService.GetIntervalDescription(intervalMinutes.ToString())}");
-            AnsiConsole.MarkupLine($"� [green]Action:[/] Check timer status and show notification if no timer is running");
+            AnsiConsole.MarkupLine($"• [green]Name:[/] {taskName}");
+            AnsiConsole.MarkupLine($"• [green]Frequency:[/] {ScheduledTaskService.GetIntervalDescription(intervalMinutes.ToString())}");
+            AnsiConsole.MarkupLine($"• [green]Action:[/] Check timer status and show notification if no timer is running");
             AnsiConsole.WriteLine();
             AnsiConsole.MarkupLine("[dim]You can view/modify this task in Windows Task Scheduler[/]");
             AnsiConsole.MarkupLine("[dim]To remove the task, run: clockify-cli config schedule-monitor --remove[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("[red]? Failed to create scheduled task[/]");
+            AnsiConsole.MarkupLine("[red]✗ Failed to create scheduled task[/]");
             AnsiConsole.MarkupLine("[yellow]This may require administrator privileges[/]");
             AnsiConsole.MarkupLine("[dim]Try running the command as administrator[/]");
             return 1;
@@ -130,7 +125,7 @@ public class ConfigScheduleCommand : ConfigCommand
         }
 
         AnsiConsole.MarkupLine($"[yellow]Found scheduled task: '{taskName}'[/]");
-        
+
         if (!AnsiConsole.Confirm("Are you sure you want to remove this scheduled task?"))
         {
             AnsiConsole.MarkupLine("[yellow]Removal cancelled[/]");
@@ -142,11 +137,11 @@ public class ConfigScheduleCommand : ConfigCommand
 
         if (success)
         {
-            AnsiConsole.MarkupLine("[green]? Scheduled task removed successfully[/]");
+            AnsiConsole.MarkupLine("[green]✓ Scheduled task removed successfully[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("[red]? Failed to remove scheduled task[/]");
+            AnsiConsole.MarkupLine("[red]✗ Failed to remove scheduled task[/]");
             AnsiConsole.MarkupLine("[yellow]This may require administrator privileges[/]");
             return 1;
         }
@@ -157,7 +152,7 @@ public class ConfigScheduleCommand : ConfigCommand
     private int GetIntervalFromUser()
     {
         AnsiConsole.MarkupLine("[bold]Select monitoring interval:[/]");
-        
+
         var choices = ScheduledTaskService.GetValidIntervals()
             .Select(interval => $"{ScheduledTaskService.GetIntervalDescription(interval)} ({interval} minutes)")
             .ToList();

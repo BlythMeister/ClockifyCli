@@ -5,12 +5,29 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>clockify-cli</ToolCommandName>
+    <PackageId>ClockifyCli</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Chris Blyth</Authors>
+    <Description>A command-line tool for managing time entries between Clockify, Jira, and Tempo</Description>
+    <PackageTags>clockify;jira;tempo;time-tracking;cli</PackageTags>
+    <PackageProjectUrl>https://github.com/BlythMeister/ClockifyCli</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/BlythMeister/ClockifyCli</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.50.0" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.50.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\..\..\README.md')" />
   </ItemGroup>
 
 </Project>

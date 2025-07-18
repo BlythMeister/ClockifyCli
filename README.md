@@ -281,4 +281,4 @@ For detailed error information, check the console output or enable verbose loggi
 
 ---
 
-Made with ❤️ using .NET 8 and Spectre.Console
+Made with ❤️ using Copilot, .NET 8 and Spectre.Console

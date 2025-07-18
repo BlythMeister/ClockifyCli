@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using ClockifyCli.Models;
 using Spectre.Console;
 using Spectre.Console.Cli;

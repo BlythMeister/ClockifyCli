@@ -1,4 +1,4 @@
-namespace ClockifyCli.Models;
+﻿namespace ClockifyCli.Models;
 
 public record TimeInterval(string Start, string End)
 {

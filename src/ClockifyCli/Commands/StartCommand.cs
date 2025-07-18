@@ -1,4 +1,4 @@
-using ClockifyCli.Models;
+﻿using ClockifyCli.Models;
 using Spectre.Console;
 using Spectre.Console.Cli;
 

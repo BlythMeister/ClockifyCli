@@ -1,9 +1,9 @@
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-using ClockifyCli.Services;
+﻿using ClockifyCli.Services;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace ClockifyCli.Commands;
 
@@ -40,7 +40,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
         // Check if running on Windows for notification support
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !settings.Silent)
         {
-            AnsiConsole.MarkupLine("[yellow]?? Toast notifications are only supported on Windows[/]");
+            AnsiConsole.MarkupLine("[yellow]⚠️ Toast notifications are only supported on Windows[/]");
             AnsiConsole.MarkupLine("[dim]Running in console-only mode...[/]");
             AnsiConsole.WriteLine();
         }
@@ -98,7 +98,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
             // No timer running - show reminder notification
             if (!settings.Silent)
             {
-                AnsiConsole.MarkupLine("[yellow]?? No timer is currently running[/]");
+                AnsiConsole.MarkupLine("[yellow]⏸️ No timer is currently running[/]");
                 AnsiConsole.MarkupLine("[dim]Showing reminder notification...[/]");
             }
 
@@ -110,7 +110,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
             if (!settings.Silent)
             {
-                AnsiConsole.MarkupLine("[green]? Notification sent successfully[/]");
+                AnsiConsole.MarkupLine("[green]✓ Notification sent successfully[/]");
                 AnsiConsole.MarkupLine("[dim]Start a timer with 'clockify-cli start'[/]");
             }
 
@@ -126,7 +126,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
             if (!settings.Silent)
             {
-                AnsiConsole.MarkupLine("[green]? Timer is running[/]");
+                AnsiConsole.MarkupLine("[green]✅ Timer is running[/]");
                 AnsiConsole.MarkupLine($"[bold]Project:[/] {Markup.Escape(projectName)}");
                 AnsiConsole.MarkupLine($"[bold]Task:[/] {Markup.Escape(taskName)}");
                 AnsiConsole.MarkupLine($"[bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
@@ -136,10 +136,10 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
             if (settings.AlwaysNotify && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 NotificationService.ShowTimerRunningNotification(projectName, taskName, elapsed);
-                
+
                 if (!settings.Silent)
                 {
-                    AnsiConsole.MarkupLine("[green]? Status notification sent[/]");
+                    AnsiConsole.MarkupLine("[green]✓ Status notification sent[/]");
                 }
             }
 

@@ -61,6 +61,31 @@ Display current configuration with masked sensitive values.clockify-cli config v
 - Configuration file location
 - Missing credential warnings
 
+#### `config schedule-monitor`
+Set up automated scheduled task for timer monitoring (Windows only).# Interactive setup with interval selection
+clockify-cli config schedule-monitor
+
+# Create task with specific interval (in minutes)
+clockify-cli config schedule-monitor --interval 60
+
+# Remove existing scheduled task
+clockify-cli config schedule-monitor --remove**Options:**
+- `-i, --interval <minutes>` - Set monitoring interval (15, 30, 60, 120, 240)
+- `-r, --remove` - Remove existing scheduled task
+
+**Features:**
+- Automatically checks if ClockifyCli is installed as global tool
+- Creates Windows scheduled task with proper permissions
+- Interactive interval selection with common presets
+- Safe task replacement (confirms before overwriting)
+- Admin privilege handling for task creation
+- Provides guidance for macOS/Linux alternatives (cron jobs)
+
+**Prerequisites:**
+- Windows operating system
+- ClockifyCli installed as global .NET tool
+- Administrator privileges for task creation
+
 ### ⏱️ Time Management
 
 #### `start`
@@ -177,10 +202,11 @@ Automatically archive tasks based on Jira completion status.clockify-cli archive
 
 ### 📚 Help & Documentation
 
-Get comprehensive help for any command:clockify-cli --help                    # General help
-clockify-cli [command] --help          # Command-specific help
-clockify-cli config --help             # Configuration help
-clockify-cli week-view --help          # Week view options
+Get comprehensive help for any command:clockify-cli --help                      # General help
+clockify-cli [command] --help            # Command-specific help
+clockify-cli config --help               # Configuration help
+clockify-cli config schedule-monitor --help # Scheduled task setup help
+clockify-cli week-view --help            # Week view options
 ## 🔧 Configuration & Setup
 
 ### 🔐 API Keys Required
@@ -255,8 +281,11 @@ clockify-cli upload-to-tempo --days 1
 # Weekly cleanup automation
 clockify-cli archive-completed-jiras
 
-# Hourly timer reminder (Windows scheduled task)
-clockify-cli timer-monitor --silent
+# Set up automated hourly timer reminder (Windows)
+clockify-cli config schedule-monitor --interval 60
+
+# Set up automated timer reminder (macOS/Linux with cron)
+# Add to crontab: */60 * * * * clockify-cli timer-monitor --silent
 ## 🛠️ Development & Contributing
 
 ### 🔧 Development Setup

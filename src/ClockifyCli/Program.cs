@@ -72,6 +72,12 @@ app.Configure(config =>
         config.AddCommand<ConfigViewCommand>("view")
             .WithDescription("View current configuration")
             .WithExample(new[] { "config", "view" });
+
+        config.AddCommand<ConfigScheduleCommand>("schedule-monitor")
+            .WithDescription("Set up scheduled task for timer monitoring")
+            .WithExample(new[] { "config", "schedule-monitor" })
+            .WithExample(new[] { "config", "schedule-monitor", "--interval", "60" })
+            .WithExample(new[] { "config", "schedule-monitor", "--remove" });
     });
 
     // Customize help and error messages

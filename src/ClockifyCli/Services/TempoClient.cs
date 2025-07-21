@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace ClockifyCli.Services;
 
-public class TempoClient
+public class TempoClient : ITempoClient
 {
     private readonly HttpClient client;
     private readonly JiraClient jiraClient;

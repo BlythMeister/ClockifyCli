@@ -10,11 +10,11 @@ namespace ClockifyCli.Commands;
 
 public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 {
-    private readonly ClockifyClient clockifyClient;
+    private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public EditTimerCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    public EditTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
@@ -34,7 +34,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         return 0;
     }
 
-    private async Task EditTimeEntry(ClockifyClient clockifyClient, IAnsiConsole console, int daysBack)
+    private async Task EditTimeEntry(IClockifyClient clockifyClient, IAnsiConsole console, int daysBack)
     {
         console.MarkupLine("[bold]Edit Time Entry[/]");
         console.WriteLine();
@@ -56,7 +56,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         List<TimeEntry> timeEntries = new();
         List<ProjectInfo> projects = new();
-        List<TaskInfo> allTasks = new();
+        List<TaskWithProject> allTasks = new();
 
         await console.Status()
                          .StartAsync("Loading time entries...", async ctx =>
@@ -73,7 +73,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                                     foreach (var project in projects)
                                                                     {
                                                                         var projectTasks = await clockifyClient.GetTasks(workspace, project);
-                                                                        allTasks.AddRange(projectTasks);
+                                                                        var tasksWithProject = projectTasks.Select(task => new TaskWithProject(task.Id, task.Name, project.Id, project.Name)).ToList();
+                                                                        allTasks.AddRange(tasksWithProject);
                                                                     }
                                                                 });
 
@@ -108,9 +109,9 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                    .UseConverter(entry =>
                                                                  {
                                                                      var project = projects.FirstOrDefault(p => p.Id == entry.ProjectId);
-                                                                     var task = allTasks.FirstOrDefault(t => t.Id == entry.TaskId);
+                                                                     var task = allTasks.FirstOrDefault(t => t.TaskId == entry.TaskId);
                                                                      var projectName = project?.Name ?? "Unknown Project";
-                                                                     var taskName = task?.Name ?? "No Task";
+                                                                     var taskName = task?.TaskName ?? "No Task";
                                                                      var startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
                                                                      var endTime = entry.TimeInterval.EndDate.ToLocalTime().ToString("HH:mm");
                                                                      var duration = TimeFormatter.FormatDurationCompact(entry.TimeInterval.DurationSpan);
@@ -123,10 +124,10 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         await EditSelectedEntry(clockifyClient, workspace, selectedEntry, projects, allTasks);
     }
 
-    private async Task EditSelectedEntry(Services.ClockifyClient clockifyClient, WorkspaceInfo workspace, TimeEntry timeEntry, List<ProjectInfo> projects, List<TaskInfo> allTasks)
+        private async Task EditSelectedEntry(IClockifyClient clockifyClient, WorkspaceInfo workspace, TimeEntry selectedEntry, List<ProjectInfo> projects, List<TaskWithProject> allTasks)
     {
-        var project = projects.FirstOrDefault(p => p.Id == timeEntry.ProjectId);
-        var task = allTasks.FirstOrDefault(t => t.Id == timeEntry.TaskId);
+        var project = projects.FirstOrDefault(p => p.Id == selectedEntry.ProjectId);
+        var task = allTasks.FirstOrDefault(t => t.TaskId == selectedEntry.TaskId);
 
         console.WriteLine();
         console.MarkupLine("[bold]Current Time Entry Details[/]");
@@ -137,11 +138,11 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         table.AddColumn("Current Value");
 
         var projectName = project?.Name != null ? Markup.Escape(project.Name) : "Unknown Project";
-        var taskName = task?.Name != null ? Markup.Escape(task.Name) : "No Task";
-        var description = string.IsNullOrWhiteSpace(timeEntry.Description) ? "No description" : Markup.Escape(timeEntry.Description);
-        var currentStartTime = timeEntry.TimeInterval.StartDate.ToLocalTime();
-        var currentEndTime = timeEntry.TimeInterval.EndDate.ToLocalTime();
-        var currentDuration = TimeFormatter.FormatDurationCompact(timeEntry.TimeInterval.DurationSpan);
+        var taskName = task?.TaskName != null ? Markup.Escape(task.TaskName) : "No Task";
+        var description = string.IsNullOrWhiteSpace(selectedEntry.Description) ? "No description" : Markup.Escape(selectedEntry.Description);
+        var currentStartTime = selectedEntry.TimeInterval.StartDate.ToLocalTime();
+        var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
+        var currentDuration = TimeFormatter.FormatDurationCompact(selectedEntry.TimeInterval.DurationSpan);
 
         table.AddRow("Project", projectName);
         table.AddRow("Task", taskName);
@@ -203,7 +204,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         if (string.IsNullOrWhiteSpace(newDescription))
         {
-            newDescription = timeEntry.Description;
+            newDescription = selectedEntry.Description;
         }
 
         // Show summary of changes
@@ -231,7 +232,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                             newDuration);
         summaryTable.AddRow(
                             "Description",
-                            string.IsNullOrWhiteSpace(timeEntry.Description) ? "[dim]No description[/]" : Markup.Escape(timeEntry.Description),
+                            string.IsNullOrWhiteSpace(selectedEntry.Description) ? "[dim]No description[/]" : Markup.Escape(selectedEntry.Description),
                             string.IsNullOrWhiteSpace(newDescription) ? "[dim]No description[/]" : Markup.Escape(newDescription));
 
         console.Write(summaryTable);
@@ -241,7 +242,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         if (console.Confirm("Apply these changes?"))
         {
             await console.Status()
-                             .StartAsync("Updating time entry...", async ctx => { await clockifyClient.UpdateTimeEntry(workspace, timeEntry, newStartTime.ToUniversalTime(), newEndTime.ToUniversalTime(), newDescription); });
+                             .StartAsync("Updating time entry...", async ctx => { await clockifyClient.UpdateTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newEndTime.ToUniversalTime(), newDescription); });
 
             console.MarkupLine("[green]✓ Time entry updated successfully![/]");
         }

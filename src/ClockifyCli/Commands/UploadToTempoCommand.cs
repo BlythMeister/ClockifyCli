@@ -8,16 +8,16 @@ namespace ClockifyCli.Commands;
 
 public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
 {
-    private readonly ClockifyClient clockifyClient;
-    private readonly TempoClient tempoClient;
+    private readonly IClockifyClient clockifyClient;
+    private readonly ITempoClient tempoClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public UploadToTempoCommand(ClockifyClient clockifyClient, TempoClient tempoClient, IAnsiConsole console)
+    public UploadToTempoCommand(IClockifyClient clockifyClient, ITempoClient tempoClient, IAnsiConsole console)
     {
-        this.clockifyClient = clockifyClient;
-        this.tempoClient = tempoClient;
-        this.console = console;
+        this.clockifyClient = clockifyClient ?? throw new ArgumentNullException(nameof(clockifyClient));
+        this.tempoClient = tempoClient ?? throw new ArgumentNullException(nameof(tempoClient));
+        this.console = console ?? throw new ArgumentNullException(nameof(console));
     }
 
     public class Settings : CommandSettings
@@ -39,7 +39,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         return 0;
     }
 
-    private async Task UploadTimeEntriesToTempo(ClockifyClient clockifyClient, TempoClient tempoClient, IAnsiConsole console, int days, bool cleanupOrphaned)
+    private async Task UploadTimeEntriesToTempo(IClockifyClient clockifyClient, ITempoClient tempoClient, IAnsiConsole console, int days, bool cleanupOrphaned)
     {
         console.MarkupLine($"[bold]Uploading time entries from Clockify to Tempo[/]");
         console.MarkupLine($"[dim]Processing last {days} days...[/]");

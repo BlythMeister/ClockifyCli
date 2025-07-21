@@ -7,11 +7,11 @@ namespace ClockifyCli.Commands;
 
 public class StartCommand : BaseCommand
 {
-    private readonly ClockifyClient clockifyClient;
+    private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public StartCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    public StartCommand(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
@@ -23,7 +23,7 @@ public class StartCommand : BaseCommand
         return 0;
     }
 
-    private async Task StartNewTimer(ClockifyClient clockifyClient, IAnsiConsole console)
+    private async Task StartNewTimer(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         console.MarkupLine("[bold]Start New Timer[/]");
         console.WriteLine();

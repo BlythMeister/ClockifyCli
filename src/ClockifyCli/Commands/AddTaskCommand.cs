@@ -1,30 +1,31 @@
+using ClockifyCli.Models;
+using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using ClockifyCli.Services;
 
 namespace ClockifyCli.Commands;
 
-public class AddTaskCommand : BaseCommand
+public class AddTaskCommand : BaseCommand<AddTaskCommand.Settings>
 {
-    private readonly ClockifyClient clockifyClient;
-    private readonly JiraClient jiraClient;
+    private readonly IClockifyClient clockifyClient;
+    private readonly IJiraClient jiraClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public AddTaskCommand(ClockifyClient clockifyClient, JiraClient jiraClient, IAnsiConsole console)
+    public AddTaskCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.jiraClient = jiraClient;
         this.console = console;
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context)
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
         await AddTask(clockifyClient, jiraClient, console);
         return 0;
     }
 
-    private async Task AddTask(ClockifyClient clockifyClient, JiraClient jiraClient, IAnsiConsole console)
+    private async Task AddTask(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
     {
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
@@ -76,5 +77,10 @@ public class AddTaskCommand : BaseCommand
         {
             console.MarkupLine("[yellow]Operation cancelled.[/]");
         }
+    }
+
+    public class Settings : CommandSettings
+    {
+        // No settings for this command currently
     }
 }

@@ -7,11 +7,11 @@ namespace ClockifyCli.Commands;
 
 public class StopCommand : BaseCommand
 {
-    private readonly ClockifyClient clockifyClient;
+    private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public StopCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    public StopCommand(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
@@ -23,7 +23,7 @@ public class StopCommand : BaseCommand
         return 0;
     }
 
-    private async Task StopCurrentTimer(ClockifyClient clockifyClient, IAnsiConsole console)
+    private async Task StopCurrentTimer(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         console.MarkupLine("[bold]Stop Current Timer[/]");
         console.WriteLine();

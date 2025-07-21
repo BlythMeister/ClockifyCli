@@ -8,11 +8,11 @@ namespace ClockifyCli.Commands;
 
 public class DiscardTimerCommand : BaseCommand
 {
-    private readonly ClockifyClient clockifyClient;
+    private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public DiscardTimerCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    public DiscardTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
@@ -24,7 +24,7 @@ public class DiscardTimerCommand : BaseCommand
         return 0;
     }
 
-    private async Task DiscardCurrentTimer(ClockifyClient clockifyClient, IAnsiConsole console)
+    private async Task DiscardCurrentTimer(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         console.MarkupLine("[bold]Discard Current Timer[/]");
         console.WriteLine();

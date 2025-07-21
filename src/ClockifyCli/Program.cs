@@ -40,6 +40,9 @@ services.AddTransient<ClockifyClient>(provider =>
     return new ClockifyClient(httpClient, config.ClockifyApiKey);
 });
 
+// Register the interface that points to the same instance
+services.AddTransient<IClockifyClient>(provider => provider.GetRequiredService<ClockifyClient>());
+
 services.AddTransient<JiraClient>(provider =>
 {
     var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
@@ -56,6 +59,9 @@ services.AddTransient<JiraClient>(provider =>
     var httpClient = httpClientFactory.CreateClient();
     return new JiraClient(httpClient, config.JiraUsername, config.JiraApiToken);
 });
+
+// Register the interface that points to the same instance
+services.AddTransient<IJiraClient>(provider => provider.GetRequiredService<JiraClient>());
 
 services.AddTransient<TempoClient>(provider =>
 {
@@ -74,6 +80,9 @@ services.AddTransient<TempoClient>(provider =>
     var httpClient = httpClientFactory.CreateClient();
     return new TempoClient(httpClient, config.TempoApiKey, jiraClient);
 });
+
+// Register the interface that points to the same instance
+services.AddTransient<ITempoClient>(provider => provider.GetRequiredService<TempoClient>());
 
 // Create type registrar and command app
 var registrar = new TypeRegistrar(services);

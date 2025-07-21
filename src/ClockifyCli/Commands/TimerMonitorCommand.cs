@@ -9,11 +9,11 @@ namespace ClockifyCli.Commands;
 
 public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 {
-    private readonly ClockifyClient clockifyClient;
+    private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public TimerMonitorCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    public TimerMonitorCommand(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
@@ -37,7 +37,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
         return await MonitorTimer(clockifyClient, console, settings);
     }
 
-    private async Task<int> MonitorTimer(ClockifyClient clockifyClient, IAnsiConsole console, Settings settings)
+    private async Task<int> MonitorTimer(IClockifyClient clockifyClient, IAnsiConsole console, Settings settings)
     {
         if (!settings.Silent)
         {

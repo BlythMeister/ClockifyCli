@@ -6,16 +6,16 @@ namespace ClockifyCli.Commands;
 
 public class ArchiveCompletedJirasCommand : BaseCommand
 {
-    private readonly ClockifyClient clockifyClient;
-    private readonly JiraClient jiraClient;
+    private readonly IClockifyClient clockifyClient;
+    private readonly IJiraClient jiraClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public ArchiveCompletedJirasCommand(ClockifyClient clockifyClient, JiraClient jiraClient, IAnsiConsole console)
+    public ArchiveCompletedJirasCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
     {
-        this.clockifyClient = clockifyClient;
-        this.jiraClient = jiraClient;
-        this.console = console;
+        this.clockifyClient = clockifyClient ?? throw new ArgumentNullException(nameof(clockifyClient));
+        this.jiraClient = jiraClient ?? throw new ArgumentNullException(nameof(jiraClient));
+        this.console = console ?? throw new ArgumentNullException(nameof(console));
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context)
@@ -24,7 +24,7 @@ public class ArchiveCompletedJirasCommand : BaseCommand
         return 0;
     }
 
-    private async Task ArchiveCompletedTasks(ClockifyClient clockifyClient, JiraClient jiraClient, IAnsiConsole console)
+    private async Task ArchiveCompletedTasks(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
     {
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)

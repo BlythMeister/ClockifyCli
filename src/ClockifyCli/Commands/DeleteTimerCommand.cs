@@ -10,11 +10,11 @@ namespace ClockifyCli.Commands;
 
 public class DeleteTimerCommand : BaseCommand
 {
-    private readonly ClockifyClient clockifyClient;
+    private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public DeleteTimerCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    public DeleteTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
@@ -26,7 +26,7 @@ public class DeleteTimerCommand : BaseCommand
         return 0;
     }
 
-    private async Task DeleteCompletedTimer(ClockifyClient clockifyClient, IAnsiConsole console)
+    private async Task DeleteCompletedTimer(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         console.MarkupLine("[bold]Delete Completed Timer[/]");
         console.WriteLine();
@@ -109,7 +109,7 @@ public class DeleteTimerCommand : BaseCommand
         await ShowTimerDetails(selectedEntry, projects, allTasks, clockifyClient, workspace);
     }
 
-    private async Task ShowTimerDetails(TimeEntry timeEntry, List<ProjectInfo> projects, List<TaskInfo> allTasks, Services.ClockifyClient clockifyClient, WorkspaceInfo workspace)
+    private async Task ShowTimerDetails(TimeEntry timeEntry, List<ProjectInfo> projects, List<TaskInfo> allTasks, Services.IClockifyClient clockifyClient, WorkspaceInfo workspace)
     {
         var project = projects.FirstOrDefault(p => p.Id == timeEntry.ProjectId);
         var task = allTasks.FirstOrDefault(t => t.Id == timeEntry.TaskId);

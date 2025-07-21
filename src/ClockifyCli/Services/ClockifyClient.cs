@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ClockifyCli.Services;
 
-public class ClockifyClient
+public class ClockifyClient : IClockifyClient
 {
     private readonly HttpClient client;
 

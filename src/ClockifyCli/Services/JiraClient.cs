@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace ClockifyCli.Services;
 
-public class JiraClient
+public class JiraClient : IJiraClient
 {
     private readonly HttpClient client;
     private readonly Regex taskInfoRegex;

@@ -10,11 +10,11 @@ namespace ClockifyCli.Commands;
 
 public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
 {
-    private readonly ClockifyClient clockifyClient;
+    private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public WeekViewCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    public WeekViewCommand(IClockifyClient clockifyClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
@@ -39,7 +39,7 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
         return 0;
     }
 
-    private async Task ShowCurrentWeekTimeEntries(ClockifyClient clockifyClient, IAnsiConsole console, bool includeCurrent, bool detailed)
+    private async Task ShowCurrentWeekTimeEntries(IClockifyClient clockifyClient, IAnsiConsole console, bool includeCurrent, bool detailed)
     {
         console.MarkupLine("[bold]Current Week Time Entries[/]");
         if (includeCurrent)

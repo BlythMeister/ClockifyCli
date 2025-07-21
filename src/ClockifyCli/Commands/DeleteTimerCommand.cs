@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using ClockifyCli.Models;
+using ClockifyCli.Services;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -9,24 +10,32 @@ namespace ClockifyCli.Commands;
 
 public class DeleteTimerCommand : BaseCommand
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public DeleteTimerCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.console = console;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-
-        await DeleteCompletedTimer(clockifyClient);
+        await DeleteCompletedTimer(clockifyClient, console);
         return 0;
     }
 
-    private async Task DeleteCompletedTimer(Services.ClockifyClient clockifyClient)
+    private async Task DeleteCompletedTimer(ClockifyClient clockifyClient, IAnsiConsole console)
     {
-        AnsiConsole.MarkupLine("[bold]Delete Completed Timer[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine("[bold]Delete Completed Timer[/]");
+        console.WriteLine();
 
         var user = await clockifyClient.GetLoggedInUser();
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
@@ -35,14 +44,14 @@ public class DeleteTimerCommand : BaseCommand
         var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
         var endOfWeek = startOfWeek.AddDays(6);
 
-        AnsiConsole.MarkupLine($"[dim]Looking for completed timers from this week ({Markup.Escape(startOfWeek.ToString("MMM dd"))} - {Markup.Escape(endOfWeek.ToString("MMM dd, yyyy"))})[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine($"[dim]Looking for completed timers from this week ({Markup.Escape(startOfWeek.ToString("MMM dd"))} - {Markup.Escape(endOfWeek.ToString("MMM dd, yyyy"))})[/]");
+        console.WriteLine();
 
         List<TimeEntry> timeEntries = new();
         List<ProjectInfo> projects = new();
         List<TaskInfo> allTasks = new();
 
-        await AnsiConsole.Status()
+        await console.Status()
             .StartAsync("Loading time entries...", async ctx =>
             {
                 ctx.Status("Getting time entries from Clockify...");
@@ -68,16 +77,16 @@ public class DeleteTimerCommand : BaseCommand
 
         if (!timeEntries.Any())
         {
-            AnsiConsole.MarkupLine("[yellow]No completed time entries found for this week.[/]");
-            AnsiConsole.MarkupLine("[dim]Only timers created this week can be deleted.[/]");
+            console.MarkupLine("[yellow]No completed time entries found for this week.[/]");
+            console.MarkupLine("[dim]Only timers created this week can be deleted.[/]");
             return;
         }
 
-        AnsiConsole.MarkupLine($"[green]Found {timeEntries.Count} completed timer(s) from this week[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine($"[green]Found {timeEntries.Count} completed timer(s) from this week[/]");
+        console.WriteLine();
 
         // Select specific time entry to delete
-        var selectedEntry = AnsiConsole.Prompt(
+        var selectedEntry = console.Prompt(
             new SelectionPrompt<TimeEntry>()
                 .Title("Select a [red]timer to delete[/]:")
                 .PageSize(15)
@@ -105,9 +114,9 @@ public class DeleteTimerCommand : BaseCommand
         var project = projects.FirstOrDefault(p => p.Id == timeEntry.ProjectId);
         var task = allTasks.FirstOrDefault(t => t.Id == timeEntry.TaskId);
 
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[bold]Timer Details[/]");
-        AnsiConsole.WriteLine();
+        console.WriteLine();
+        console.MarkupLine("[bold]Timer Details[/]");
+        console.WriteLine();
 
         var table = new Table();
         table.AddColumn("Field");
@@ -128,28 +137,28 @@ public class DeleteTimerCommand : BaseCommand
         table.AddRow("End Time", endTime.ToString("HH:mm"));
         table.AddRow("Duration", duration);
 
-        AnsiConsole.Write(table);
-        AnsiConsole.WriteLine();
+        console.Write(table);
+        console.WriteLine();
 
-        AnsiConsole.MarkupLine("[red]?? WARNING: This will permanently delete the timer![/]");
-        AnsiConsole.MarkupLine("[dim]This action cannot be undone.[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine("[red]?? WARNING: This will permanently delete the timer![/]");
+        console.MarkupLine("[dim]This action cannot be undone.[/]");
+        console.WriteLine();
 
         // Final confirmation
-        if (AnsiConsole.Confirm($"Are you sure you want to delete this timer with {duration} of logged time?"))
+        if (console.Confirm($"Are you sure you want to delete this timer with {duration} of logged time?"))
         {
-            await AnsiConsole.Status()
+            await console.Status()
                 .StartAsync("Deleting timer...", async ctx =>
                 {
                     await clockifyClient.DeleteTimeEntry(workspace, timeEntry);
                 });
 
-            AnsiConsole.MarkupLine("[green]? Timer deleted successfully![/]");
-            AnsiConsole.MarkupLine($"[dim]Deleted timer with {duration} of logged time[/]");
+            console.MarkupLine("[green]? Timer deleted successfully![/]");
+            console.MarkupLine($"[dim]Deleted timer with {duration} of logged time[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("[yellow]Deletion cancelled.[/]");
+            console.MarkupLine("[yellow]Deletion cancelled.[/]");
         }
     }
 }

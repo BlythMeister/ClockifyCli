@@ -1,4 +1,5 @@
-﻿using ClockifyCli.Models;
+using ClockifyCli.Models;
+using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
@@ -7,6 +8,18 @@ namespace ClockifyCli.Commands;
 
 public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly TempoClient tempoClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public UploadToTempoCommand(ClockifyClient clockifyClient, TempoClient tempoClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.tempoClient = tempoClient;
+        this.console = console;
+    }
+
     public class Settings : CommandSettings
     {
         [Description("Number of days to upload time entries for")]
@@ -22,24 +35,20 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-        var jiraClient = await CreateJiraClientAsync();
-        var tempoClient = await CreateTempoClientAsync(jiraClient);
-
-        await UploadTimeEntriesToTempo(clockifyClient, tempoClient, settings.Days, settings.CleanupOrphaned);
+        await UploadTimeEntriesToTempo(clockifyClient, tempoClient, console, settings.Days, settings.CleanupOrphaned);
         return 0;
     }
 
-    private async Task UploadTimeEntriesToTempo(Services.ClockifyClient clockifyClient, Services.TempoClient tempoClient, int days, bool cleanupOrphaned)
+    private async Task UploadTimeEntriesToTempo(ClockifyClient clockifyClient, TempoClient tempoClient, IAnsiConsole console, int days, bool cleanupOrphaned)
     {
-        AnsiConsole.MarkupLine($"[bold]Uploading time entries from Clockify to Tempo[/]");
-        AnsiConsole.MarkupLine($"[dim]Processing last {days} days...[/]");
+        console.MarkupLine($"[bold]Uploading time entries from Clockify to Tempo[/]");
+        console.MarkupLine($"[dim]Processing last {days} days...[/]");
         if (cleanupOrphaned)
         {
-            AnsiConsole.MarkupLine("[yellow]⚠ Orphaned entry cleanup is enabled[/]");
+            console.MarkupLine("[yellow]⚠ Orphaned entry cleanup is enabled[/]");
         }
 
-        AnsiConsole.WriteLine();
+        console.WriteLine();
 
         var today = DateTime.UtcNow.Date;
         var endDate = today.AddDays(days);
@@ -48,12 +57,12 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
         // Check for running timer and warn user
-        await AnsiConsole.Status()
+        await console.Status()
                          .StartAsync("Checking for running timer...", async ctx =>
                                                                       {
                                                                           var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
@@ -86,38 +95,38 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
             var startTime = runningEntry.TimeInterval.StartDate;
             var elapsed = DateTime.UtcNow - startTime;
 
-            AnsiConsole.MarkupLine("[yellow]⚠️  Warning: A timer is currently running![/]");
-            AnsiConsole.WriteLine();
+            console.MarkupLine("[yellow]⚠️  Warning: A timer is currently running![/]");
+            console.WriteLine();
 
             var projectName = project != null ? Markup.Escape(project.Name) : "Unknown Project";
             var taskName = task != null ? Markup.Escape(task.Name) : "No Task";
             var description = string.IsNullOrWhiteSpace(runningEntry.Description) ? "No description" : Markup.Escape(runningEntry.Description);
 
-            AnsiConsole.MarkupLine($"[bold]Currently running timer:[/]");
-            AnsiConsole.MarkupLine($"  [bold]Project:[/] {projectName}");
-            AnsiConsole.MarkupLine($"  [bold]Task:[/] {taskName}");
-            AnsiConsole.MarkupLine($"  [bold]Description:[/] {description}");
-            AnsiConsole.MarkupLine($"  [bold]Elapsed:[/] {Utilities.TimeFormatter.FormatDuration(elapsed)}");
-            AnsiConsole.WriteLine();
+            console.MarkupLine($"[bold]Currently running timer:[/]");
+            console.MarkupLine($"  [bold]Project:[/] {projectName}");
+            console.MarkupLine($"  [bold]Task:[/] {taskName}");
+            console.MarkupLine($"  [bold]Description:[/] {description}");
+            console.MarkupLine($"  [bold]Elapsed:[/] {Utilities.TimeFormatter.FormatDuration(elapsed)}");
+            console.WriteLine();
 
-            AnsiConsole.MarkupLine("[yellow]Uploading while a timer is running may cause incomplete time entries to be uploaded.[/]");
-            AnsiConsole.MarkupLine("[dim]Consider stopping the timer first with 'clockify-cli stop' for accurate time tracking.[/]");
-            AnsiConsole.WriteLine();
+            console.MarkupLine("[yellow]Uploading while a timer is running may cause incomplete time entries to be uploaded.[/]");
+            console.MarkupLine("[dim]Consider stopping the timer first with 'clockify-cli stop' for accurate time tracking.[/]");
+            console.WriteLine();
 
-            if (!AnsiConsole.Confirm("Do you want to proceed with the upload anyway?"))
+            if (!console.Confirm("Do you want to proceed with the upload anyway?"))
             {
-                AnsiConsole.MarkupLine("[yellow]Upload cancelled.[/]");
+                console.MarkupLine("[yellow]Upload cancelled.[/]");
                 return;
             }
 
-            AnsiConsole.WriteLine();
+            console.WriteLine();
         }
 
         var successCount = 0;
         var errorCount = 0;
         var results = new List<(string EntryId, string Date, bool Success, string? ErrorMessage)>();
 
-        await AnsiConsole.Status()
+        await console.Status()
                          .StartAsync("Loading data from Clockify and Tempo...", async ctx =>
                                                                                 {
                                                                                     ctx.Status("Getting time entries from Clockify...");
@@ -149,12 +158,12 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                                                                                             foreach (var exportedTime in orphanedEntries)
                                                                                             {
                                                                                                 await tempoClient.Delete(exportedTime);
-                                                                                                AnsiConsole.MarkupLine($"[red]Deleted orphaned entry {exportedTime.TempoWorklogId}[/]");
+                                                                                                console.MarkupLine($"[red]Deleted orphaned entry {exportedTime.TempoWorklogId}[/]");
                                                                                             }
                                                                                         }
                                                                                         else
                                                                                         {
-                                                                                            AnsiConsole.MarkupLine("[green]✓ No orphaned entries found[/]");
+                                                                                            console.MarkupLine("[green]✓ No orphaned entries found[/]");
                                                                                         }
                                                                                     }
 
@@ -170,7 +179,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                                                                                     if (!entriesToUpload.Any())
                                                                                     {
                                                                                         ctx.Status("No new time entries to upload.");
-                                                                                        AnsiConsole.MarkupLine("[green]✓ All time entries are already up to date in Tempo[/]");
+                                                                                        console.MarkupLine("[green]✓ All time entries are already up to date in Tempo[/]");
                                                                                         return;
                                                                                     }
 
@@ -207,20 +216,20 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         {
             if (success)
             {
-                AnsiConsole.MarkupLine($"[green]✓ Uploaded entry {entryId}[/] [dim]({date})[/]");
+                console.MarkupLine($"[green]✓ Uploaded entry {entryId}[/] [dim]({date})[/]");
             }
             else
             {
-                AnsiConsole.MarkupLine($"[red]✗ Failed to upload entry {entryId}: {Markup.Escape(errorMessage ?? "Unknown error")}[/]");
+                console.MarkupLine($"[red]✗ Failed to upload entry {entryId}: {Markup.Escape(errorMessage ?? "Unknown error")}[/]");
             }
         }
 
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine($"[bold]Upload Summary:[/]");
-        AnsiConsole.MarkupLine($"[green]✓ Successfully uploaded: {successCount} entries[/]");
+        console.WriteLine();
+        console.MarkupLine($"[bold]Upload Summary:[/]");
+        console.MarkupLine($"[green]✓ Successfully uploaded: {successCount} entries[/]");
         if (errorCount > 0)
         {
-            AnsiConsole.MarkupLine($"[red]✗ Failed to upload: {errorCount} entries[/]");
+            console.MarkupLine($"[red]✗ Failed to upload: {errorCount} entries[/]");
         }
     }
 }

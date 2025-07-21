@@ -1,4 +1,5 @@
-﻿using ClockifyCli.Utilities;
+using ClockifyCli.Services;
+using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -6,24 +7,32 @@ namespace ClockifyCli.Commands;
 
 public class StopCommand : BaseCommand
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public StopCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.console = console;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-
-        await StopCurrentTimer(clockifyClient);
+        await StopCurrentTimer(clockifyClient, console);
         return 0;
     }
 
-    private async Task StopCurrentTimer(Services.ClockifyClient clockifyClient)
+    private async Task StopCurrentTimer(ClockifyClient clockifyClient, IAnsiConsole console)
     {
-        AnsiConsole.MarkupLine("[bold]Stop Current Timer[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine("[bold]Stop Current Timer[/]");
+        console.WriteLine();
 
         var user = await clockifyClient.GetLoggedInUser();
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
@@ -33,32 +42,32 @@ public class StopCommand : BaseCommand
         Models.TaskInfo? task = null;
         var elapsed = TimeSpan.Zero;
 
-        await AnsiConsole.Status()
-                         .StartAsync("Checking current time entry...", async ctx =>
+        await console.Status()
+                     .StartAsync("Checking current time entry...", async ctx =>
+                                                                   {
+                                                                       currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+
+                                                                       if (currentEntry == null)
                                                                        {
-                                                                           currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+                                                                           return;
+                                                                       }
 
-                                                                           if (currentEntry == null)
-                                                                           {
-                                                                               return;
-                                                                           }
+                                                                       // Get project and task details for display
+                                                                       ctx.Status("Getting project and task details...");
+                                                                       var projects = await clockifyClient.GetProjects(workspace);
+                                                                       project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
+                                                                       task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
 
-                                                                           // Get project and task details for display
-                                                                           ctx.Status("Getting project and task details...");
-                                                                           var projects = await clockifyClient.GetProjects(workspace);
-                                                                           project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
-                                                                           task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
-
-                                                                           // Calculate elapsed time before stopping
-                                                                           var startTime = currentEntry.TimeInterval.StartDate;
-                                                                           elapsed = DateTime.UtcNow - startTime;
-                                                                       });
+                                                                       // Calculate elapsed time before stopping
+                                                                       var startTime = currentEntry.TimeInterval.StartDate;
+                                                                       elapsed = DateTime.UtcNow - startTime;
+                                                                   });
 
         // Check if there's a timer running (outside Status block)
         if (currentEntry == null)
         {
-            AnsiConsole.MarkupLine("[yellow]⏸️  No time entry is currently running[/]");
-            AnsiConsole.MarkupLine("[dim]There's nothing to stop.[/]");
+            console.MarkupLine("[yellow]⏸️  No time entry is currently running[/]");
+            console.MarkupLine("[dim]There's nothing to stop.[/]");
             return;
         }
 
@@ -67,29 +76,29 @@ public class StopCommand : BaseCommand
         var taskName = task != null ? Markup.Escape(task.Name) : "No Task";
         var description = string.IsNullOrWhiteSpace(currentEntry.Description) ? "No description" : Markup.Escape(currentEntry.Description);
 
-        AnsiConsole.MarkupLine($"[yellow]Currently running:[/]");
-        AnsiConsole.MarkupLine($"  [bold]Project:[/] {projectName}");
-        AnsiConsole.MarkupLine($"  [bold]Task:[/] {taskName}");
-        AnsiConsole.MarkupLine($"  [bold]Description:[/] {description}");
-        AnsiConsole.MarkupLine($"  [bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
-        AnsiConsole.WriteLine();
+        console.MarkupLine($"[yellow]Currently running:[/]");
+        console.MarkupLine($"  [bold]Project:[/] {projectName}");
+        console.MarkupLine($"  [bold]Task:[/] {taskName}");
+        console.MarkupLine($"  [bold]Description:[/] {description}");
+        console.MarkupLine($"  [bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
+        console.WriteLine();
 
         // User confirmation (outside Status block)
-        if (AnsiConsole.Confirm("Stop this timer?"))
+        if (console.Confirm("Stop this timer?"))
         {
             // Stop the timer (inside Status block for feedback)
-            await AnsiConsole.Status()
-                             .StartAsync("Stopping timer...", async ctx =>
-                                                              {
-                                                                  var stoppedEntry = await clockifyClient.StopCurrentTimeEntry(workspace, user);
-                                                              });
+            await console.Status()
+                         .StartAsync("Stopping timer...", async ctx =>
+                                                          {
+                                                              var stoppedEntry = await clockifyClient.StopCurrentTimeEntry(workspace, user);
+                                                          });
 
-            AnsiConsole.MarkupLine("[green]✓ Timer stopped successfully![/]");
-            AnsiConsole.MarkupLine($"[dim]Final duration: {TimeFormatter.FormatDuration(elapsed)}[/]");
+            console.MarkupLine("[green]✓ Timer stopped successfully![/]");
+            console.MarkupLine($"[dim]Final duration: {TimeFormatter.FormatDuration(elapsed)}[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("[yellow]Timer stop cancelled.[/]");
+            console.MarkupLine("[yellow]Timer stop cancelled.[/]");
         }
     }
 }

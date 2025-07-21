@@ -7,7 +7,7 @@ using System.Net;
 namespace ClockifyCli.Tests.Services;
 
 [TestFixture]
-public class ClockifyClientTests
+public class ClockifyClientHttpTests
 {
     private MockHttpMessageHandler mockHttp = null!;
     private HttpClient httpClient = null!;

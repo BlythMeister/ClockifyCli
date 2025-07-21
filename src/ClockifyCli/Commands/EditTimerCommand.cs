@@ -1,4 +1,5 @@
-﻿using ClockifyCli.Models;
+using ClockifyCli.Models;
+using ClockifyCli.Services;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -9,6 +10,16 @@ namespace ClockifyCli.Commands;
 
 public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public EditTimerCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.console = console;
+    }
+
     public class Settings : CommandSettings
     {
         [Description("Number of days back to look for time entries")]
@@ -19,22 +30,20 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-
-        await EditTimeEntry(clockifyClient, settings.Days);
+        await EditTimeEntry(clockifyClient, console, settings.Days);
         return 0;
     }
 
-    private async Task EditTimeEntry(Services.ClockifyClient clockifyClient, int daysBack)
+    private async Task EditTimeEntry(ClockifyClient clockifyClient, IAnsiConsole console, int daysBack)
     {
-        AnsiConsole.MarkupLine("[bold]Edit Time Entry[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine("[bold]Edit Time Entry[/]");
+        console.WriteLine();
 
         var user = await clockifyClient.GetLoggedInUser();
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
@@ -42,14 +51,14 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         var endDate = DateTime.Today.AddDays(1);
         var startDate = DateTime.Today.AddDays(-daysBack);
 
-        AnsiConsole.MarkupLine($"[dim]Looking for entries from {Markup.Escape(startDate.ToString("MMM dd"))} to {Markup.Escape(DateTime.Today.ToString("MMM dd, yyyy"))}[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine($"[dim]Looking for entries from {Markup.Escape(startDate.ToString("MMM dd"))} to {Markup.Escape(DateTime.Today.ToString("MMM dd, yyyy"))}[/]");
+        console.WriteLine();
 
         List<TimeEntry> timeEntries = new();
         List<ProjectInfo> projects = new();
         List<TaskInfo> allTasks = new();
 
-        await AnsiConsole.Status()
+        await console.Status()
                          .StartAsync("Loading time entries...", async ctx =>
                                                                 {
                                                                     ctx.Status("Getting time entries from Clockify...");
@@ -70,8 +79,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         if (!timeEntries.Any())
         {
-            AnsiConsole.MarkupLine("[yellow]No completed time entries found in the specified date range.[/]");
-            AnsiConsole.MarkupLine("[dim]Try increasing the number of days with --days option.[/]");
+            console.MarkupLine("[yellow]No completed time entries found in the specified date range.[/]");
+            console.MarkupLine("[dim]Try increasing the number of days with --days option.[/]");
             return;
         }
 
@@ -81,7 +90,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                             .OrderByDescending(g => g.Key)
                             .ToList();
 
-        var selectedDate = AnsiConsole.Prompt(
+        var selectedDate = console.Prompt(
                                               new SelectionPrompt<DateTime>()
                                                   .Title("Select a [green]date[/] to edit entries from:")
                                                   .PageSize(10)
@@ -91,7 +100,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         // Step 2: Select specific time entry from that date
         var entriesForDate = entriesByDate.First(g => g.Key == selectedDate).OrderBy(e => e.TimeInterval.StartDate).ToList();
 
-        var selectedEntry = AnsiConsole.Prompt(
+        var selectedEntry = console.Prompt(
                                                new SelectionPrompt<TimeEntry>()
                                                    .Title($"Select a [green]time entry[/] from {Markup.Escape(selectedDate.ToString("MMM dd"))} to edit:")
                                                    .PageSize(15)
@@ -119,9 +128,9 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         var project = projects.FirstOrDefault(p => p.Id == timeEntry.ProjectId);
         var task = allTasks.FirstOrDefault(t => t.Id == timeEntry.TaskId);
 
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[bold]Current Time Entry Details[/]");
-        AnsiConsole.WriteLine();
+        console.WriteLine();
+        console.MarkupLine("[bold]Current Time Entry Details[/]");
+        console.WriteLine();
 
         var table = new Table();
         table.AddColumn("Field");
@@ -141,13 +150,11 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         table.AddRow("End Time", currentEndTime.ToString("MMM dd, yyyy HH:mm"));
         table.AddRow("Duration", currentDuration);
 
-        AnsiConsole.Write(table);
-        AnsiConsole.WriteLine();
+        console.Write(table);
+        console.WriteLine();
 
         // Get new start time
-        var newStartTimeStr = AnsiConsole.Ask<string>(
-                                                      $"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):",
-                                                      string.Empty);
+        var newStartTimeStr = console.Ask<string>($"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):");
 
         var newStartTime = currentStartTime;
         if (!string.IsNullOrWhiteSpace(newStartTimeStr))
@@ -158,14 +165,12 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             }
             else
             {
-                AnsiConsole.MarkupLine("[red]Invalid time format. Keeping original start time.[/]");
+                console.MarkupLine("[red]Invalid time format. Keeping original start time.[/]");
             }
         }
 
         // Get new end time
-        var newEndTimeStr = AnsiConsole.Ask<string>(
-                                                    $"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):",
-                                                    string.Empty);
+        var newEndTimeStr = console.Ask<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):");
 
         var newEndTime = currentEndTime;
         if (!string.IsNullOrWhiteSpace(newEndTimeStr))
@@ -182,21 +187,19 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             }
             else
             {
-                AnsiConsole.MarkupLine("[red]Invalid time format. Keeping original end time.[/]");
+                console.MarkupLine("[red]Invalid time format. Keeping original end time.[/]");
             }
         }
 
         // Validate times
         if (newEndTime <= newStartTime)
         {
-            AnsiConsole.MarkupLine("[red]End time must be after start time. Operation cancelled.[/]");
+            console.MarkupLine("[red]End time must be after start time. Operation cancelled.[/]");
             return;
         }
 
         // Get new description (optional)
-        var newDescription = AnsiConsole.Ask<string>(
-                                                     "Enter new [green]description[/] (or leave blank to keep current):",
-                                                     string.Empty);
+        var newDescription = console.Ask<string>("Enter new [green]description[/] (or leave blank to keep current):");
 
         if (string.IsNullOrWhiteSpace(newDescription))
         {
@@ -204,8 +207,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         }
 
         // Show summary of changes
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[bold]Summary of Changes[/]");
+        console.WriteLine();
+        console.MarkupLine("[bold]Summary of Changes[/]");
 
         var summaryTable = new Table();
         summaryTable.AddColumn("Field");
@@ -231,20 +234,20 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                             string.IsNullOrWhiteSpace(timeEntry.Description) ? "[dim]No description[/]" : Markup.Escape(timeEntry.Description),
                             string.IsNullOrWhiteSpace(newDescription) ? "[dim]No description[/]" : Markup.Escape(newDescription));
 
-        AnsiConsole.Write(summaryTable);
-        AnsiConsole.WriteLine();
+        console.Write(summaryTable);
+        console.WriteLine();
 
         // Confirm changes
-        if (AnsiConsole.Confirm("Apply these changes?"))
+        if (console.Confirm("Apply these changes?"))
         {
-            await AnsiConsole.Status()
+            await console.Status()
                              .StartAsync("Updating time entry...", async ctx => { await clockifyClient.UpdateTimeEntry(workspace, timeEntry, newStartTime.ToUniversalTime(), newEndTime.ToUniversalTime(), newDescription); });
 
-            AnsiConsole.MarkupLine("[green]✓ Time entry updated successfully![/]");
+            console.MarkupLine("[green]✓ Time entry updated successfully![/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("[yellow]Changes cancelled.[/]");
+            console.MarkupLine("[yellow]Changes cancelled.[/]");
         }
     }
 }

@@ -1,4 +1,5 @@
 using ClockifyCli.Models;
+using ClockifyCli.Services;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -7,24 +8,32 @@ namespace ClockifyCli.Commands;
 
 public class DiscardTimerCommand : BaseCommand
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public DiscardTimerCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.console = console;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-
-        await DiscardCurrentTimer(clockifyClient);
+        await DiscardCurrentTimer(clockifyClient, console);
         return 0;
     }
 
-    private async Task DiscardCurrentTimer(Services.ClockifyClient clockifyClient)
+    private async Task DiscardCurrentTimer(ClockifyClient clockifyClient, IAnsiConsole console)
     {
-        AnsiConsole.MarkupLine("[bold]Discard Current Timer[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine("[bold]Discard Current Timer[/]");
+        console.WriteLine();
 
         var user = await clockifyClient.GetLoggedInUser();
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
@@ -33,7 +42,7 @@ public class DiscardTimerCommand : BaseCommand
         TaskInfo? task = null;
         TimeSpan elapsed = TimeSpan.Zero;
 
-        await AnsiConsole.Status()
+        await console.Status()
             .StartAsync("Checking for running timer...", async ctx =>
             {
                 currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
@@ -55,8 +64,8 @@ public class DiscardTimerCommand : BaseCommand
         // Check if there's a timer running
         if (currentEntry == null)
         {
-            AnsiConsole.MarkupLine("[yellow]?? No time entry is currently running[/]");
-            AnsiConsole.MarkupLine("[dim]There's nothing to discard.[/]");
+            console.MarkupLine("[yellow]?? No time entry is currently running[/]");
+            console.MarkupLine("[dim]There's nothing to discard.[/]");
             return;
         }
 
@@ -65,34 +74,34 @@ public class DiscardTimerCommand : BaseCommand
         var taskName = task != null ? Markup.Escape(task.Name) : "No Task";
         var description = string.IsNullOrWhiteSpace(currentEntry.Description) ? "No description" : Markup.Escape(currentEntry.Description);
 
-        AnsiConsole.MarkupLine($"[yellow]Currently running timer:[/]");
-        AnsiConsole.MarkupLine($"  [bold]Project:[/] {projectName}");
-        AnsiConsole.MarkupLine($"  [bold]Task:[/] {taskName}");
-        AnsiConsole.MarkupLine($"  [bold]Description:[/] {description}");
-        AnsiConsole.MarkupLine($"  [bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
-        AnsiConsole.WriteLine();
+        console.MarkupLine($"[yellow]Currently running timer:[/]");
+        console.MarkupLine($"  [bold]Project:[/] {projectName}");
+        console.MarkupLine($"  [bold]Task:[/] {taskName}");
+        console.MarkupLine($"  [bold]Description:[/] {description}");
+        console.MarkupLine($"  [bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
+        console.WriteLine();
 
-        AnsiConsole.MarkupLine("[red]?? WARNING: This will permanently delete the running timer![/]");
-        AnsiConsole.MarkupLine("[dim]All elapsed time will be lost and cannot be recovered.[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine("[red]?? WARNING: This will permanently delete the running timer![/]");
+        console.MarkupLine("[dim]All elapsed time will be lost and cannot be recovered.[/]");
+        console.WriteLine();
 
         // User confirmation
-        if (AnsiConsole.Confirm($"Are you sure you want to discard this timer with {TimeFormatter.FormatDuration(elapsed)} of elapsed time?"))
+        if (console.Confirm($"Are you sure you want to discard this timer with {TimeFormatter.FormatDuration(elapsed)} of elapsed time?"))
         {
             // Delete the timer
-            await AnsiConsole.Status()
+            await console.Status()
                 .StartAsync("Discarding timer...", async ctx =>
                 {
                     await clockifyClient.DeleteTimeEntry(workspace, currentEntry);
                 });
 
-            AnsiConsole.MarkupLine("[green]? Timer discarded successfully![/]");
-            AnsiConsole.MarkupLine($"[dim]Discarded {TimeFormatter.FormatDuration(elapsed)} of elapsed time[/]");
+            console.MarkupLine("[green]? Timer discarded successfully![/]");
+            console.MarkupLine($"[dim]Discarded {TimeFormatter.FormatDuration(elapsed)} of elapsed time[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("[yellow]Discard cancelled.[/]");
-            AnsiConsole.MarkupLine("[dim]Timer is still running.[/]");
+            console.MarkupLine("[yellow]Discard cancelled.[/]");
+            console.MarkupLine("[dim]Timer is still running.[/]");
         }
     }
 }

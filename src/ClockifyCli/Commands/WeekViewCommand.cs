@@ -1,4 +1,5 @@
-﻿using ClockifyCli.Models;
+using ClockifyCli.Models;
+using ClockifyCli.Services;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -9,6 +10,16 @@ namespace ClockifyCli.Commands;
 
 public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public WeekViewCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.console = console;
+    }
+
     public class Settings : CommandSettings
     {
         [Description("Include the currently running time entry in the view")]
@@ -24,32 +35,30 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-
-        await ShowCurrentWeekTimeEntries(clockifyClient, settings.IncludeCurrent, settings.Detailed);
+        await ShowCurrentWeekTimeEntries(clockifyClient, console, settings.IncludeCurrent, settings.Detailed);
         return 0;
     }
 
-    private async Task ShowCurrentWeekTimeEntries(Services.ClockifyClient clockifyClient, bool includeCurrent, bool detailed)
+    private async Task ShowCurrentWeekTimeEntries(ClockifyClient clockifyClient, IAnsiConsole console, bool includeCurrent, bool detailed)
     {
-        AnsiConsole.MarkupLine("[bold]Current Week Time Entries[/]");
+        console.MarkupLine("[bold]Current Week Time Entries[/]");
         if (includeCurrent)
         {
-            AnsiConsole.MarkupLine("[dim]Including in-progress time entry[/]");
+            console.MarkupLine("[dim]Including in-progress time entry[/]");
         }
 
         if (detailed)
         {
-            AnsiConsole.MarkupLine("[dim]Detailed view with start/end times[/]");
+            console.MarkupLine("[dim]Detailed view with start/end times[/]");
         }
 
-        AnsiConsole.WriteLine();
+        console.WriteLine();
 
         var user = await clockifyClient.GetLoggedInUser();
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
@@ -58,10 +67,10 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
         var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
         var endOfWeek = startOfWeek.AddDays(6);
 
-        AnsiConsole.MarkupLine($"[dim]Week: {startOfWeek:MMM dd} - {endOfWeek:MMM dd, yyyy}[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine($"[dim]Week: {startOfWeek:MMM dd} - {endOfWeek:MMM dd, yyyy}[/]");
+        console.WriteLine();
 
-        await AnsiConsole.Status()
+        await console.Status()
                          .StartAsync("Loading time entries...", async ctx =>
                                                                 {
                                                                     ctx.Status("Getting time entries from Clockify...");
@@ -123,12 +132,12 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                     {
                                                                         if (currentEntry != null && (currentEntry.TimeInterval.StartDate.Date < startOfWeek || currentEntry.TimeInterval.StartDate.Date > endOfWeek))
                                                                         {
-                                                                            AnsiConsole.MarkupLine("[yellow]No time entries found for the current week.[/]");
-                                                                            AnsiConsole.MarkupLine("[dim]Current running entry is from a different week.[/]");
+                                                                            console.MarkupLine("[yellow]No time entries found for the current week.[/]");
+                                                                            console.MarkupLine("[dim]Current running entry is from a different week.[/]");
                                                                         }
                                                                         else
                                                                         {
-                                                                            AnsiConsole.MarkupLine("[yellow]No time entries found for the current week.[/]");
+                                                                            console.MarkupLine("[yellow]No time entries found for the current week.[/]");
                                                                         }
 
                                                                         return;
@@ -261,23 +270,23 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                         }
                                                                     }
 
-                                                                    AnsiConsole.Write(table);
-                                                                    AnsiConsole.WriteLine();
-                                                                    AnsiConsole.MarkupLine($"[bold green]Week Total: {TimeFormatter.FormatDurationCompact(weekTotal)}[/]");
+                                                                    console.Write(table);
+                                                                    console.WriteLine();
+                                                                    console.MarkupLine($"[bold green]Week Total: {TimeFormatter.FormatDurationCompact(weekTotal)}[/]");
 
                                                                     // Show daily averages
                                                                     var workingDaysWithEntries = entriesByDate.Count;
                                                                     if (workingDaysWithEntries > 0)
                                                                     {
                                                                         var averagePerDay = TimeSpan.FromTicks(weekTotal.Ticks / workingDaysWithEntries);
-                                                                        AnsiConsole.MarkupLine($"[dim]Average per day ({workingDaysWithEntries} days): {TimeFormatter.FormatDurationCompact(averagePerDay)}[/]");
+                                                                        console.MarkupLine($"[dim]Average per day ({workingDaysWithEntries} days): {TimeFormatter.FormatDurationCompact(averagePerDay)}[/]");
                                                                     }
 
                                                                     // Show note about current entry if included
                                                                     if (includeCurrent && currentEntry != null)
                                                                     {
-                                                                        AnsiConsole.WriteLine();
-                                                                        AnsiConsole.MarkupLine("[dim]Note: Running timer duration is calculated in real-time and will continue to increase.[/]");
+                                                                        console.WriteLine();
+                                                                        console.MarkupLine("[dim]Note: Running timer duration is calculated in real-time and will continue to increase.[/]");
                                                                     }
                                                                 });
     }

@@ -1,4 +1,4 @@
-﻿using ClockifyCli.Services;
+using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -6,9 +6,18 @@ namespace ClockifyCli.Commands;
 
 public class ConfigViewCommand : ConfigCommand
 {
+    private readonly ConfigurationService configService;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public ConfigViewCommand(ConfigurationService configService, IAnsiConsole console)
+    {
+        this.configService = configService;
+        this.console = console;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var configService = new ConfigurationService();
         var config = await configService.LoadConfigurationAsync();
 
         var table = new Table();
@@ -22,19 +31,19 @@ public class ConfigViewCommand : ConfigCommand
         table.AddRow("Jira API Token", MaskSecret(config.JiraApiToken), GetStatus(config.JiraApiToken));
         table.AddRow("Tempo API Key", MaskSecret(config.TempoApiKey), GetStatus(config.TempoApiKey));
 
-        AnsiConsole.MarkupLine("[bold]Current Configuration[/]");
-        AnsiConsole.Write(table);
+        console.MarkupLine("[bold]Current Configuration[/]");
+        console.Write(table);
 
-        AnsiConsole.MarkupLine($"\nConfiguration file: [dim]{configService.GetConfigurationPath()}[/]");
+        console.MarkupLine($"\nConfiguration file: [dim]{configService.GetConfigurationPath()}[/]");
 
         if (config.IsComplete())
         {
-            AnsiConsole.MarkupLine("\n[green]✓ All configuration values are set[/]");
+            console.MarkupLine("\n[green]✓ All configuration values are set[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("\n[yellow]⚠ Some configuration values are missing[/]");
-            AnsiConsole.MarkupLine("Use '[green]config set[/]' to configure missing values.");
+            console.MarkupLine("\n[yellow]⚠ Some configuration values are missing[/]");
+            console.MarkupLine("Use '[green]config set[/]' to configure missing values.");
         }
 
         return 0;

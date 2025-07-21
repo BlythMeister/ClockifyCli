@@ -1,35 +1,45 @@
-﻿using Spectre.Console;
+using ClockifyCli.Services;
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace ClockifyCli.Commands;
 
 public class ArchiveCompletedJirasCommand : BaseCommand
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly JiraClient jiraClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public ArchiveCompletedJirasCommand(ClockifyClient clockifyClient, JiraClient jiraClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.jiraClient = jiraClient;
+        this.console = console;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-        var jiraClient = await CreateJiraClientAsync();
-
-        await ArchiveCompletedTasks(clockifyClient, jiraClient);
+        await ArchiveCompletedTasks(clockifyClient, jiraClient, console);
         return 0;
     }
 
-    private async Task ArchiveCompletedTasks(Services.ClockifyClient clockifyClient, Services.JiraClient jiraClient)
+    private async Task ArchiveCompletedTasks(ClockifyClient clockifyClient, JiraClient jiraClient, IAnsiConsole console)
     {
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
-        AnsiConsole.MarkupLine("[bold]Scanning for archivable tasks...[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine("[bold]Scanning for archivable tasks...[/]");
+        console.WriteLine();
 
         var projects = await clockifyClient.GetProjects(workspace);
         var tasksToArchive = new List<(Models.ProjectInfo Project, Models.TaskInfo Task, Models.JiraIssue Issue)>();
 
-        await AnsiConsole.Status()
+        await console.Status()
                          .StartAsync("Checking tasks and Jira status...", async ctx =>
                                                                           {
                                                                               foreach (var project in projects)
@@ -50,7 +60,7 @@ public class ArchiveCompletedJirasCommand : BaseCommand
 
         if (tasksToArchive.Count == 0)
         {
-            AnsiConsole.MarkupLine("[green]✓ No tasks need to be archived - all tasks are up to date![/]");
+            console.MarkupLine("[green]✓ No tasks need to be archived - all tasks are up to date![/]");
             return;
         }
 
@@ -69,15 +79,15 @@ public class ArchiveCompletedJirasCommand : BaseCommand
                         );
         }
 
-        AnsiConsole.Write(table);
-        AnsiConsole.WriteLine();
+        console.Write(table);
+        console.WriteLine();
 
         // Ask if user wants to archive these tasks
-        var shouldArchive = AnsiConsole.Confirm($"Archive {tasksToArchive.Count} completed task(s) in Clockify?");
+        var shouldArchive = console.Confirm($"Archive {tasksToArchive.Count} completed task(s) in Clockify?");
 
         if (!shouldArchive)
         {
-            AnsiConsole.MarkupLine("[yellow]Archive operation cancelled.[/]");
+            console.MarkupLine("[yellow]Archive operation cancelled.[/]");
             return;
         }
 
@@ -86,7 +96,7 @@ public class ArchiveCompletedJirasCommand : BaseCommand
         var failureCount = 0;
         var results = new List<(string TaskName, bool Success, string? ErrorMessage)>();
 
-        await AnsiConsole.Progress()
+        await console.Progress()
                          .StartAsync(async ctx =>
                                      {
                                          var progressTask = ctx.AddTask("[green]Archiving tasks...[/]");
@@ -115,21 +125,21 @@ public class ArchiveCompletedJirasCommand : BaseCommand
         {
             if (success)
             {
-                AnsiConsole.MarkupLine($"[green]✓ Archived:[/] {Markup.Escape(taskName)}");
+                console.MarkupLine($"[green]✓ Archived:[/] {Markup.Escape(taskName)}");
             }
             else
             {
-                AnsiConsole.MarkupLine($"[red]✗ Failed to archive:[/] {Markup.Escape(taskName)} - {Markup.Escape(errorMessage ?? "Unknown error")}");
+                console.MarkupLine($"[red]✗ Failed to archive:[/] {Markup.Escape(taskName)} - {Markup.Escape(errorMessage ?? "Unknown error")}");
             }
         }
 
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine($"[bold]Archive Summary:[/]");
-        AnsiConsole.MarkupLine($"[green]✓ Successfully archived: {successCount} task(s)[/]");
+        console.WriteLine();
+        console.MarkupLine($"[bold]Archive Summary:[/]");
+        console.MarkupLine($"[green]✓ Successfully archived: {successCount} task(s)[/]");
 
         if (failureCount > 0)
         {
-            AnsiConsole.MarkupLine($"[red]✗ Failed to archive: {failureCount} task(s)[/]");
+            console.MarkupLine($"[red]✗ Failed to archive: {failureCount} task(s)[/]");
         }
     }
 }

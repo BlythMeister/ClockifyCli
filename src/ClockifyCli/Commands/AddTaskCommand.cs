@@ -1,31 +1,41 @@
-﻿using Spectre.Console;
+using Spectre.Console;
 using Spectre.Console.Cli;
+using ClockifyCli.Services;
 
 namespace ClockifyCli.Commands;
 
 public class AddTaskCommand : BaseCommand
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly JiraClient jiraClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public AddTaskCommand(ClockifyClient clockifyClient, JiraClient jiraClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.jiraClient = jiraClient;
+        this.console = console;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-        var jiraClient = await CreateJiraClientAsync();
-
-        await AddTask(clockifyClient, jiraClient);
+        await AddTask(clockifyClient, jiraClient, console);
         return 0;
     }
 
-    private async Task AddTask(Services.ClockifyClient clockifyClient, Services.JiraClient jiraClient)
+    private async Task AddTask(ClockifyClient clockifyClient, JiraClient jiraClient, IAnsiConsole console)
     {
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
         var projects = await clockifyClient.GetProjects(workspace);
 
-        var projectChoice = AnsiConsole.Prompt(
+        var projectChoice = console.Prompt(
                                                new SelectionPrompt<string>()
                                                    .Title("Select a [green]project[/]:")
                                                    .PageSize(10)
@@ -33,38 +43,38 @@ public class AddTaskCommand : BaseCommand
 
         var selectedProject = projects.First(p => p.Name == projectChoice);
 
-        var jiraRefOrUrl = AnsiConsole.Ask<string>("Enter [blue]Jira Ref[/] or [blue]URL[/]:");
+        var jiraRefOrUrl = console.Ask<string>("Enter [blue]Jira Ref[/] or [blue]URL[/]:");
         var jiraRef = jiraRefOrUrl.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)
                           ? jiraRefOrUrl.Substring(jiraRefOrUrl.LastIndexOf("/") + 1)
                           : jiraRefOrUrl;
 
         // Load Jira issue data first (inside Status block)
         Models.JiraIssue? issue = null;
-        await AnsiConsole.Status()
+        await console.Status()
                          .StartAsync($"Finding jira: {jiraRef}...", async ctx => { issue = await jiraClient.GetIssue(jiraRef); });
 
         // Check if issue was found and has valid data (outside Status block)
         if (issue == null || string.IsNullOrEmpty(issue.Key) || issue.Fields == null || string.IsNullOrEmpty(issue.Fields.Summary))
         {
-            AnsiConsole.MarkupLine($"[red]Unknown Issue '{Markup.Escape(jiraRefOrUrl)}' or issue data is incomplete[/]");
+            console.MarkupLine($"[red]Unknown Issue '{Markup.Escape(jiraRefOrUrl)}' or issue data is incomplete[/]");
             return;
         }
 
         // Show confirmation (outside Status block)
         var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
-        AnsiConsole.MarkupLine($"Will Add Task '[yellow]{Markup.Escape(taskName)}[/]' Into Project '[green]{Markup.Escape(selectedProject.Name)}[/]'");
+        console.MarkupLine($"Will Add Task '[yellow]{Markup.Escape(taskName)}[/]' Into Project '[green]{Markup.Escape(selectedProject.Name)}[/]'");
 
-        if (AnsiConsole.Confirm("Confirm?"))
+        if (console.Confirm("Confirm?"))
         {
             // Add the task (inside Status block for feedback)
-            await AnsiConsole.Status()
+            await console.Status()
                              .StartAsync("Adding task...", async ctx => { await clockifyClient.AddTask(workspace, selectedProject, taskName); });
 
-            AnsiConsole.MarkupLine("[green]Task added successfully![/]");
+            console.MarkupLine("[green]Task added successfully![/]");
         }
         else
         {
-            AnsiConsole.MarkupLine("[yellow]Operation cancelled.[/]");
+            console.MarkupLine("[yellow]Operation cancelled.[/]");
         }
     }
 }

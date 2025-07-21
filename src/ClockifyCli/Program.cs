@@ -1,4 +1,7 @@
 ﻿using ClockifyCli.Commands;
+using ClockifyCli.Infrastructure;
+using ClockifyCli.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.Text;
@@ -7,7 +10,74 @@ using System.Text;
 Console.OutputEncoding = Encoding.UTF8;
 Console.InputEncoding = Encoding.UTF8;
 
-var app = new CommandApp();
+// Setup dependency injection
+var services = new ServiceCollection();
+
+// Register console
+services.AddSingleton<IAnsiConsole>(AnsiConsole.Console);
+
+// Register HTTP clients
+services.AddHttpClient();
+
+// Register our services
+services.AddSingleton<ConfigurationService>();
+
+// Register client factories that will create clients on-demand
+services.AddTransient<ClockifyClient>(provider =>
+{
+    var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+    var configService = provider.GetRequiredService<ConfigurationService>();
+    
+    // Load config when the client is actually needed
+    var config = configService.LoadConfigurationAsync().GetAwaiter().GetResult();
+    
+    if (string.IsNullOrWhiteSpace(config.ClockifyApiKey))
+    {
+        throw new InvalidOperationException("Configuration is incomplete. Run 'config set' first to configure your API keys.");
+    }
+    
+    var httpClient = httpClientFactory.CreateClient();
+    return new ClockifyClient(httpClient, config.ClockifyApiKey);
+});
+
+services.AddTransient<JiraClient>(provider =>
+{
+    var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+    var configService = provider.GetRequiredService<ConfigurationService>();
+    
+    // Load config when the client is actually needed
+    var config = configService.LoadConfigurationAsync().GetAwaiter().GetResult();
+    
+    if (string.IsNullOrWhiteSpace(config.JiraUsername) || string.IsNullOrWhiteSpace(config.JiraApiToken))
+    {
+        throw new InvalidOperationException("Configuration is incomplete. Run 'config set' first to configure your API keys.");
+    }
+    
+    var httpClient = httpClientFactory.CreateClient();
+    return new JiraClient(httpClient, config.JiraUsername, config.JiraApiToken);
+});
+
+services.AddTransient<TempoClient>(provider =>
+{
+    var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+    var configService = provider.GetRequiredService<ConfigurationService>();
+    var jiraClient = provider.GetRequiredService<JiraClient>();
+    
+    // Load config when the client is actually needed
+    var config = configService.LoadConfigurationAsync().GetAwaiter().GetResult();
+    
+    if (string.IsNullOrWhiteSpace(config.TempoApiKey))
+    {
+        throw new InvalidOperationException("Configuration is incomplete. Run 'config set' first to configure your API keys.");
+    }
+    
+    var httpClient = httpClientFactory.CreateClient();
+    return new TempoClient(httpClient, config.TempoApiKey, jiraClient);
+});
+
+// Create type registrar and command app
+var registrar = new TypeRegistrar(services);
+var app = new CommandApp(registrar);
 
 app.Configure(config =>
               {

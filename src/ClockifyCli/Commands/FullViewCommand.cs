@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+using ClockifyCli.Services;
+using Spectre.Console;
 using Spectre.Console.Cli;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -8,23 +9,30 @@ namespace ClockifyCli.Commands;
 public class FullViewCommand : BaseCommand
 {
     private const string ClockifyUrl = "https://app.clockify.me/tracker";
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public FullViewCommand(IAnsiConsole console)
+    {
+        this.console = console;
+    }
 
     public override Task<int> ExecuteAsync(CommandContext context)
     {
         try
         {
-            AnsiConsole.MarkupLine("[bold]Opening Clockify web app...[/]");
-            AnsiConsole.MarkupLine($"[dim]URL: {ClockifyUrl}[/]");
+            console.MarkupLine("[bold]Opening Clockify web app...[/]");
+            console.MarkupLine($"[dim]URL: {ClockifyUrl}[/]");
 
             OpenUrl(ClockifyUrl);
 
-            AnsiConsole.MarkupLine("[green]✓ Clockify web app opened in your default browser[/]");
+            console.MarkupLine("[green]✓ Clockify web app opened in your default browser[/]");
             return Task.FromResult(0);
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red]✗ Failed to open browser: {ex.Message}[/]");
-            AnsiConsole.MarkupLine($"[yellow]You can manually open: {ClockifyUrl}[/]");
+            console.MarkupLine($"[red]✗ Failed to open browser: {ex.Message}[/]");
+            console.MarkupLine($"[yellow]You can manually open: {ClockifyUrl}[/]");
             return Task.FromResult(1);
         }
     }

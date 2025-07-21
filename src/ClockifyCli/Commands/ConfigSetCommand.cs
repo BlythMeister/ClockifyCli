@@ -1,4 +1,4 @@
-﻿using ClockifyCli.Services;
+using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -6,13 +6,22 @@ namespace ClockifyCli.Commands;
 
 public class ConfigSetCommand : ConfigCommand
 {
+    private readonly ConfigurationService configService;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public ConfigSetCommand(ConfigurationService configService, IAnsiConsole console)
+    {
+        this.configService = configService;
+        this.console = console;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var configService = new ConfigurationService();
         var currentConfig = await configService.LoadConfigurationAsync();
 
-        AnsiConsole.MarkupLine("[bold]Configuration Setup[/]");
-        AnsiConsole.MarkupLine("Leave fields blank to keep current values.\n");
+        console.MarkupLine("[bold]Configuration Setup[/]");
+        console.MarkupLine("Leave fields blank to keep current values.\n");
 
         // Clockify API Key
         var clockifyApiKey = PromptForSecret(
@@ -21,7 +30,7 @@ public class ConfigSetCommand : ConfigCommand
                                              "Get this from Clockify → Profile Settings → API");
 
         // Jira Username
-        var jiraUsername = AnsiConsole.Prompt(
+        var jiraUsername = console.Prompt(
                                               new TextPrompt<string>("Jira Username (email):")
                                                   .DefaultValue(currentConfig.JiraUsername ?? "")
                                                   .AllowEmpty());
@@ -48,28 +57,28 @@ public class ConfigSetCommand : ConfigCommand
                                                                              string.IsNullOrWhiteSpace(tempoApiKey) ? null : tempoApiKey
                                                                             );
 
-            AnsiConsole.MarkupLine("\n[green]✓ Configuration saved successfully![/]");
+            console.MarkupLine("\n[green]✓ Configuration saved successfully![/]");
 
             if (updatedConfig.IsComplete())
             {
-                AnsiConsole.MarkupLine("[green]✓ All required configuration values are now set[/]");
+                console.MarkupLine("[green]✓ All required configuration values are now set[/]");
             }
             else
             {
-                AnsiConsole.MarkupLine("[yellow]⚠ Some configuration values are still missing[/]");
-                AnsiConsole.MarkupLine("Run '[green]config view[/]' to see what's missing.");
+                console.MarkupLine("[yellow]⚠ Some configuration values are still missing[/]");
+                console.MarkupLine("Run '[green]config view[/]' to see what's missing.");
             }
 
             return 0;
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red]✗ Failed to save configuration: {ex.Message}[/]");
+            console.MarkupLine($"[red]✗ Failed to save configuration: {ex.Message}[/]");
             return 1;
         }
     }
 
-    private static string PromptForSecret(string fieldName, string? currentValue, string helpText)
+    private string PromptForSecret(string fieldName, string? currentValue, string helpText)
     {
         var hasCurrentValue = !string.IsNullOrWhiteSpace(currentValue);
         var prompt = new TextPrompt<string>($"{fieldName}:")
@@ -79,15 +88,15 @@ public class ConfigSetCommand : ConfigCommand
         if (hasCurrentValue)
         {
             prompt.DefaultValue(""); // Don't show the actual value as default
-            AnsiConsole.MarkupLine($"[dim]{helpText}[/]");
-            AnsiConsole.MarkupLine($"[dim]Current value: {MaskValue(currentValue!)} (leave blank to keep)[/]");
+            console.MarkupLine($"[dim]{helpText}[/]");
+            console.MarkupLine($"[dim]Current value: {MaskValue(currentValue!)} (leave blank to keep)[/]");
         }
         else
         {
-            AnsiConsole.MarkupLine($"[dim]{helpText}[/]");
+            console.MarkupLine($"[dim]{helpText}[/]");
         }
 
-        return AnsiConsole.Prompt(prompt);
+        return console.Prompt(prompt);
     }
 
     private static string MaskValue(string value)

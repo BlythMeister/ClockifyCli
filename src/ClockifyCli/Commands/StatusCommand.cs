@@ -1,4 +1,5 @@
-﻿using ClockifyCli.Utilities;
+using ClockifyCli.Services;
+using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -6,58 +7,66 @@ namespace ClockifyCli.Commands;
 
 public class StatusCommand : BaseCommand
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public StatusCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.console = console;
+    }
+
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-
-        await ShowCurrentStatus(clockifyClient);
+        await ShowCurrentStatus(clockifyClient, console);
         return 0;
     }
 
-    private async Task ShowCurrentStatus(Services.ClockifyClient clockifyClient)
+    private async Task ShowCurrentStatus(ClockifyClient clockifyClient, IAnsiConsole console)
     {
-        AnsiConsole.MarkupLine("[bold]Current Clockify Status[/]");
-        AnsiConsole.WriteLine();
+        console.MarkupLine("[bold]Current Clockify Status[/]");
+        console.WriteLine();
 
         var user = await clockifyClient.GetLoggedInUser();
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
         {
-            AnsiConsole.MarkupLine("[red]No workspace found![/]");
+            console.MarkupLine("[red]No workspace found![/]");
             return;
         }
 
-        await AnsiConsole.Status()
-                         .StartAsync("Getting current time entry...", async ctx =>
+        await console.Status()
+                     .StartAsync("Getting current time entry...", async ctx =>
+                                                                  {
+                                                                      var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+
+                                                                      if (currentEntry == null)
                                                                       {
-                                                                          var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+                                                                          console.MarkupLine("[yellow]⏸️  No time entry currently running[/]");
+                                                                          console.MarkupLine("[dim]Start a new time entry by running 'clockify-cli start' to see it here.[/]");
+                                                                          return;
+                                                                      }
 
-                                                                          if (currentEntry == null)
-                                                                          {
-                                                                              AnsiConsole.MarkupLine("[yellow]⏸️  No time entry currently running[/]");
-                                                                              AnsiConsole.MarkupLine("[dim]Start a new time entry by running 'clockify-cli start' to see it here.[/]");
-                                                                              return;
-                                                                          }
+                                                                      // Get project and task details
+                                                                      ctx.Status("Getting project and task details...");
+                                                                      var projects = await clockifyClient.GetProjects(workspace);
+                                                                      var project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
 
-                                                                          // Get project and task details
-                                                                          ctx.Status("Getting project and task details...");
-                                                                          var projects = await clockifyClient.GetProjects(workspace);
-                                                                          var project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
+                                                                      var task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
 
-                                                                          var task = project != null ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : null;
+                                                                      // Calculate elapsed time
+                                                                      var startTime = currentEntry.TimeInterval.StartDate;
+                                                                      var elapsed = DateTime.UtcNow - startTime;
 
-                                                                          // Calculate elapsed time
-                                                                          var startTime = currentEntry.TimeInterval.StartDate;
-                                                                          var elapsed = DateTime.UtcNow - startTime;
+                                                                      // Create status panel
+                                                                      var panel = new Panel(CreateStatusContent(currentEntry, project, task, startTime, elapsed))
+                                                                                  .Header("[green]⏱️  Currently Running[/]")
+                                                                                  .BorderColor(Color.Green)
+                                                                                  .Padding(1, 1);
 
-                                                                          // Create status panel
-                                                                          var panel = new Panel(CreateStatusContent(currentEntry, project, task, startTime, elapsed))
-                                                                                      .Header("[green]⏱️  Currently Running[/]")
-                                                                                      .BorderColor(Color.Green)
-                                                                                      .Padding(1, 1);
-
-                                                                          AnsiConsole.Write(panel);
-                                                                      });
+                                                                      console.Write(panel);
+                                                                  });
     }
 
     private static string CreateStatusContent(

@@ -1,4 +1,4 @@
-﻿using ClockifyCli.Services;
+using ClockifyCli.Services;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -9,6 +9,16 @@ namespace ClockifyCli.Commands;
 
 public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 {
+    private readonly ClockifyClient clockifyClient;
+    private readonly IAnsiConsole console;
+
+    // Constructor for dependency injection (now required)
+    public TimerMonitorCommand(ClockifyClient clockifyClient, IAnsiConsole console)
+    {
+        this.clockifyClient = clockifyClient;
+        this.console = console;
+    }
+
     public class Settings : CommandSettings
     {
         [Description("Silent mode - suppress console output (useful for scheduled tasks)")]
@@ -24,25 +34,23 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var clockifyClient = await CreateClockifyClientAsync();
-
-        return await MonitorTimer(clockifyClient, settings);
+        return await MonitorTimer(clockifyClient, console, settings);
     }
 
-    private async Task<int> MonitorTimer(ClockifyClient clockifyClient, Settings settings)
+    private async Task<int> MonitorTimer(ClockifyClient clockifyClient, IAnsiConsole console, Settings settings)
     {
         if (!settings.Silent)
         {
-            AnsiConsole.MarkupLine("[bold]Clockify Timer Monitor[/]");
-            AnsiConsole.WriteLine();
+            console.MarkupLine("[bold]Clockify Timer Monitor[/]");
+            console.WriteLine();
         }
 
         // Check if running on Windows for notification support
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !settings.Silent)
         {
-            AnsiConsole.MarkupLine("[yellow]⚠️ Toast notifications are only supported on Windows[/]");
-            AnsiConsole.MarkupLine("[dim]Running in console-only mode...[/]");
-            AnsiConsole.WriteLine();
+            console.MarkupLine("[yellow]⚠️ Toast notifications are only supported on Windows[/]");
+            console.MarkupLine("[dim]Running in console-only mode...[/]");
+            console.WriteLine();
         }
 
         var user = await clockifyClient.GetLoggedInUser();
@@ -51,7 +59,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
         {
             if (!settings.Silent)
             {
-                AnsiConsole.MarkupLine("[red]No workspace found![/]");
+                console.MarkupLine("[red]No workspace found![/]");
             }
 
             return 1;
@@ -63,7 +71,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
         if (!settings.Silent)
         {
-            await AnsiConsole.Status()
+            await console.Status()
                              .StartAsync("Checking timer status...", async ctx =>
                                                                      {
                                                                          currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
@@ -95,8 +103,8 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
             // No timer running - show reminder notification
             if (!settings.Silent)
             {
-                AnsiConsole.MarkupLine("[yellow]⏸️ No timer is currently running[/]");
-                AnsiConsole.MarkupLine("[dim]Showing reminder notification...[/]");
+                console.MarkupLine("[yellow]⏸️ No timer is currently running[/]");
+                console.MarkupLine("[dim]Showing reminder notification...[/]");
             }
 
             // Show Windows toast notification
@@ -107,8 +115,8 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
             if (!settings.Silent)
             {
-                AnsiConsole.MarkupLine("[green]✓ Notification sent successfully[/]");
-                AnsiConsole.MarkupLine("[dim]Start a timer with 'clockify-cli start'[/]");
+                console.MarkupLine("[green]✓ Notification sent successfully[/]");
+                console.MarkupLine("[dim]Start a timer with 'clockify-cli start'[/]");
             }
 
             return 2; // Special exit code indicating no timer running
@@ -123,10 +131,10 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
             if (!settings.Silent)
             {
-                AnsiConsole.MarkupLine("[green]✅ Timer is running[/]");
-                AnsiConsole.MarkupLine($"[bold]Project:[/] {Markup.Escape(projectName)}");
-                AnsiConsole.MarkupLine($"[bold]Task:[/] {Markup.Escape(taskName)}");
-                AnsiConsole.MarkupLine($"[bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
+                console.MarkupLine("[green]✅ Timer is running[/]");
+                console.MarkupLine($"[bold]Project:[/] {Markup.Escape(projectName)}");
+                console.MarkupLine($"[bold]Task:[/] {Markup.Escape(taskName)}");
+                console.MarkupLine($"[bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
             }
 
             // Show notification if always-notify is enabled
@@ -136,7 +144,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
                 if (!settings.Silent)
                 {
-                    AnsiConsole.MarkupLine("[green]✓ Status notification sent[/]");
+                    console.MarkupLine("[green]✓ Status notification sent[/]");
                 }
             }
 

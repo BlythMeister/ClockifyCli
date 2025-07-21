@@ -22,6 +22,22 @@ public class ClockifyClient
         {
             var response = await client.GetAsync("user");
             var responseContent = await response.Content.ReadAsStringAsync();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                // Try to parse error response
+                try
+                {
+                    var error = JsonConvert.DeserializeObject<ApiErrorResponse>(responseContent);
+                    throw new HttpRequestException($"API Error: {error?.Message ?? "Unknown error"} (Status: {response.StatusCode})");
+                }
+                catch (JsonException)
+                {
+                    // If we can't parse the error response, use the raw content
+                    throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
+                }
+            }
+            
             return JsonConvert.DeserializeObject<UserInfo>(responseContent)!;
         }
         catch (Exception e)
@@ -37,6 +53,22 @@ public class ClockifyClient
         {
             var response = await client.GetAsync("workspaces");
             var responseContent = await response.Content.ReadAsStringAsync();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                // Try to parse error response
+                try
+                {
+                    var error = JsonConvert.DeserializeObject<ApiErrorResponse>(responseContent);
+                    throw new HttpRequestException($"API Error: {error?.Message ?? "Unknown error"} (Status: {response.StatusCode})");
+                }
+                catch (JsonException)
+                {
+                    // If we can't parse the error response, use the raw content
+                    throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
+                }
+            }
+            
             return JsonConvert.DeserializeObject<List<WorkspaceInfo>>(responseContent)!;
         }
         catch (Exception e)
@@ -85,6 +117,22 @@ public class ClockifyClient
         {
             var response = await client.GetAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?in-progress=true");
             var responseContent = await response.Content.ReadAsStringAsync();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                // Try to parse error response
+                try
+                {
+                    var error = JsonConvert.DeserializeObject<ApiErrorResponse>(responseContent);
+                    throw new HttpRequestException($"API Error: {error?.Message ?? "Unknown error"} (Status: {response.StatusCode})");
+                }
+                catch (JsonException)
+                {
+                    // If we can't parse the error response, use the raw content
+                    throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
+                }
+            }
+            
             var entries = JsonConvert.DeserializeObject<List<TimeEntry>>(responseContent)!;
             return entries.FirstOrDefault();
         }
@@ -104,9 +152,23 @@ public class ClockifyClient
             var content = new StringContent(stopTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
             var response = await client.PatchAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries", content);
-            response.EnsureSuccessStatusCode();
-
             var responseContent = await response.Content.ReadAsStringAsync();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                // Try to parse error response
+                try
+                {
+                    var error = JsonConvert.DeserializeObject<ApiErrorResponse>(responseContent);
+                    throw new HttpRequestException($"API Error: {error?.Message ?? "Unknown error"} (Status: {response.StatusCode})");
+                }
+                catch (JsonException)
+                {
+                    // If we can't parse the error response, use the raw content
+                    throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
+                }
+            }
+
             return JsonConvert.DeserializeObject<TimeEntry>(responseContent)!;
         }
         catch (Exception e)
@@ -242,6 +304,22 @@ public class ClockifyClient
                 var pageInfo = baseUrl.Contains("?") ? $"&page={page}&page-size={pageSize}" : $"?page={page}&page-size={pageSize}";
                 var response = await client.GetAsync($"{baseUrl}{pageInfo}");
                 var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    // Try to parse error response
+                    try
+                    {
+                        var error = JsonConvert.DeserializeObject<ApiErrorResponse>(responseContent);
+                        throw new HttpRequestException($"API Error: {error?.Message ?? "Unknown error"} (Status: {response.StatusCode})");
+                    }
+                    catch (JsonException)
+                    {
+                        // If we can't parse the error response, use the raw content
+                        throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
+                    }
+                }
+                
                 var items = JsonConvert.DeserializeObject<List<T>>(responseContent)!;
 
                 returnItems.AddRange(items);

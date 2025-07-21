@@ -43,10 +43,10 @@ public class AddTaskCommand : BaseCommand
         await AnsiConsole.Status()
                          .StartAsync($"Finding jira: {jiraRef}...", async ctx => { issue = await jiraClient.GetIssue(jiraRef); });
 
-        // Check if issue was found (outside Status block)
-        if (issue == null)
+        // Check if issue was found and has valid data (outside Status block)
+        if (issue == null || string.IsNullOrEmpty(issue.Key) || issue.Fields == null || string.IsNullOrEmpty(issue.Fields.Summary))
         {
-            AnsiConsole.MarkupLine($"[red]Unknown Issue '{Markup.Escape(jiraRefOrUrl)}'[/]");
+            AnsiConsole.MarkupLine($"[red]Unknown Issue '{Markup.Escape(jiraRefOrUrl)}' or issue data is incomplete[/]");
             return;
         }
 

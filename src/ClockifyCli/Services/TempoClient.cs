@@ -164,6 +164,12 @@ public class TempoClient
             {
                 var response = await client.GetAsync(url);
                 var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException($"Tempo API Error: {responseContent} (Status: {response.StatusCode})");
+                }
+                
                 var page = JsonConvert.DeserializeObject<TempoPage<T>>(responseContent)!;
 
                 returnItems.AddRange(page.Results);

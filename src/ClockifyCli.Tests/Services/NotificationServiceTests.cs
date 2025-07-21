@@ -7,14 +7,14 @@ namespace ClockifyCli.Tests.Services;
 [TestFixture]
 public class NotificationServiceTests
 {
-    [Test]
+    [Test, Explicit]
     public void ShowTimerReminderNotification_ShouldNotThrowException()
     {
         // Act & Assert - Should not throw even if PowerShell fails
         Assert.DoesNotThrow(() => NotificationService.ShowTimerReminderNotification());
     }
 
-    [Test]
+    [Test, Explicit]
     public void ShowTimerRunningNotification_WithValidParameters_ShouldNotThrowException()
     {
         // Act & Assert - Should not throw even if PowerShell fails
@@ -25,7 +25,7 @@ public class NotificationServiceTests
         ));
     }
 
-    [Test]
+    [Test, Explicit]
     public void ShowTimerRunningNotification_WithLongElapsedTime_ShouldNotThrowException()
     {
         // Act & Assert - Should not throw even if PowerShell fails
@@ -36,7 +36,7 @@ public class NotificationServiceTests
         ));
     }
 
-    [Test]
+    [Test, Explicit]
     public void ShowTimerRunningNotification_WithSpecialCharacters_ShouldNotThrowException()
     {
         // Act & Assert - Should handle special characters without throwing

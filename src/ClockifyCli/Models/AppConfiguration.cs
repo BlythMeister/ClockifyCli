@@ -1,4 +1,4 @@
-﻿namespace ClockifyCli.Models;
+namespace ClockifyCli.Models;
 
 public record AppConfiguration(
     string ClockifyApiKey,

@@ -140,7 +140,7 @@ public class DeleteTimerCommand : BaseCommand
         console.Write(table);
         console.WriteLine();
 
-        console.MarkupLine("[red]?? WARNING: This will permanently delete the timer![/]");
+        console.MarkupLine("[red]⚠️ WARNING: This will permanently delete the timer![/]");
         console.MarkupLine("[dim]This action cannot be undone.[/]");
         console.WriteLine();
 
@@ -153,7 +153,7 @@ public class DeleteTimerCommand : BaseCommand
                     await clockifyClient.DeleteTimeEntry(workspace, timeEntry);
                 });
 
-            console.MarkupLine("[green]? Timer deleted successfully![/]");
+            console.MarkupLine("[green]✅ Timer deleted successfully![/]");
             console.MarkupLine($"[dim]Deleted timer with {duration} of logged time[/]");
         }
         else

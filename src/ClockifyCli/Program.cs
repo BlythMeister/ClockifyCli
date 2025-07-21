@@ -1,4 +1,4 @@
-﻿using ClockifyCli.Commands;
+using ClockifyCli.Commands;
 using ClockifyCli.Infrastructure;
 using ClockifyCli.Services;
 using Microsoft.Extensions.DependencyInjection;

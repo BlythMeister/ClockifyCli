@@ -1,4 +1,4 @@
-﻿using ClockifyCli.Models;
+using ClockifyCli.Models;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Text;

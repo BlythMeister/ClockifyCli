@@ -1,3 +1,3 @@
-﻿namespace ClockifyCli.Models;
+namespace ClockifyCli.Models;
 
 public record JiraStatus(string Name, JiraStatusCategory StatusCategory);

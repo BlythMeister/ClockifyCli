@@ -193,7 +193,7 @@ public class ClockifyClient
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
             var response = await client.PutAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
-
+            
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
@@ -206,6 +206,25 @@ public class ClockifyClient
         catch (Exception e)
         {
             Console.WriteLine($"Error updating time entry: {e}");
+            throw;
+        }
+    }
+
+    public async Task DeleteTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry)
+    {
+        try
+        {
+            var response = await client.DeleteAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}");
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Failed to delete time entry. Status: {response.StatusCode}, Response: {errorContent}");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error deleting time entry: {e}");
             throw;
         }
     }

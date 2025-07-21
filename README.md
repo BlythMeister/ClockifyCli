@@ -15,6 +15,7 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - **🔄 Sync time entries** from Clockify to Tempo automatically
 - **📋 Manage tasks** directly from Jira issues in Clockify
 - **⏱️ Start/Stop timers** with an intuitive command-line interface
+- **🗑️ Discard/Delete timers** with safety confirmations and time restrictions
 - **✏️ Edit existing timers** with precise start/end time adjustments
 - **📊 View time reports** for current week and specific periods with optional detailed breakdown
 - **🔔 Monitor timers** with desktop notifications
@@ -66,10 +67,16 @@ This shows your current configuration status and masks sensitive values for secu
 #### Stop Current Timer
 `clockify-cli stop` - Stop the currently running timer
 
+#### Discard Current Timer
+`clockify-cli discard-timer` - Permanently delete the currently running timer (cannot be undone)
+
 #### Edit Existing Timer
 `clockify-cli edit-timer` - Edit start/end times of existing time entries
 
 `clockify-cli edit-timer --days 3` - Look for entries from the last 3 days
+
+#### Delete Completed Timer
+`clockify-cli delete-timer` - Delete completed timers from this week (newest first)
 
 #### View This Week's Time Entries
 `clockify-cli week-view` - Display current week's logged time
@@ -146,7 +153,9 @@ The configuration is stored securely in your user profile:
 |---------|-------------|----------|
 | `start` | Start a new timer by selecting from available tasks | `clockify-cli start` |
 | `stop` | Stop the currently running timer | `clockify-cli stop` |
+| `discard-timer` | Permanently delete the currently running timer | `clockify-cli discard-timer` |
 | `edit-timer` | Edit start/end times of existing time entries | `clockify-cli edit-timer --days 7` |
+| `delete-timer` | Delete completed timers from this week | `clockify-cli delete-timer` |
 | `status` | Display current in-progress time entry | `clockify-cli status` |
 | `week-view` | Display current week's time entries | `clockify-cli week-view --include-current --detailed` |
 

@@ -62,6 +62,16 @@ app.Configure(config =>
                         .WithExample(new[] { "edit-timer", "--days", "3" })
                         .WithExample(new[] { "edit-timer", "--days", "14" });
 
+                  // Add the discard-timer command
+                  config.AddCommand<DiscardTimerCommand>("discard-timer")
+                        .WithDescription("Discard the currently running timer (permanently deletes it)")
+                        .WithExample(new[] { "discard-timer" });
+
+                  // Add the delete-timer command
+                  config.AddCommand<DeleteTimerCommand>("delete-timer")
+                        .WithDescription("Delete completed timers from this week")
+                        .WithExample(new[] { "delete-timer" });
+
                   // Add the timer-monitor command
                   config.AddCommand<TimerMonitorCommand>("timer-monitor")
                         .WithDescription("Monitor timer status and show notifications (ideal for scheduled tasks)")

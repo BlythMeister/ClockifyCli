@@ -9,7 +9,7 @@ public sealed class TypeRegistrar : ITypeRegistrar
 
     public TypeRegistrar(IServiceCollection builder)
     {
-        _builder = builder;
+        _builder = builder ?? throw new ArgumentNullException(nameof(builder));
     }
 
     public ITypeResolver Build()

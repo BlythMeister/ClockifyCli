@@ -1,5 +1,4 @@
 using ClockifyCli.Models;
-using ClockifyCli.Services;
 
 namespace ClockifyCli.Services;
 
@@ -7,9 +6,13 @@ public class ClientFactory
 {
     private readonly ConfigurationService configurationService;
     
-    public ClientFactory()
+    public ClientFactory() : this(new ConfigurationService())
     {
-        configurationService = new ConfigurationService();
+    }
+    
+    public ClientFactory(ConfigurationService configurationService)
+    {
+        this.configurationService = configurationService;
     }
 
     public async Task<ClockifyClient> CreateClockifyClientAsync()

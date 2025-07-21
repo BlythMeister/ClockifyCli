@@ -1,5 +1,3 @@
-using System;
-
 namespace ClockifyCli.Utilities;
 
 public static class TimeFormatter

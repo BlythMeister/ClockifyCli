@@ -30,10 +30,15 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) or later
 
 ### Install as Global Tool
+
 `dotnet tool install --global ClockifyCli`
+
 ### Update to Latest Version
+
 `dotnet tool update --global ClockifyCli`
+
 ### Uninstall
+
 `dotnet tool uninstall --global ClockifyCli`
 
 ### PowerShell Auto-Completion (Windows)
@@ -41,6 +46,7 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 To enable tab completion for commands and options in PowerShell, add the following to your PowerShell profile:
 
 #### Temporary Installation (Current Session Only)
+
 ```powershell
 # Enable tab completion for the current PowerShell session
 Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
@@ -64,6 +70,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
 ```
 
 #### Permanent Installation (Add to PowerShell Profile)
+
 ```powershell
 # Add to your PowerShell profile for persistent auto-completion
 # First, check if you have a PowerShell profile
@@ -88,6 +95,7 @@ notepad $PROFILE
 Before using the CLI, you need to configure your API credentials for the services you want to integrate.
 
 ### 1. Set up Configuration
+
 `clockify-cli config set`
 
 This interactive command will prompt you for:
@@ -98,6 +106,7 @@ This interactive command will prompt you for:
 - **Tempo API Key** - Get from [Tempo → Settings → API Integration](https://tempo.io/server-docs/timesheets/api/rest-api/)
 
 ### 2. Verify Configuration
+
 `clockify-cli config view`
 
 This shows your current configuration status and masks sensitive values for security.
@@ -107,26 +116,33 @@ This shows your current configuration status and masks sensitive values for secu
 ### Basic Time Tracking
 
 #### Start a Timer
+
 `clockify-cli start` - Interactive selection of available tasks
 
 #### Check Current Status
+
 `clockify-cli status` - See what timer is currently running
 
 #### Stop Current Timer
+
 `clockify-cli stop` - Stop the currently running timer
 
 #### Discard Current Timer
+
 `clockify-cli discard-timer` - Permanently delete the currently running timer (cannot be undone)
 
 #### Edit Existing Timer
+
 `clockify-cli edit-timer` - Edit start/end times of existing time entries
 
 `clockify-cli edit-timer --days 3` - Look for entries from the last 3 days
 
 #### Delete Completed Timer
+
 `clockify-cli delete-timer` - Delete completed timers from this week (newest first)
 
 #### View This Week's Time Entries
+
 `clockify-cli week-view` - Display current week's logged time
 
 `clockify-cli week-view --include-current` - Include currently running timer in the view
@@ -138,14 +154,17 @@ This shows your current configuration status and masks sensitive values for secu
 ### Task Management
 
 #### Add New Task from Jira
+
 `clockify-cli add-task` - Interactive selection to add Jira issues as Clockify tasks
 
 #### Archive Completed Tasks
+
 `clockify-cli archive-completed-jiras` - Archive Clockify tasks that are marked as Done in Jira
 
 ### Data Synchronization
 
 #### Upload Time to Tempo
+
 `clockify-cli upload-to-tempo` - Upload recent time entries to Tempo
 
 `clockify-cli upload-to-tempo --days 7` - Upload last 7 days
@@ -155,6 +174,7 @@ This shows your current configuration status and masks sensitive values for secu
 ### Monitoring & Automation
 
 #### Timer Monitoring
+
 `clockify-cli timer-monitor` - Check timer status and show notifications
 
 `clockify-cli timer-monitor --silent` - Silent mode (no console output)
@@ -162,20 +182,25 @@ This shows your current configuration status and masks sensitive values for secu
 `clockify-cli timer-monitor --always-notify` - Always show notifications regardless of timer state
 
 #### Schedule Monitoring (Windows)
+
 `clockify-cli config schedule-monitor` - Set up scheduled task to monitor every 30 minutes
 
 `clockify-cli config schedule-monitor --interval 60` - Custom interval (60 minutes)
 
 `clockify-cli config schedule-monitor --remove` - Remove scheduled task
+
 ### Utility Commands
 
 #### Open Clockify Web App
+
 `clockify-cli full-view` - Open Clockify in your default browser
 
 #### Help and Information
+
 `clockify-cli --help` - Show available commands
 
 `clockify-cli start --help` - Show help for specific command
+
 ## 🔧 Configuration Management
 
 ### Configuration Commands
@@ -221,7 +246,7 @@ The configuration is stored securely in your user profile:
 | `upload-to-tempo` | Upload time entries from Clockify to Tempo | `clockify-cli upload-to-tempo --days 7` |
 | `timer-monitor` | Monitor timer status with notifications | `clockify-cli timer-monitor --silent` |
 
-### Utility Commands
+### CLI Utility Commands
 
 | Command | Description | Examples |
 |---------|-------------|----------|
@@ -240,9 +265,11 @@ We welcome contributions! Here's how you can help improve Clockify CLI:
 3. **Set up development environment**: Restore dependencies with `dotnet restore`
 
 ### Build the project
+
 `dotnet build`
 
 ### Run tests (Coming soon)
+
 `dotnet test`
 
 ### Development Guidelines
@@ -282,25 +309,30 @@ We welcome contributions! Here's how you can help improve Clockify CLI:
 
 #### Common Issues
 
-**Configuration Problems**
+### Configuration Problems
 
 #### Check your configuration
+
 `clockify-cli config view`
 
 #### Reconfigure if needed
+
 `clockify-cli config set`
 
-**API Connection Issues**
+### API Connection Issues
+
 - Verify your API keys are correct and have proper permissions
 - Check your internet connection
 - Ensure the services (Clockify/Jira/Tempo) are accessible
 
-**Timer Issues**
+### Timer Issues
 
 #### Check current timer status
+
 `clockify-cli status`
 
 #### Stop any stuck timers
+
 `clockify-cli stop`
 
 ### Reporting Issues

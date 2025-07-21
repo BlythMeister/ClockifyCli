@@ -158,8 +158,9 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                                                                                         }
                                                                                     }
 
-                                                                                    // Upload new time entries
+                                                                                    // Upload new time entries (exclude running timers)
                                                                                     var entriesToUpload = timeEntries.Where(e =>
+                                                                                                                                !string.IsNullOrEmpty(e.TimeInterval.End) && // Exclude running timers
                                                                                                                                 !exportedTimes.Any(et =>
                                                                                                                                                        et.Description.Contains($"[cid:{e.Id}]") &&
                                                                                                                                                        et.StartDateTimeUtc.Date == e.TimeInterval.StartDate.Date))

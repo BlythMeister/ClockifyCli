@@ -35,6 +35,54 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 `dotnet tool update --global ClockifyCli`
 ### Uninstall
 `dotnet tool uninstall --global ClockifyCli`
+
+### PowerShell Auto-Completion (Windows)
+
+To enable tab completion for commands and options in PowerShell, add the following to your PowerShell profile:
+
+#### Temporary Installation (Current Session Only)
+```powershell
+# Enable tab completion for the current PowerShell session
+Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+    $command = "$wordToComplete"
+    if ($command.Length -eq 0) {
+        $command = ""
+    }
+    
+    # Get available commands and options
+    $commands = @('add-task', 'archive-completed-jiras', 'config', 'delete-timer', 'discard-timer', 'edit-timer', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $options = @('--help', '--version')
+    
+    # Filter suggestions based on what user has typed
+    $suggestions = ($commands + $options) | Where-Object { $_ -like "$wordToComplete*" }
+    
+    foreach ($suggestion in $suggestions) {
+        [System.Management.Automation.CompletionResult]::new($suggestion, $suggestion, 'ParameterValue', $suggestion)
+    }
+}
+```
+
+#### Permanent Installation (Add to PowerShell Profile)
+```powershell
+# Add to your PowerShell profile for persistent auto-completion
+# First, check if you have a PowerShell profile
+Test-Path $PROFILE
+
+# If it returns False, create the profile
+if (!(Test-Path $PROFILE)) {
+    New-Item -Type File -Path $PROFILE -Force
+}
+
+# Open your profile in notepad (or your preferred editor)
+notepad $PROFILE
+
+# Add the Register-ArgumentCompleter block from above to your profile
+# Save the file and restart PowerShell or run: . $PROFILE
+```
+
+> **Note**: Auto-completion helps you quickly discover available commands and options by pressing `Tab` while typing commands.
+
 ## ⚙️ Initial Setup
 
 Before using the CLI, you need to configure your API credentials for the services you want to integrate.

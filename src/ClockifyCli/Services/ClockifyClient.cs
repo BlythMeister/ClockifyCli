@@ -9,11 +9,18 @@ public class ClockifyClient
 {
     private readonly HttpClient client;
 
-    public ClockifyClient(string apiKey)
+    // Constructor for dependency injection with HttpClient
+    public ClockifyClient(HttpClient httpClient, string apiKey)
     {
-        client = new HttpClient();
+        client = httpClient;
         client.BaseAddress = new Uri("https://api.clockify.me/api/v1/");
+        client.DefaultRequestHeaders.Clear();
         client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+    }
+
+    // Original constructor for backward compatibility
+    public ClockifyClient(string apiKey) : this(new HttpClient(), apiKey)
+    {
     }
 
     public async Task<UserInfo> GetLoggedInUser()

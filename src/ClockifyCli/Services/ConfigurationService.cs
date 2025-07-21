@@ -8,26 +8,35 @@ namespace ClockifyCli.Services;
 public class ConfigurationService
 {
     private const string ConfigFileName = "clockify-config.dat";
-
-    private static readonly string ConfigFilePath = Path.Combine(
-                                                                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                                                                 "ClockifyCli",
-                                                                 ConfigFileName
-                                                                );
+    private readonly string configFilePath;
 
     private static readonly byte[] AdditionalEntropy =
         Encoding.UTF8.GetBytes("ClockifyCli-SecureConfig-2024");
+
+    public ConfigurationService() : this(null)
+    {
+    }
+
+    public ConfigurationService(string? customConfigDirectory)
+    {
+        var configDirectory = customConfigDirectory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "ClockifyCli"
+        );
+
+        configFilePath = Path.Combine(configDirectory, ConfigFileName);
+    }
 
     public async Task<AppConfiguration> LoadConfigurationAsync()
     {
         try
         {
-            if (!File.Exists(ConfigFilePath))
+            if (!File.Exists(configFilePath))
             {
                 return AppConfiguration.Empty;
             }
 
-            var encryptedData = await File.ReadAllBytesAsync(ConfigFilePath);
+            var encryptedData = await File.ReadAllBytesAsync(configFilePath);
             var decryptedData = DecryptData(encryptedData);
 
             var json = Encoding.UTF8.GetString(decryptedData);
@@ -45,7 +54,7 @@ public class ConfigurationService
         try
         {
             // Ensure directory exists
-            var directory = Path.GetDirectoryName(ConfigFilePath)!;
+            var directory = Path.GetDirectoryName(configFilePath)!;
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
@@ -55,7 +64,7 @@ public class ConfigurationService
             var plainData = Encoding.UTF8.GetBytes(json);
             var encryptedData = EncryptData(plainData);
 
-            await File.WriteAllBytesAsync(ConfigFilePath, encryptedData);
+            await File.WriteAllBytesAsync(configFilePath, encryptedData);
         }
         catch (Exception ex)
         {
@@ -84,12 +93,12 @@ public class ConfigurationService
 
     public bool ConfigurationExists()
     {
-        return File.Exists(ConfigFilePath);
+        return File.Exists(configFilePath);
     }
 
     public string GetConfigurationPath()
     {
-        return ConfigFilePath;
+        return configFilePath;
     }
 
     private static byte[] EncryptData(byte[] plainData)

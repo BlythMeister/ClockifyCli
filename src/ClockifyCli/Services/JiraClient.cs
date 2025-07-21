@@ -15,12 +15,14 @@ public class JiraClient
 
     public Lazy<Task<string>> UserId { get; }
 
-    public JiraClient(string user, string apiKey)
+    // Constructor for dependency injection with HttpClient
+    public JiraClient(HttpClient httpClient, string user, string apiKey)
     {
         var base64BasicAuthText = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user}:{apiKey}"));
 
-        client = new HttpClient();
+        client = httpClient;
         client.BaseAddress = new Uri("https://15below.atlassian.net/rest/api/3/");
+        client.DefaultRequestHeaders.Clear();
         client.DefaultRequestHeaders.Add("Authorization", $"Basic {base64BasicAuthText}");
         client.DefaultRequestHeaders.Add("Accept", "application/json");
 
@@ -29,6 +31,11 @@ public class JiraClient
         jiraIdMap = new ConcurrentDictionary<string, Task<JiraIssue>>();
 
         UserId = new Lazy<Task<string>>(() => GetUser());
+    }
+
+    // Original constructor for backward compatibility
+    public JiraClient(string user, string apiKey) : this(new HttpClient(), user, apiKey)
+    {
     }
 
     public async Task<JiraProject?> GetProject(ProjectInfo projectInfo)

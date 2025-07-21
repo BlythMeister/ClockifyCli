@@ -58,7 +58,7 @@ $notifyIcon.Dispose()
         try
         {
             var formattedElapsed = FormatElapsedTime(elapsed);
-            var message = $"Timer is running!\\nProject: {projectName}\\nTask: {taskName}\\nElapsed: {formattedElapsed}";
+            var message = $"Timer running: {projectName} - {taskName} ({formattedElapsed})";
 
             var script = @$"
 Add-Type -AssemblyName System.Windows.Forms

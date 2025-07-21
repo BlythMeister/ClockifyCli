@@ -13,16 +13,23 @@ public class TempoClient
     private readonly Regex descriptionRegex;
     private readonly Regex timeParseRegex;
 
-    public TempoClient(string apiKey, JiraClient jiraClient)
+    // Constructor for dependency injection with HttpClient
+    public TempoClient(HttpClient httpClient, string apiKey, JiraClient jiraClient)
     {
         this.jiraClient = jiraClient;
 
-        client = new HttpClient();
+        client = httpClient;
         client.BaseAddress = new Uri("https://api.tempo.io/4/");
+        client.DefaultRequestHeaders.Clear();
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
         descriptionRegex = new Regex(@".*(?<remBlock>\[rem:(?<remVal>.*)\]).*");
         timeParseRegex = new Regex(@"((?<week>(?:\d|\.)*)w)?((?<day>(?:\d|\.)*)d)?((?<hour>(?:\d|\.)*)h)?((?<minute>(?:\d|\.)*)m)?");
+    }
+
+    // Original constructor for backward compatibility
+    public TempoClient(string apiKey, JiraClient jiraClient) : this(new HttpClient(), apiKey, jiraClient)
+    {
     }
 
     public async Task Delete(TempoTime tempoTime)

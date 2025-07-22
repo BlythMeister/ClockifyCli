@@ -16,7 +16,7 @@ public class TypeResolverTests
         var services = new ServiceCollection();
         services.AddSingleton<ITestService, TestService>();
         services.AddSingleton<TestConcreteService>();
-        
+
         serviceProvider = services.BuildServiceProvider();
         typeResolver = new TypeResolver(serviceProvider);
     }
@@ -158,7 +158,7 @@ public class UnregisteredService
 public class DisposableTestService : IDisposable
 {
     public bool IsDisposed { get; private set; }
-    
+
     public void Dispose()
     {
         IsDisposed = true;

@@ -38,7 +38,7 @@ public class EditTimerCommandTests
         var settings = new EditTimerCommand.Settings { Days = 7 };
         var mockRemainingArgs = new Mock<IRemainingArguments>();
         var context = new CommandContext([], mockRemainingArgs.Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
@@ -68,7 +68,7 @@ public class EditTimerCommandTests
         var settings = new EditTimerCommand.Settings { Days = 7 };
         var mockRemainingArgs = new Mock<IRemainingArguments>();
         var context = new CommandContext([], mockRemainingArgs.Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -90,7 +90,7 @@ public class EditTimerCommandTests
         var settings = new EditTimerCommand.Settings { Days = 14 };
         var mockRemainingArgs = new Mock<IRemainingArguments>();
         var context = new CommandContext([], mockRemainingArgs.Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
@@ -122,11 +122,11 @@ public class EditTimerCommandTests
         var settings = new EditTimerCommand.Settings { Days = 7 };
         var mockRemainingArgs = new Mock<IRemainingArguments>();
         var context = new CommandContext([], mockRemainingArgs.Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
-        
+
         // Create only a running time entry (no completed ones)
         var runningEntry = new TimeEntry(
             "entry1",
@@ -190,11 +190,11 @@ public class EditTimerCommandTests
         var settings = new EditTimerCommand.Settings { Days = 7 };
         var mockRemainingArgs = new Mock<IRemainingArguments>();
         var context = new CommandContext([], mockRemainingArgs.Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
-        
+
         // Create a completed time entry and a running time entry on the same date
         var today = DateTime.Today;
         var completedEntry = new TimeEntry(
@@ -205,7 +205,7 @@ public class EditTimerCommandTests
             "regular",
             new TimeInterval(today.AddHours(9).ToString("o"), today.AddHours(10).ToString("o"))
         );
-        
+
         var runningEntry = new TimeEntry(
             "entry2",
             "Running Task",
@@ -252,15 +252,15 @@ public class EditTimerCommandTests
         var settings = new EditTimerCommand.Settings { Days = 7 };
         var mockRemainingArgs = new Mock<IRemainingArguments>();
         var context = new CommandContext([], mockRemainingArgs.Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
-        
+
         // Create entries on different dates
         var yesterday = DateTime.Today.AddDays(-1);
         var today = DateTime.Today;
-        
+
         var yesterdayEntry = new TimeEntry(
             "entry1",
             "Yesterday Task",
@@ -269,7 +269,7 @@ public class EditTimerCommandTests
             "regular",
             new TimeInterval(yesterday.AddHours(9).ToString("o"), yesterday.AddHours(10).ToString("o"))
         );
-        
+
         var runningEntry = new TimeEntry(
             "entry2",
             "Running Task",
@@ -338,7 +338,7 @@ public class EditTimerCommandTests
 
         // Act & Assert
         Assert.DoesNotThrow(() => new EditTimerCommand(mockClockifyClient.Object, testConsole));
-        
+
         // Cleanup
         testConsole.Dispose();
     }
@@ -350,20 +350,20 @@ public class EditTimerCommandTests
         // by checking that the AllowEmpty() method is properly configured.
         // The actual implementation uses TextPrompt<string>(...).AllowEmpty()
         // which should allow blank inputs to preserve existing values.
-        
+
         // Arrange
         var testConsole = new TestConsole();
-        
+
         // Act - Test that empty string prompts are configured correctly
         var startTimePrompt = new TextPrompt<string>("Start time:").AllowEmpty();
         var endTimePrompt = new TextPrompt<string>("End time:").AllowEmpty();
         var descriptionPrompt = new TextPrompt<string>("Description:").AllowEmpty();
-        
+
         // Assert - Verify the prompts allow empty values
         Assert.That(startTimePrompt.AllowEmpty, Is.True, "Start time prompt should allow empty input");
         Assert.That(endTimePrompt.AllowEmpty, Is.True, "End time prompt should allow empty input");
         Assert.That(descriptionPrompt.AllowEmpty, Is.True, "Description prompt should allow empty input");
-        
+
         // Cleanup
         testConsole.Dispose();
     }
@@ -380,20 +380,20 @@ public class EditTimerCommandTests
         // to allow users to leave fields blank and keep existing values.
         //
         // This test ensures that the AllowEmpty configuration is not accidentally removed.
-        
+
         // Arrange - Create prompts as they should be configured in EditTimerCommand
         var startTimePrompt = new TextPrompt<string>("Start time").AllowEmpty();
-        var endTimePrompt = new TextPrompt<string>("End time").AllowEmpty();  
+        var endTimePrompt = new TextPrompt<string>("End time").AllowEmpty();
         var descriptionPrompt = new TextPrompt<string>("Description").AllowEmpty();
-        
+
         // Act & Assert - Verify each prompt allows empty input
         Assert.Multiple(() =>
         {
-            Assert.That(startTimePrompt.AllowEmpty, Is.True, 
+            Assert.That(startTimePrompt.AllowEmpty, Is.True,
                 "Start time prompt must allow empty input to keep existing time");
-            Assert.That(endTimePrompt.AllowEmpty, Is.True, 
-                "End time prompt must allow empty input to keep existing time");  
-            Assert.That(descriptionPrompt.AllowEmpty, Is.True, 
+            Assert.That(endTimePrompt.AllowEmpty, Is.True,
+                "End time prompt must allow empty input to keep existing time");
+            Assert.That(descriptionPrompt.AllowEmpty, Is.True,
                 "Description prompt must allow empty input to keep existing description");
         });
     }
@@ -402,11 +402,11 @@ public class EditTimerCommandTests
     public void EditTimerCommand_DescriptionLogic_HandlesSpecialClearValue()
     {
         // Test that entering "-" as description clears the existing description
-        
+
         // Arrange
         var existingDescription = "Existing description";
         var userInput = "-";
-        
+
         // Act - Simulate the description logic from EditTimerCommand
         string newDescription;
         if (string.IsNullOrWhiteSpace(userInput))
@@ -421,7 +421,7 @@ public class EditTimerCommandTests
         {
             newDescription = userInput;
         }
-        
+
         // Assert
         Assert.That(newDescription, Is.EqualTo(""), "Entering '-' should clear the description");
     }
@@ -430,11 +430,11 @@ public class EditTimerCommandTests
     public void EditTimerCommand_DescriptionLogic_HandlesBlankInput()
     {
         // Test that blank input keeps existing description
-        
+
         // Arrange
         var existingDescription = "Existing description";
         var userInput = "";
-        
+
         // Act - Simulate the description logic from EditTimerCommand
         string newDescription;
         if (string.IsNullOrWhiteSpace(userInput))
@@ -449,7 +449,7 @@ public class EditTimerCommandTests
         {
             newDescription = userInput;
         }
-        
+
         // Assert
         Assert.That(newDescription, Is.EqualTo(existingDescription), "Blank input should keep existing description");
     }
@@ -458,11 +458,11 @@ public class EditTimerCommandTests
     public void EditTimerCommand_DescriptionLogic_HandlesRegularInput()
     {
         // Test that regular input replaces existing description
-        
+
         // Arrange
         var existingDescription = "Existing description";
         var userInput = "New description";
-        
+
         // Act - Simulate the description logic from EditTimerCommand
         string newDescription;
         if (string.IsNullOrWhiteSpace(userInput))
@@ -477,7 +477,7 @@ public class EditTimerCommandTests
         {
             newDescription = userInput;
         }
-        
+
         // Assert
         Assert.That(newDescription, Is.EqualTo(userInput), "Regular input should replace existing description");
     }
@@ -486,11 +486,11 @@ public class EditTimerCommandTests
     public void EditTimerCommand_DescriptionLogic_HandlesDashWithWhitespace()
     {
         // Test that "-" with surrounding whitespace still clears description
-        
+
         // Arrange
         var existingDescription = "Existing description";
         var userInput = "  -  "; // Dash with spaces
-        
+
         // Act - Simulate the description logic from EditTimerCommand
         string newDescription;
         if (string.IsNullOrWhiteSpace(userInput))
@@ -505,7 +505,7 @@ public class EditTimerCommandTests
         {
             newDescription = userInput;
         }
-        
+
         // Assert
         Assert.That(newDescription, Is.EqualTo(""), "'-' with whitespace should still clear the description");
     }
@@ -514,9 +514,9 @@ public class EditTimerCommandTests
     public void EditTimerCommand_DescriptionLogic_ComprehensiveScenarios()
     {
         // Comprehensive test covering all description input scenarios
-        
+
         var existingDescription = "Original description";
-        
+
         // Test data: input -> expected output
         var scenarios = new[]
         {
@@ -528,7 +528,7 @@ public class EditTimerCommandTests
             ("- this is not a clear", "- this is not a clear"), // Dash in text is preserved
             ("Clear with -", "Clear with -"),   // Dash at end is preserved
         };
-        
+
         foreach (var (input, expected) in scenarios)
         {
             // Act - Simulate the description logic from EditTimerCommand
@@ -545,9 +545,9 @@ public class EditTimerCommandTests
             {
                 newDescription = input;
             }
-            
+
             // Assert
-            Assert.That(newDescription, Is.EqualTo(expected), 
+            Assert.That(newDescription, Is.EqualTo(expected),
                 $"Input '{input}' should result in '{expected}'");
         }
     }

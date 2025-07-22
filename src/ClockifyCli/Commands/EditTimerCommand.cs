@@ -89,12 +89,12 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         // Step 1: Select date
         // Get all dates that have entries or the running timer
         var allDates = timeEntries.Select(e => e.TimeInterval.StartDate.Date).ToList();
-        
+
         if (currentRunningEntry != null)
         {
             allDates.Add(currentRunningEntry.TimeInterval.StartDate.Date);
         }
-        
+
         var entriesByDate = allDates.Distinct()
                                   .OrderByDescending(date => date)
                                   .Select(date => new { Date = date, Entries = timeEntries.Where(e => e.TimeInterval.StartDate.Date == date).ToList() })
@@ -105,7 +105,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                   .Title("Select a [green]date[/] to edit entries from:")
                                                   .PageSize(10)
                                                   .AddChoices(entriesByDate.Select(g => g.Date))
-                                                  .UseConverter(date => 
+                                                  .UseConverter(date =>
                                                   {
                                                       var entryCount = entriesByDate.First(g => g.Date == date).Entries.Count();
                                                       var hasRunningTimer = currentRunningEntry != null && currentRunningEntry.TimeInterval.StartDate.Date == date.Date;
@@ -115,7 +115,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         // Step 2: Select specific time entry from that date
         var entriesForDate = entriesByDate.First(g => g.Date == selectedDate).Entries.OrderBy(e => e.TimeInterval.StartDate).ToList();
-        
+
         // Add running timer to the list only if it's on the selected date
         if (currentRunningEntry != null && currentRunningEntry.TimeInterval.StartDate.Date == selectedDate.Date)
         {
@@ -143,7 +143,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
                                                                      // Check if this is the running timer
                                                                      var isRunning = currentRunningEntry != null && entry.Id == currentRunningEntry.Id;
-                                                                     
+
                                                                      if (isRunning)
                                                                      {
                                                                          var startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
@@ -163,7 +163,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         await EditSelectedEntry(clockifyClient, workspace, selectedEntry, projects, allTasks, currentRunningEntry);
     }
 
-        private async Task EditSelectedEntry(IClockifyClient clockifyClient, WorkspaceInfo workspace, TimeEntry selectedEntry, List<ProjectInfo> projects, List<TaskWithProject> allTasks, TimeEntry? currentRunningEntry)
+    private async Task EditSelectedEntry(IClockifyClient clockifyClient, WorkspaceInfo workspace, TimeEntry selectedEntry, List<ProjectInfo> projects, List<TaskWithProject> allTasks, TimeEntry? currentRunningEntry)
     {
         var project = projects.FirstOrDefault(p => p.Id == selectedEntry.ProjectId);
         var task = allTasks.FirstOrDefault(t => t.TaskId == selectedEntry.TaskId);
@@ -231,7 +231,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         // Get new end time
         DateTime? newEndTime = null;
-        
+
         if (!isRunning)
         {
             var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
@@ -328,8 +328,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         if (console.Confirm("Apply these changes?"))
         {
             await console.Status()
-                             .StartAsync("Updating time entry...", async ctx => 
-                             { 
+                             .StartAsync("Updating time entry...", async ctx =>
+                             {
                                  if (isRunning)
                                  {
                                      await clockifyClient.UpdateRunningTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newDescription);

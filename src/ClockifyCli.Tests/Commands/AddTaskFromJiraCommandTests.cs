@@ -23,7 +23,7 @@ public class AddTaskFromJiraCommandTests
 
         // Act & Assert
         Assert.DoesNotThrow(() => new AddTaskFromJiraCommand(clockifyClient, jiraClient, console));
-        
+
         // Cleanup
         mockHttp.Dispose();
         httpClient.Dispose();
@@ -35,17 +35,17 @@ public class AddTaskFromJiraCommandTests
         // Arrange - separate HttpClients to avoid base address conflicts
         var clockifyMockHttp = new MockHttpMessageHandler();
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
-        
+
         var jiraMockHttp = new MockHttpMessageHandler();
         var jiraHttpClient = new HttpClient(jiraMockHttp);
-        
+
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var jiraClient = new JiraClient(jiraHttpClient, "test-user", "test-token");
         var testConsole = new TestConsole();
-        
+
         // Act & Assert
         Assert.DoesNotThrow(() => new AddTaskFromJiraCommand(clockifyClient, jiraClient, testConsole));
-        
+
         // Cleanup
         clockifyMockHttp.Dispose();
         clockifyHttpClient.Dispose();
@@ -53,16 +53,16 @@ public class AddTaskFromJiraCommandTests
         jiraHttpClient.Dispose();
     }
 
-    [Test]  
+    [Test]
     public async Task AddTask_WithNoWorkspace_ShouldDisplayErrorMessage()
     {
         // Arrange - separate HttpClients to avoid base address conflicts
         var clockifyMockHttp = new MockHttpMessageHandler();
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
-        
+
         var jiraMockHttp = new MockHttpMessageHandler();
         var jiraHttpClient = new HttpClient(jiraMockHttp);
-        
+
         // Mock empty workspaces response
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
                         .Respond("application/json", "[]");
@@ -70,7 +70,7 @@ public class AddTaskFromJiraCommandTests
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var jiraClient = new JiraClient(jiraHttpClient, "test-user", "test-token");
         var testConsole = new TestConsole();
-        
+
         var command = new AddTaskFromJiraCommand(clockifyClient, jiraClient, testConsole);
         var mockRemainingArgs = new Mock<IRemainingArguments>();
         var context = new CommandContext([], mockRemainingArgs.Object, "", null);
@@ -81,11 +81,11 @@ public class AddTaskFromJiraCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         // Verify error message was displayed
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("No workspace found!"), "Should display no workspace error message");
-        
+
         // Cleanup
         clockifyMockHttp.Dispose();
         clockifyHttpClient.Dispose();

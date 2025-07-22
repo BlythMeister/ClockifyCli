@@ -37,7 +37,7 @@ public class TimerMonitorCommandTests
         // Arrange
         var settings = new TimerMonitorCommand.Settings();
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockTimeInterval = new TimeInterval(DateTime.UtcNow.AddHours(-1).ToString("O"), "");
@@ -64,7 +64,7 @@ public class TimerMonitorCommandTests
         // Arrange
         var settings = new TimerMonitorCommand.Settings();
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -86,7 +86,7 @@ public class TimerMonitorCommandTests
         // Arrange
         var settings = new TimerMonitorCommand.Settings();
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
 
@@ -112,7 +112,7 @@ public class TimerMonitorCommandTests
         // Arrange
         var settings = new TimerMonitorCommand.Settings { Silent = true };
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockTimeInterval = new TimeInterval(DateTime.UtcNow.AddHours(-1).ToString("O"), "");

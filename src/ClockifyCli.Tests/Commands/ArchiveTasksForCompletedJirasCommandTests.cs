@@ -37,7 +37,7 @@ public class ArchiveTasksForCompletedJirasCommandTests
     {
         // Arrange
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
 
@@ -75,7 +75,7 @@ public class ArchiveTasksForCompletedJirasCommandTests
     {
         // Arrange
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProject = new ProjectInfo("project1", "Test Project");
         var mockProjects = new List<ProjectInfo> { mockProject };
@@ -98,18 +98,18 @@ public class ArchiveTasksForCompletedJirasCommandTests
     {
         // Arrange
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProject = new ProjectInfo("project1", "Test Project");
         var mockProjects = new List<ProjectInfo> { mockProject };
-        
+
         var mockTask = new TaskInfo("task1", "TEST-123 Test Task", "Active");
         var mockTasks = new List<TaskInfo> { mockTask };
 
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, mockProject)).ReturnsAsync(mockTasks);
-        
+
         // Mock Jira client to return null (no connection or issue not found)
         mockJiraClient.Setup(x => x.GetIssue(mockTask)).ReturnsAsync((JiraIssue?)null);
 
@@ -126,11 +126,11 @@ public class ArchiveTasksForCompletedJirasCommandTests
     {
         // Arrange
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProject = new ProjectInfo("project1", "Test Project");
         var mockProjects = new List<ProjectInfo> { mockProject };
-        
+
         var mockTask = new TaskInfo("task1", "TEST-123 Test Task", "Active");
         var mockTasks = new List<TaskInfo> { mockTask };
 
@@ -166,7 +166,7 @@ public class ArchiveTasksForCompletedJirasCommandTests
     public void Constructor_WithNullClockifyClient_ThrowsArgumentNullException()
     {
         // Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new ArchiveTasksForCompletedJirasCommand(null!, mockJiraClient.Object, testConsole));
     }
 
@@ -174,7 +174,7 @@ public class ArchiveTasksForCompletedJirasCommandTests
     public void Constructor_WithNullJiraClient_ThrowsArgumentNullException()
     {
         // Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new ArchiveTasksForCompletedJirasCommand(mockClockifyClient.Object, null!, testConsole));
     }
 
@@ -182,7 +182,7 @@ public class ArchiveTasksForCompletedJirasCommandTests
     public void Constructor_WithNullConsole_ThrowsArgumentNullException()
     {
         // Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new ArchiveTasksForCompletedJirasCommand(mockClockifyClient.Object, mockJiraClient.Object, null!));
     }
 }

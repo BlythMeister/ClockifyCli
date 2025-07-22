@@ -59,8 +59,8 @@ public class DeleteTimerCommand : BaseCommand
 
                 // Filter out current running entries (they have no end time) and only include entries from this week
                 timeEntries = timeEntries
-                    .Where(e => !string.IsNullOrEmpty(e.TimeInterval.End) && 
-                               e.TimeInterval.StartDate.Date >= startOfWeek && 
+                    .Where(e => !string.IsNullOrEmpty(e.TimeInterval.End) &&
+                               e.TimeInterval.StartDate.Date >= startOfWeek &&
                                e.TimeInterval.StartDate.Date <= endOfWeek)
                     .OrderByDescending(e => e.TimeInterval.StartDate) // Newest first
                     .ToList();
@@ -101,7 +101,7 @@ public class DeleteTimerCommand : BaseCommand
                     var endTime = entry.TimeInterval.EndDate.ToLocalTime();
                     var duration = TimeFormatter.FormatDurationCompact(entry.TimeInterval.DurationSpan);
                     var description = string.IsNullOrWhiteSpace(entry.Description) ? "No description" : entry.Description;
-                    
+
                     return Markup.Escape($"{startTime:MMM dd, HH:mm}-{endTime:HH:mm} ({duration}) | {projectName} > {taskName} | {description}");
                 }));
 

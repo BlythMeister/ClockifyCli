@@ -38,7 +38,7 @@ public class UploadToTempoCommandTests
         // Arrange
         var settings = new UploadToTempoCommand.Settings { Days = 7 };
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockTimeEntries = new List<TimeEntry>();
@@ -69,7 +69,7 @@ public class UploadToTempoCommandTests
         // Arrange
         var settings = new UploadToTempoCommand.Settings();
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -90,7 +90,7 @@ public class UploadToTempoCommandTests
         // Arrange
         var settings = new UploadToTempoCommand.Settings { CleanupOrphaned = true };
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockTimeEntries = new List<TimeEntry>();
@@ -121,7 +121,7 @@ public class UploadToTempoCommandTests
         // Arrange
         var settings = new UploadToTempoCommand.Settings { Days = 30 };
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockTimeEntries = new List<TimeEntry>();
@@ -153,10 +153,10 @@ public class UploadToTempoCommandTests
         // Arrange
         var settings = new UploadToTempoCommand.Settings();
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
-        
+
         var mockTimeEntry = new TimeEntry(
             "entry1",
             "TEST-123 Test Task",
@@ -215,7 +215,7 @@ public class UploadToTempoCommandTests
     public void Constructor_WithNullClockifyClient_ThrowsArgumentNullException()
     {
         // Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new UploadToTempoCommand(null!, mockTempoClient.Object, testConsole));
     }
 
@@ -223,7 +223,7 @@ public class UploadToTempoCommandTests
     public void Constructor_WithNullTempoClient_ThrowsArgumentNullException()
     {
         // Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new UploadToTempoCommand(mockClockifyClient.Object, null!, testConsole));
     }
 
@@ -231,7 +231,7 @@ public class UploadToTempoCommandTests
     public void Constructor_WithNullConsole_ThrowsArgumentNullException()
     {
         // Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             new UploadToTempoCommand(mockClockifyClient.Object, mockTempoClient.Object, null!));
     }
 }

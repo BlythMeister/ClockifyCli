@@ -52,10 +52,10 @@ public class DiscardTimerCommand : BaseCommand
                     ctx.Status("Getting timer details...");
                     var projects = await clockifyClient.GetProjects(workspace);
                     project = projects.FirstOrDefault(p => p.Id == currentEntry.ProjectId);
-                    task = project != null ? 
-                        (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) : 
+                    task = project != null ?
+                        (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) :
                         null;
-                    
+
                     var startTime = currentEntry.TimeInterval.StartDate;
                     elapsed = DateTime.UtcNow - startTime;
                 }

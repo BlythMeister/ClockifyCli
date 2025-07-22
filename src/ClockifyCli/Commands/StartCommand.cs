@@ -43,14 +43,14 @@ public class StartCommand : BaseCommand
             console.MarkupLine("[yellow]⚠️  A timer is already running![/]");
             console.MarkupLine($"[dim]Current timer: {currentEntry.Description}[/]");
             console.WriteLine();
-            
+
             var shouldStop = console.Confirm("Do you want to stop the current timer and start a new one?", false);
             if (!shouldStop)
             {
                 console.MarkupLine("[dim]Timer start cancelled. Use 'clockify-cli status' to see what's running.[/]");
                 return;
             }
-            
+
             // Stop the current timer
             console.MarkupLine("[dim]Stopping current timer...[/]");
             await clockifyClient.StopCurrentTimeEntry(workspace, user);

@@ -27,15 +27,15 @@ services.AddTransient<ClockifyClient>(provider =>
 {
     var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
     var configService = provider.GetRequiredService<ConfigurationService>();
-    
+
     // Load config when the client is actually needed
     var config = configService.LoadConfigurationAsync().GetAwaiter().GetResult();
-    
+
     if (string.IsNullOrWhiteSpace(config.ClockifyApiKey))
     {
         throw new InvalidOperationException("Configuration is incomplete. Run 'config set' first to configure your API keys.");
     }
-    
+
     var httpClient = httpClientFactory.CreateClient();
     return new ClockifyClient(httpClient, config.ClockifyApiKey);
 });
@@ -47,15 +47,15 @@ services.AddTransient<JiraClient>(provider =>
 {
     var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
     var configService = provider.GetRequiredService<ConfigurationService>();
-    
+
     // Load config when the client is actually needed
     var config = configService.LoadConfigurationAsync().GetAwaiter().GetResult();
-    
+
     if (string.IsNullOrWhiteSpace(config.JiraUsername) || string.IsNullOrWhiteSpace(config.JiraApiToken))
     {
         throw new InvalidOperationException("Configuration is incomplete. Run 'config set' first to configure your API keys.");
     }
-    
+
     var httpClient = httpClientFactory.CreateClient();
     return new JiraClient(httpClient, config.JiraUsername, config.JiraApiToken);
 });
@@ -68,15 +68,15 @@ services.AddTransient<TempoClient>(provider =>
     var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
     var configService = provider.GetRequiredService<ConfigurationService>();
     var jiraClient = provider.GetRequiredService<JiraClient>();
-    
+
     // Load config when the client is actually needed
     var config = configService.LoadConfigurationAsync().GetAwaiter().GetResult();
-    
+
     if (string.IsNullOrWhiteSpace(config.TempoApiKey))
     {
         throw new InvalidOperationException("Configuration is incomplete. Run 'config set' first to configure your API keys.");
     }
-    
+
     var httpClient = httpClientFactory.CreateClient();
     return new TempoClient(httpClient, config.TempoApiKey, jiraClient);
 });

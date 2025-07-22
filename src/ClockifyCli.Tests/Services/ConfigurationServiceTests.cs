@@ -16,7 +16,7 @@ public class ConfigurationServiceTests
         // Create a unique test directory for each test
         testConfigDirectory = Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(testConfigDirectory);
-        
+
         // Use the custom directory constructor
         configService = new ConfigurationService(testConfigDirectory);
     }
@@ -99,7 +99,7 @@ public class ConfigurationServiceTests
         Assert.That(updatedConfig.JiraUsername, Is.EqualTo(string.Empty));
         Assert.That(updatedConfig.JiraApiToken, Is.EqualTo(string.Empty));
         Assert.That(updatedConfig.TempoApiKey, Is.EqualTo(string.Empty));
-        
+
         // Verify the config was actually saved by loading it again
         var reloadedConfig = await configService.LoadConfigurationAsync();
         Assert.That(reloadedConfig, Is.EqualTo(updatedConfig));
@@ -141,7 +141,7 @@ public class ConfigurationServiceTests
     {
         // This test verifies that the method handles normal cases correctly
         var config = new AppConfiguration("test", "test", "test", "test");
-        
+
         // Act & Assert - Should not throw for valid config
         Assert.DoesNotThrowAsync(async () => await configService.SaveConfigurationAsync(config));
     }

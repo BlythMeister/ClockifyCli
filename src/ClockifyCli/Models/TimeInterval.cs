@@ -4,7 +4,7 @@ public record TimeInterval(string Start, string End)
 {
     public DateTime StartDate => DateTime.Parse(Start, null, System.Globalization.DateTimeStyles.RoundtripKind);
     public DateTime EndDate => DateTime.Parse(End, null, System.Globalization.DateTimeStyles.RoundtripKind);
-    
+
     /// <summary>
     /// Gets the duration of this time interval. 
     /// Only use this for completed time entries where End is not null/empty.
@@ -21,7 +21,7 @@ public record TimeInterval(string Start, string End)
             return EndDate.Subtract(StartDate);
         }
     }
-    
+
     /// <summary>
     /// Indicates whether this time entry is currently running (End is null or empty).
     /// </summary>

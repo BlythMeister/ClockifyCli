@@ -33,7 +33,7 @@ public class ClockifyClientHttpTests
     {
         // Arrange
         var jsonResponse = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
-        
+
         mockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
                  .Respond("application/json", jsonResponse);
 
@@ -67,7 +67,7 @@ public class ClockifyClientHttpTests
     {
         // Arrange
         var jsonResponse = """[{"id":"workspace1","name":"Test Workspace"}]""";
-        
+
         mockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
                  .Respond("application/json", jsonResponse);
 
@@ -89,7 +89,7 @@ public class ClockifyClientHttpTests
         // Arrange
         var workspace = new WorkspaceInfo("workspace123", "Test Workspace");
         var jsonResponse = """[{"id":"project1","name":"Test Project","clientName":"Test Client"}]""";
-        
+
         mockHttp.When(HttpMethod.Get, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/projects?page=1&page-size=100")
                  .Respond("application/json", jsonResponse);
 
@@ -114,7 +114,7 @@ public class ClockifyClientHttpTests
         var startDate = DateTime.Today.AddDays(-7);
         var endDate = DateTime.Today;
         var jsonResponse = """[{"id":"entry1","description":"Test entry","timeInterval":{"start":"2024-01-01T09:00:00Z","end":"2024-01-01T10:00:00Z"}}]""";
-        
+
         var expectedUrl = $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/user/{user.Id}/time-entries?start={startDate:yyyy-MM-dd}T00:00:00Z&end={endDate:yyyy-MM-dd}T23:59:59Z&in-progress=false&page=1&page-size=100";
         mockHttp.When(HttpMethod.Get, expectedUrl)
                  .Respond("application/json", jsonResponse);
@@ -149,7 +149,7 @@ public class ClockifyClientHttpTests
         var newDescription = "Updated description";
 
         var expectedJsonResponse = """{"id":"entry123","description":"Updated description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":"2024-01-01T11:00:00Z"}}""";
-        
+
         mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{timeEntry.Id}")
                  .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""end"":""2024-01-01T11:00:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Updated description""}")
                  .Respond("application/json", expectedJsonResponse);
@@ -182,7 +182,7 @@ public class ClockifyClientHttpTests
         var newDescription = "Updated running description";
 
         var expectedJsonResponse = """{"id":"entry123","description":"Updated running description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":null}}""";
-        
+
         mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{runningTimeEntry.Id}")
                  .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Updated running description""}")
                  .Respond("application/json", expectedJsonResponse);
@@ -214,7 +214,7 @@ public class ClockifyClientHttpTests
         var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
 
         var expectedJsonResponse = """{"id":"entry123","description":"Original description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":null}}""";
-        
+
         mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{runningTimeEntry.Id}")
                  .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Original description""}")
                  .Respond("application/json", expectedJsonResponse);
@@ -252,7 +252,7 @@ public class ClockifyClientHttpTests
         var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(async () => 
+        Assert.ThrowsAsync<HttpRequestException>(async () =>
             await clockifyClient.UpdateTimeEntry(workspace, timeEntry, newStartTime, newEndTime, "New description"));
     }
 
@@ -277,7 +277,7 @@ public class ClockifyClientHttpTests
         var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(async () => 
+        Assert.ThrowsAsync<HttpRequestException>(async () =>
             await clockifyClient.UpdateRunningTimeEntry(workspace, runningTimeEntry, newStartTime, "New description"));
     }
 }

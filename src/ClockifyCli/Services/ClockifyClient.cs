@@ -29,7 +29,7 @@ public class ClockifyClient : IClockifyClient
         {
             var response = await client.GetAsync("user");
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 // Try to parse error response
@@ -44,7 +44,7 @@ public class ClockifyClient : IClockifyClient
                     throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
                 }
             }
-            
+
             return JsonConvert.DeserializeObject<UserInfo>(responseContent)!;
         }
         catch (Exception e)
@@ -60,7 +60,7 @@ public class ClockifyClient : IClockifyClient
         {
             var response = await client.GetAsync("workspaces");
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 // Try to parse error response
@@ -75,7 +75,7 @@ public class ClockifyClient : IClockifyClient
                     throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
                 }
             }
-            
+
             return JsonConvert.DeserializeObject<List<WorkspaceInfo>>(responseContent)!;
         }
         catch (Exception e)
@@ -124,7 +124,7 @@ public class ClockifyClient : IClockifyClient
         {
             var response = await client.GetAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?in-progress=true");
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 // Try to parse error response
@@ -139,7 +139,7 @@ public class ClockifyClient : IClockifyClient
                     throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
                 }
             }
-            
+
             var entries = JsonConvert.DeserializeObject<List<TimeEntry>>(responseContent)!;
             return entries.FirstOrDefault();
         }
@@ -160,7 +160,7 @@ public class ClockifyClient : IClockifyClient
 
             var response = await client.PatchAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries", content);
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 // Try to parse error response
@@ -262,7 +262,7 @@ public class ClockifyClient : IClockifyClient
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
             var response = await client.PutAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
@@ -300,7 +300,7 @@ public class ClockifyClient : IClockifyClient
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
             var response = await client.PutAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
@@ -322,7 +322,7 @@ public class ClockifyClient : IClockifyClient
         try
         {
             var response = await client.DeleteAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}");
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
@@ -349,7 +349,7 @@ public class ClockifyClient : IClockifyClient
                 var pageInfo = baseUrl.Contains("?") ? $"&page={page}&page-size={pageSize}" : $"?page={page}&page-size={pageSize}";
                 var response = await client.GetAsync($"{baseUrl}{pageInfo}");
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     // Try to parse error response
@@ -364,7 +364,7 @@ public class ClockifyClient : IClockifyClient
                         throw new HttpRequestException($"API Error: {responseContent} (Status: {response.StatusCode})");
                     }
                 }
-                
+
                 var items = JsonConvert.DeserializeObject<List<T>>(responseContent)!;
 
                 returnItems.AddRange(items);

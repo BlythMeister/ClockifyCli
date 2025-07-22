@@ -36,7 +36,7 @@ public class WeekViewCommandTests
         // Arrange
         var settings = new WeekViewCommand.Settings();
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
@@ -65,7 +65,7 @@ public class WeekViewCommandTests
         // Arrange
         var settings = new WeekViewCommand.Settings();
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -86,7 +86,7 @@ public class WeekViewCommandTests
         // Arrange
         var settings = new WeekViewCommand.Settings { IncludeCurrent = true };
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
@@ -112,7 +112,7 @@ public class WeekViewCommandTests
         // Arrange
         var settings = new WeekViewCommand.Settings { Detailed = true };
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
@@ -138,7 +138,7 @@ public class WeekViewCommandTests
         // Arrange
         var settings = new WeekViewCommand.Settings();
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        
+
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();

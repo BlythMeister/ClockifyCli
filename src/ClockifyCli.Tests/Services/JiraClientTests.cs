@@ -55,7 +55,7 @@ public class JiraClientTests
             }
         }
         """;
-        
+
         mockHttp.When(HttpMethod.Get, "https://15below.atlassian.net/rest/api/3/issue/TEST-456")
                  .Respond("application/json", jsonResponse);
 
@@ -97,7 +97,7 @@ public class JiraClientTests
             }
         }
         """;
-        
+
         mockHttp.When(HttpMethod.Get, "https://15below.atlassian.net/rest/api/3/issue/TEST-789")
                  .Respond("application/json", jsonResponse);
 
@@ -132,7 +132,7 @@ public class JiraClientTests
     {
         // Arrange
         var jiraRef = "TEST-404";
-        
+
         mockHttp.When(HttpMethod.Get, "https://15below.atlassian.net/rest/api/3/issue/TEST-404")
                  .Respond(HttpStatusCode.NotFound);
 
@@ -150,7 +150,7 @@ public class JiraClientTests
     {
         // Arrange
         var jsonResponse = """{"accountId":"abc123def456","displayName":"Test User","emailAddress":"test@example.com"}""";
-        
+
         mockHttp.When(HttpMethod.Get, "https://15below.atlassian.net/rest/api/3/myself")
                  .Respond("application/json", jsonResponse);
 
@@ -181,7 +181,7 @@ public class JiraClientTests
     {
         // Arrange
         var jsonResponse = """{"accountId":"lazy123def456","displayName":"Lazy User","emailAddress":"lazy@example.com"}""";
-        
+
         mockHttp.When(HttpMethod.Get, "https://15below.atlassian.net/rest/api/3/myself")
                  .Respond("application/json", jsonResponse);
 
@@ -220,7 +220,7 @@ public class JiraClientTests
             }
         }
         """;
-        
+
         // Setup mock to only respond once - if caching doesn't work, second call will fail
         mockHttp.When(HttpMethod.Get, "https://15below.atlassian.net/rest/api/3/issue/TEST-CACHE")
                  .Respond("application/json", jsonResponse);

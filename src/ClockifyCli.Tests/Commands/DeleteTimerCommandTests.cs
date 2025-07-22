@@ -20,7 +20,7 @@ public class DeleteTimerCommandTests
 
         // Act & Assert
         Assert.DoesNotThrow(() => new DeleteTimerCommand(clockifyClient, console));
-        
+
         // Cleanup
         mockHttp.Dispose();
         httpClient.Dispose();
@@ -32,16 +32,16 @@ public class DeleteTimerCommandTests
         // Arrange
         var mockHttp = new MockHttpMessageHandler();
         var httpClient = new HttpClient(mockHttp);
-        
+
         // Mock user and workspace calls
         var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
         mockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
                 .Respond("application/json", userJson);
-        
+
         var workspacesJson = """[{"id":"workspace1","name":"Test Workspace"}]""";
         mockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
                 .Respond("application/json", workspacesJson);
-        
+
         // Mock no completed timers (empty array)
         mockHttp.When(HttpMethod.Get, "*")
                 .Respond("application/json", "[]");
@@ -55,11 +55,11 @@ public class DeleteTimerCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         // Should complete without errors
         var output = console.Output;
         Assert.That(output, Is.Not.Empty);
-        
+
         // Cleanup
         mockHttp.Dispose();
         httpClient.Dispose();

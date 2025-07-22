@@ -40,7 +40,7 @@ public class ConfigScheduleCommandTests
 
         // Assert
         Assert.That(result, Is.AnyOf(0, -1)); // May fail if not on Windows or missing permissions
-        
+
         // Should display some output regardless of success/failure
         var output = testConsole.Output;
         Assert.That(output, Is.Not.Empty);

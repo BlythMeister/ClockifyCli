@@ -18,7 +18,7 @@ public class ConfigViewCommandTests
         // Create a temporary directory for test config files
         testConfigDirectory = Path.Combine(Path.GetTempPath(), $"ClockifyCliTests_{Guid.NewGuid()}");
         Directory.CreateDirectory(testConfigDirectory);
-        
+
         configService = new ConfigurationService(testConfigDirectory);
         testConsole = new TestConsole();
     }
@@ -28,7 +28,7 @@ public class ConfigViewCommandTests
     {
         // Clean up test console
         testConsole.Dispose();
-        
+
         // Clean up test directory
         if (Directory.Exists(testConfigDirectory))
         {
@@ -54,7 +54,7 @@ public class ConfigViewCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         // Verify configuration display
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("Current Configuration"));

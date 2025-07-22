@@ -59,14 +59,14 @@ public class JiraClient : IJiraClient
                                                          {
                                                              var response = await client.GetAsync($"issue/{jiraRef}");
                                                              var responseContent = await response.Content.ReadAsStringAsync();
-                                                             
+
                                                              if (!response.IsSuccessStatusCode)
                                                              {
                                                                  // For JIRA API, just return null for invalid issue references
                                                                  // This allows the calling code to handle it gracefully
                                                                  return null!; // Use null! to satisfy the non-nullable return type
                                                              }
-                                                             
+
                                                              return JsonConvert.DeserializeObject<JiraIssue>(responseContent)!;
                                                          }
                                                          catch (Exception e)
@@ -89,12 +89,12 @@ public class JiraClient : IJiraClient
         {
             var response = await client.GetAsync("myself");
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 throw new HttpRequestException($"Failed to get JIRA user. Status: {response.StatusCode}, Response: {responseContent}");
             }
-            
+
             var user = JsonConvert.DeserializeObject<JiraUser>(responseContent)!;
             return user.AccountId;
         }

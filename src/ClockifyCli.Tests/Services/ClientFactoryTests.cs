@@ -18,7 +18,7 @@ public class ClientFactoryTests
         // Create a temporary directory for test config
         tempConfigDirectory = Path.Combine(Path.GetTempPath(), "ClockifyCliTests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempConfigDirectory);
-        
+
         // Create ClientFactory with isolated ConfigurationService
         var configurationService = new ConfigurationService(tempConfigDirectory);
         clientFactory = new ClientFactory(configurationService);
@@ -48,7 +48,7 @@ public class ClientFactoryTests
         // Act & Assert
         var ex = Assert.ThrowsAsync<InvalidOperationException>(
             async () => await clientFactory.CreateClockifyClientAsync());
-        
+
         Assert.That(ex.Message, Does.Contain("Configuration is incomplete"));
     }
 
@@ -58,7 +58,7 @@ public class ClientFactoryTests
         // Act & Assert
         var ex = Assert.ThrowsAsync<InvalidOperationException>(
             async () => await clientFactory.CreateJiraClientAsync());
-        
+
         Assert.That(ex.Message, Does.Contain("Configuration is incomplete"));
     }
 
@@ -73,9 +73,9 @@ public class ClientFactoryTests
         // Act & Assert
         var ex = Assert.ThrowsAsync<InvalidOperationException>(
             async () => await clientFactory.CreateTempoClientAsync(jiraClient));
-        
+
         Assert.That(ex.Message, Does.Contain("Configuration is incomplete"));
-        
+
         // Cleanup
         jiraMockHttp.Dispose();
         jiraHttpClient.Dispose();
@@ -87,7 +87,7 @@ public class ClientFactoryTests
         // This test verifies that ClientFactory can be used in a DI scenario
         // Act & Assert
         Assert.DoesNotThrow(() => new ClientFactory());
-        
+
         // Verify the factory has the expected methods by checking their types
         var factoryType = typeof(ClientFactory);
         Assert.That(factoryType.GetMethod("CreateClockifyClientAsync"), Is.Not.Null);

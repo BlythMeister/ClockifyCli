@@ -5,11 +5,11 @@ namespace ClockifyCli.Services;
 public class ClientFactory
 {
     private readonly ConfigurationService configurationService;
-    
+
     public ClientFactory() : this(new ConfigurationService())
     {
     }
-    
+
     public ClientFactory(ConfigurationService configurationService)
     {
         this.configurationService = configurationService;

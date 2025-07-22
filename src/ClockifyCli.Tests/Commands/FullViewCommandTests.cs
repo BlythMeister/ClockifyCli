@@ -29,7 +29,7 @@ public class FullViewCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         // Should display success message
         var output = console.Output;
         Assert.That(output, Does.Contain("Opening Clockify"));

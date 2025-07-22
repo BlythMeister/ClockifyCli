@@ -13,7 +13,7 @@ public class ScheduledTaskServiceTests
     {
         // Act
         bool result;
-        
+
         // Assert - Should not throw an exception
         Assert.DoesNotThrow(() => result = ScheduledTaskService.IsToolInstalledAsGlobalTool());
     }
@@ -24,10 +24,10 @@ public class ScheduledTaskServiceTests
     {
         // Act
         string? result = null;
-        
+
         // Assert - Should not throw an exception
         Assert.DoesNotThrow(() => result = ScheduledTaskService.GetGlobalToolPath());
-        
+
         // Result should be either null or a valid string
         Assert.That(result, Is.Null.Or.TypeOf<string>());
     }
@@ -38,7 +38,7 @@ public class ScheduledTaskServiceTests
     {
         // This test will only be meaningful on non-Windows platforms
         // On Windows, it will test the actual functionality
-        
+
         // Arrange
         string taskName = "TestTask";
         int intervalMinutes = 30;
@@ -67,7 +67,7 @@ public class ScheduledTaskServiceTests
         int intervalMinutes = 30;
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => 
+        Assert.DoesNotThrowAsync(async () =>
             await ScheduledTaskService.CreateScheduledTask(invalidTaskName, intervalMinutes));
     }
 
@@ -80,7 +80,7 @@ public class ScheduledTaskServiceTests
         int invalidInterval = -1;
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => 
+        Assert.DoesNotThrowAsync(async () =>
             await ScheduledTaskService.CreateScheduledTask(taskName, invalidInterval));
     }
 
@@ -114,7 +114,7 @@ public class ScheduledTaskServiceTests
         string emptyTaskName = "";
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => 
+        Assert.DoesNotThrowAsync(async () =>
             await ScheduledTaskService.DeleteScheduledTask(emptyTaskName));
     }
 

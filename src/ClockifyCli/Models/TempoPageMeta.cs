@@ -1,3 +1,3 @@
 namespace ClockifyCli.Models;
 
-public record TempoPageMeta(string Next);
+public record TempoPageMeta(string? Next);

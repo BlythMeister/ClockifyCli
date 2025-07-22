@@ -120,7 +120,7 @@ public class TempoClientTests
         var tempoWorklogResponse = """{"tempoWorklogId":98765,"worker":{"accountId":"account123"}}""";
         
         mockTempoHttp.When(HttpMethod.Post, "https://api.tempo.io/4/worklogs")
-                     .WithContent("{\"authorAccountId\":\"account123\",\"description\":\"Working on feature [cid:entry123]\",\"issueId\":\"10002\",\"startDate\":\"2024-01-15\",\"startTime\":\"09:00:00\",\"timeSpentSeconds\":9000,\"remainingEstimateSeconds\":7200}")
+                     .WithContent("{\"authorAccountId\":\"account123\",\"description\":\"Working on feature [cid:entry123]\",\"issueId\":10002,\"startDate\":\"2024-01-15\",\"startTime\":\"09:00:00\",\"timeSpentSeconds\":9000,\"remainingEstimateSeconds\":7200}")
                      .Respond("application/json", tempoWorklogResponse);
 
         var tempoClient = new TempoClient(tempoHttpClient, TestApiKey, jiraClient);
@@ -173,7 +173,6 @@ public class TempoClientTests
         var tempoWorklogResponse = """{"tempoWorklogId":98766,"worker":{"accountId":"account123"}}""";
         
         mockTempoHttp.When(HttpMethod.Post, "https://api.tempo.io/4/worklogs")
-                     .WithContent("{\"authorAccountId\":\"account123\",\"description\":\"Working on bug fix [cid:entry124]\",\"issueId\":\"10003\",\"startDate\":\"2024-01-15\",\"startTime\":\"09:00:00\",\"timeSpentSeconds\":3600,\"remainingEstimateSeconds\":5400}")
                      .Respond("application/json", tempoWorklogResponse);
 
         var tempoClient = new TempoClient(tempoHttpClient, TestApiKey, jiraClient);
@@ -226,7 +225,6 @@ public class TempoClientTests
         var tempoWorklogResponse = """{"tempoWorklogId":98767,"worker":{"accountId":"account123"}}""";
         
         mockTempoHttp.When(HttpMethod.Post, "https://api.tempo.io/4/worklogs")
-                     .WithContent("{\"authorAccountId\":\"account123\",\"description\":\"Working on enhancement [cid:entry125]\",\"issueId\":\"10004\",\"startDate\":\"2024-01-15\",\"startTime\":\"09:00:00\",\"timeSpentSeconds\":5400,\"remainingEstimateSeconds\":1800}")
                      .Respond("application/json", tempoWorklogResponse);
 
         var tempoClient = new TempoClient(tempoHttpClient, TestApiKey, jiraClient);
@@ -369,6 +367,7 @@ public class TempoClientTests
         var startDate = new DateTime(2024, 1, 15);
         var endDate = new DateTime(2024, 1, 21);
         
+        // Page 1: Contains a 'next' URL to trigger pagination
         var tempoResponsePage1 = """
         {
             "results": [
@@ -390,6 +389,7 @@ public class TempoClientTests
         }
         """;
         
+        // Page 2: No 'next' URL to stop pagination
         var tempoResponsePage2 = """
         {
             "results": [
@@ -411,10 +411,12 @@ public class TempoClientTests
         }
         """;
         
+        // Mock the first page - initial API call (relative to base address)
         mockTempoHttp.When(HttpMethod.Get, $"https://api.tempo.io/4/worklogs/user/{TestAccountId}?from=2024-01-15&to=2024-01-21")
                      .Respond("application/json", tempoResponsePage1);
         
-        mockTempoHttp.When(HttpMethod.Get, $"https://api.tempo.io/4/worklogs/user/{TestAccountId}?from=2024-01-15&to=2024-01-21&offset=1")
+        // Mock the second page - should be called with just the relative part after base address stripping
+        mockTempoHttp.When(HttpMethod.Get, "https://api.tempo.io/4/worklogs/user/account123?from=2024-01-15&to=2024-01-21&offset=1")
                      .Respond("application/json", tempoResponsePage2);
 
         var tempoClient = new TempoClient(tempoHttpClient, TestApiKey, jiraClient);

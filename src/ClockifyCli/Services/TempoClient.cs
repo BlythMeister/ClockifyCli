@@ -69,7 +69,9 @@ public class TempoClient : ITempoClient
                 var remValue = descriptionRegexMatch.Groups["remVal"].Value;
                 if (remValue.Equals("auto", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    remaining = remaining - durationSeconds;
+                    // Get the current remaining estimate from Jira first
+                    var currentRemaining = ParseTimeStringToSeconds(jiraIssue.Fields.TimeTracking.RemainingEstimate);
+                    remaining = currentRemaining - durationSeconds;
                     if (remaining < 0)
                     {
                         remaining = 0;
@@ -182,7 +184,15 @@ public class TempoClient : ITempoClient
                 returnItems.AddRange(page.Results);
                 if (page.MetaData.Next != null)
                 {
-                    url = page.MetaData.Next;
+                    // If the next URL is a full URL, extract just the relative part after the base address
+                    if (page.MetaData.Next.StartsWith(client.BaseAddress?.ToString() ?? ""))
+                    {
+                        url = page.MetaData.Next.Substring(client.BaseAddress!.ToString().Length);
+                    }
+                    else
+                    {
+                        url = page.MetaData.Next;
+                    }
                 }
                 else
                 {

@@ -30,60 +30,6 @@ public class JiraClientTests
     }
 
     [Test]
-    public async Task GetProject_WithValidProjectName_ShouldReturnProject()
-    {
-        // Arrange
-        var projectInfo = new ProjectInfo("project123", "TEST-123");
-        var jsonResponse = """{"id":"10001","key":"TEST","name":"Test Project","projectTypeKey":"software"}""";
-        
-        mockHttp.When(HttpMethod.Get, "https://15below.atlassian.net/rest/api/3/project/TEST")
-                 .Respond("application/json", jsonResponse);
-
-        var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);
-
-        // Act
-        var result = await jiraClient.GetProject(projectInfo);
-
-        // Assert
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.Id, Is.EqualTo(10001));
-        Assert.That(result.Key, Is.EqualTo("TEST"));
-        Assert.That(result.Name, Is.EqualTo("Test Project"));
-    }
-
-    [Test]
-    public async Task GetProject_WithInvalidProjectName_ShouldReturnNull()
-    {
-        // Arrange
-        var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);
-        var projectInfo = new ProjectInfo("project123", "Invalid Project Name");
-
-        // Act - No HTTP mocking needed for this test since it returns null for invalid names
-        var result = await jiraClient.GetProject(projectInfo);
-
-        // Assert
-        Assert.That(result, Is.Null);
-    }
-
-    [Test]
-    public async Task GetProject_WithHttpError_ShouldReturnNull()
-    {
-        // Arrange
-        var projectInfo = new ProjectInfo("project123", "TEST-123");
-        
-        mockHttp.When(HttpMethod.Get, "https://15below.atlassian.net/rest/api/3/project/TEST")
-                 .Respond(HttpStatusCode.NotFound);
-
-        var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);
-
-        // Act
-        var result = await jiraClient.GetProject(projectInfo);
-
-        // Assert
-        Assert.That(result, Is.Null);
-    }
-
-    [Test]
     public async Task GetIssue_WithValidTaskName_ShouldReturnIssue()
     {
         // Arrange

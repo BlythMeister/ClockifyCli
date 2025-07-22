@@ -79,7 +79,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                                     }
                                                                 });
 
-        if (!timeEntries.Any())
+        if (!timeEntries.Any() && currentRunningEntry == null)
         {
             console.MarkupLine("[yellow]No time entries found in the specified date range.[/]");
             console.MarkupLine("[dim]Try increasing the number of days with --days option.[/]");

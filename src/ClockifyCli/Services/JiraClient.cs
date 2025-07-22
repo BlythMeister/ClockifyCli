@@ -10,7 +10,6 @@ public class JiraClient : IJiraClient
 {
     private readonly HttpClient client;
     private readonly Regex taskInfoRegex;
-    private readonly Regex projectInfoRegex;
     private readonly ConcurrentDictionary<string, Task<JiraIssue>> jiraIdMap;
 
     public Lazy<Task<string>> UserId { get; }
@@ -27,7 +26,6 @@ public class JiraClient : IJiraClient
         client.DefaultRequestHeaders.Add("Accept", "application/json");
 
         taskInfoRegex = new Regex(@"(?<jiraRef>\S*-\d*)(\s|-|).*");
-        projectInfoRegex = new Regex(@"(?<projectRef>\S*)(\s|-|).*");
         jiraIdMap = new ConcurrentDictionary<string, Task<JiraIssue>>();
 
         UserId = new Lazy<Task<string>>(() => GetUser());
@@ -36,35 +34,6 @@ public class JiraClient : IJiraClient
     // Original constructor for backward compatibility
     public JiraClient(string user, string apiKey) : this(new HttpClient(), user, apiKey)
     {
-    }
-
-    public async Task<JiraProject?> GetProject(ProjectInfo projectInfo)
-    {
-        var projectMatches = projectInfoRegex.Match(projectInfo.Name);
-        if (!projectMatches.Success || !projectMatches.Groups["projectRef"].Success)
-        {
-            return null;
-        }
-
-        var projectRef = projectMatches.Groups["projectRef"].Value;
-
-        try
-        {
-            var response = await client.GetAsync($"project/{projectRef}");
-            var responseContent = await response.Content.ReadAsStringAsync();
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-            
-            return JsonConvert.DeserializeObject<JiraProject>(responseContent);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.ToString());
-            throw;
-        }
     }
 
     public async Task<JiraIssue?> GetIssue(TaskInfo taskInfo)

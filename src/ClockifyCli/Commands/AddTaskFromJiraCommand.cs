@@ -5,14 +5,14 @@ using Spectre.Console.Cli;
 
 namespace ClockifyCli.Commands;
 
-public class AddTaskCommand : BaseCommand<AddTaskCommand.Settings>
+public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Settings>
 {
     private readonly IClockifyClient clockifyClient;
     private readonly IJiraClient jiraClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public AddTaskCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
+    public AddTaskFromJiraCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient;
         this.jiraClient = jiraClient;

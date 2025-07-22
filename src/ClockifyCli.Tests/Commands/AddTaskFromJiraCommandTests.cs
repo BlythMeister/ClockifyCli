@@ -9,7 +9,7 @@ using Moq;
 namespace ClockifyCli.Tests.Commands;
 
 [TestFixture]
-public class AddTaskCommandTests
+public class AddTaskFromJiraCommandTests
 {
     [Test]
     public void Constructor_WithDependencies_ShouldCreateSuccessfully()
@@ -22,7 +22,7 @@ public class AddTaskCommandTests
         var console = new TestConsole();
 
         // Act & Assert
-        Assert.DoesNotThrow(() => new AddTaskCommand(clockifyClient, jiraClient, console));
+        Assert.DoesNotThrow(() => new AddTaskFromJiraCommand(clockifyClient, jiraClient, console));
         
         // Cleanup
         mockHttp.Dispose();
@@ -30,7 +30,7 @@ public class AddTaskCommandTests
     }
 
     [Test]
-    public void AddTaskCommand_WithInjectedDependencies_ShouldInitializeCorrectly()
+    public void AddTaskFromJiraCommand_WithInjectedDependencies_ShouldInitializeCorrectly()
     {
         // Arrange - separate HttpClients to avoid base address conflicts
         var clockifyMockHttp = new MockHttpMessageHandler();
@@ -44,7 +44,7 @@ public class AddTaskCommandTests
         var testConsole = new TestConsole();
         
         // Act & Assert
-        Assert.DoesNotThrow(() => new AddTaskCommand(clockifyClient, jiraClient, testConsole));
+        Assert.DoesNotThrow(() => new AddTaskFromJiraCommand(clockifyClient, jiraClient, testConsole));
         
         // Cleanup
         clockifyMockHttp.Dispose();
@@ -71,10 +71,10 @@ public class AddTaskCommandTests
         var jiraClient = new JiraClient(jiraHttpClient, "test-user", "test-token");
         var testConsole = new TestConsole();
         
-        var command = new AddTaskCommand(clockifyClient, jiraClient, testConsole);
+        var command = new AddTaskFromJiraCommand(clockifyClient, jiraClient, testConsole);
         var mockRemainingArgs = new Mock<IRemainingArguments>();
         var context = new CommandContext([], mockRemainingArgs.Object, "", null);
-        var settings = new AddTaskCommand.Settings();
+        var settings = new AddTaskFromJiraCommand.Settings();
 
         // Act
         var result = await command.ExecuteAsync(context, settings);

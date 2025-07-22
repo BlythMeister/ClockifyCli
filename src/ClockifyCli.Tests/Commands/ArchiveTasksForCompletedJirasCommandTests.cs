@@ -10,12 +10,12 @@ using Spectre.Console.Testing;
 namespace ClockifyCli.Tests.Commands;
 
 [TestFixture]
-public class ArchiveCompletedJirasCommandTests
+public class ArchiveTasksForCompletedJirasCommandTests
 {
     private Mock<IClockifyClient> mockClockifyClient;
     private Mock<IJiraClient> mockJiraClient;
     private TestConsole testConsole;
-    private ArchiveCompletedJirasCommand command;
+    private ArchiveTasksForCompletedJirasCommand command;
 
     [SetUp]
     public void Setup()
@@ -23,7 +23,7 @@ public class ArchiveCompletedJirasCommandTests
         mockClockifyClient = new Mock<IClockifyClient>();
         mockJiraClient = new Mock<IJiraClient>();
         testConsole = new TestConsole();
-        command = new ArchiveCompletedJirasCommand(mockClockifyClient.Object, mockJiraClient.Object, testConsole);
+        command = new ArchiveTasksForCompletedJirasCommand(mockClockifyClient.Object, mockJiraClient.Object, testConsole);
     }
 
     [TearDown]
@@ -167,7 +167,7 @@ public class ArchiveCompletedJirasCommandTests
     {
         // Assert
         Assert.Throws<ArgumentNullException>(() => 
-            new ArchiveCompletedJirasCommand(null!, mockJiraClient.Object, testConsole));
+            new ArchiveTasksForCompletedJirasCommand(null!, mockJiraClient.Object, testConsole));
     }
 
     [Test]
@@ -175,7 +175,7 @@ public class ArchiveCompletedJirasCommandTests
     {
         // Assert
         Assert.Throws<ArgumentNullException>(() => 
-            new ArchiveCompletedJirasCommand(mockClockifyClient.Object, null!, testConsole));
+            new ArchiveTasksForCompletedJirasCommand(mockClockifyClient.Object, null!, testConsole));
     }
 
     [Test]
@@ -183,6 +183,6 @@ public class ArchiveCompletedJirasCommandTests
     {
         // Assert
         Assert.Throws<ArgumentNullException>(() => 
-            new ArchiveCompletedJirasCommand(mockClockifyClient.Object, mockJiraClient.Object, null!));
+            new ArchiveTasksForCompletedJirasCommand(mockClockifyClient.Object, mockJiraClient.Object, null!));
     }
 }

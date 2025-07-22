@@ -19,7 +19,7 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - **✏️ Edit existing timers** with precise start/end time adjustments
 - **📊 View time reports** for current week and specific periods with optional detailed breakdown
 - **🔔 Monitor timers** with desktop notifications
-- **🗂️ Archive completed** Jira tasks automatically
+- **🗂️ Archive Tasks For Completed Jiras** automatically
 - **⚙️ Easy configuration** management for API keys
 - **🌐 Cross-platform** support (Windows, macOS, Linux)
 
@@ -57,7 +57,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
     }
     
     # Get available commands and options
-    $commands = @('add-task', 'archive-completed-jiras', 'config', 'delete-timer', 'discard-timer', 'edit-timer', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $commands = @('add-task-from-jira', 'archive-tasks-for-completed-jiras', 'config', 'delete-timer', 'discard-timer', 'edit-timer', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
     $options = @('--help', '--version')
     
     # Filter suggestions based on what user has typed
@@ -153,13 +153,13 @@ This shows your current configuration status and masks sensitive values for secu
 
 ### Task Management
 
-#### Add New Task from Jira
+#### Add Task From Jira
 
-`clockify-cli add-task` - Interactive selection to add Jira issues as Clockify tasks
+`clockify-cli add-task-from-jira` - Interactive selection to add Jira issues as Clockify tasks
 
-#### Archive Completed Tasks
+#### Archive Tasks For Completed Jiras
 
-`clockify-cli archive-completed-jiras` - Archive Clockify tasks that are marked as Done in Jira
+`clockify-cli archive-tasks-for-completed-jiras` - Archive Clockify tasks that are marked as Done in Jira
 
 ### Data Synchronization
 
@@ -236,8 +236,8 @@ The configuration is stored securely in your user profile:
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `add-task` | Add a new task from a Jira issue | `clockify-cli add-task` |
-| `archive-completed-jiras` | Archive tasks with completed Jira status | `clockify-cli archive-completed-jiras` |
+| `add-task-from-jira` | Add Task From Jira | `clockify-cli add-task-from-jira` |
+| `archive-tasks-for-completed-jiras` | Archive Tasks For Completed Jiras | `clockify-cli archive-tasks-for-completed-jiras` |
 
 ### Integration Commands
 

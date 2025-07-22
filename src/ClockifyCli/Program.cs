@@ -101,15 +101,15 @@ app.Configure(config =>
                         .WithExample(new[] { "upload-to-tempo", "--days", "7" })
                         .WithExample(new[] { "upload-to-tempo", "--days", "30", "--cleanup-orphaned" });
 
-                  // Add the add-task command
-                  config.AddCommand<AddTaskCommand>("add-task")
-                        .WithDescription("Add a new task to Clockify from a Jira issue")
-                        .WithExample(new[] { "add-task" });
+                  // Add the add-task-from-jira command
+                  config.AddCommand<AddTaskFromJiraCommand>("add-task-from-jira")
+                        .WithDescription("Add Task From Jira")
+                        .WithExample(new[] { "add-task-from-jira" });
 
-                  // Add the archive-completed-jiras command
-                  config.AddCommand<ArchiveCompletedJirasCommand>("archive-completed-jiras")
-                        .WithDescription("Archive tasks in Clockify that have completed Jira status")
-                        .WithExample(new[] { "archive-completed-jiras" });
+                  // Add the archive-tasks-for-completed-jiras command
+                  config.AddCommand<ArchiveTasksForCompletedJirasCommand>("archive-tasks-for-completed-jiras")
+                        .WithDescription("Archive Tasks For Completed Jiras")
+                        .WithExample(new[] { "archive-tasks-for-completed-jiras" });
 
                   // Add the week-view command
                   config.AddCommand<WeekViewCommand>("week-view")

@@ -98,7 +98,7 @@ public class StartCommand : BaseCommand
         if (!allOptions.Any())
         {
             console.MarkupLine("[yellow]No tasks found![/]");
-            console.MarkupLine("[dim]Add some tasks to your projects first using 'clockify-cli add-task'.[/]");
+            console.MarkupLine("[dim]Add some tasks to your projects first using 'clockify-cli add-task-from-jira'.[/]");
             return;
         }
 

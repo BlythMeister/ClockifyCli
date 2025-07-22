@@ -4,14 +4,14 @@ using Spectre.Console.Cli;
 
 namespace ClockifyCli.Commands;
 
-public class ArchiveCompletedJirasCommand : BaseCommand
+public class ArchiveTasksForCompletedJirasCommand : BaseCommand
 {
     private readonly IClockifyClient clockifyClient;
     private readonly IJiraClient jiraClient;
     private readonly IAnsiConsole console;
 
     // Constructor for dependency injection (now required)
-    public ArchiveCompletedJirasCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
+    public ArchiveTasksForCompletedJirasCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
     {
         this.clockifyClient = clockifyClient ?? throw new ArgumentNullException(nameof(clockifyClient));
         this.jiraClient = jiraClient ?? throw new ArgumentNullException(nameof(jiraClient));

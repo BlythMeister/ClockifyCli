@@ -130,4 +130,154 @@ public class ClockifyClientHttpTests
         Assert.That(result[0].Id, Is.EqualTo("entry1"));
         Assert.That(result[0].Description, Is.EqualTo("Test entry"));
     }
+
+    [Test]
+    public async Task UpdateTimeEntry_WithValidParameters_ShouldUpdateSuccessfully()
+    {
+        // Arrange
+        var workspace = new WorkspaceInfo("workspace123", "Test Workspace");
+        var timeEntry = new TimeEntry(
+            "entry123",
+            "Original description",
+            "task123",
+            "project123",
+            "regular",
+            new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")
+        );
+        var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
+        var newEndTime = new DateTime(2024, 1, 1, 11, 0, 0, DateTimeKind.Utc);
+        var newDescription = "Updated description";
+
+        var expectedJsonResponse = """{"id":"entry123","description":"Updated description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":"2024-01-01T11:00:00Z"}}""";
+        
+        mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{timeEntry.Id}")
+                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""end"":""2024-01-01T11:00:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Updated description""}")
+                 .Respond("application/json", expectedJsonResponse);
+
+        var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
+
+        // Act
+        var result = await clockifyClient.UpdateTimeEntry(workspace, timeEntry, newStartTime, newEndTime, newDescription);
+
+        // Assert
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Id, Is.EqualTo("entry123"));
+        Assert.That(result.Description, Is.EqualTo("Updated description"));
+    }
+
+    [Test]
+    public async Task UpdateRunningTimeEntry_WithValidParameters_ShouldUpdateSuccessfully()
+    {
+        // Arrange
+        var workspace = new WorkspaceInfo("workspace123", "Test Workspace");
+        var runningTimeEntry = new TimeEntry(
+            "entry123",
+            "Original description",
+            "task123",
+            "project123",
+            "regular",
+            new TimeInterval("2024-01-01T09:00:00Z", null!)
+        );
+        var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
+        var newDescription = "Updated running description";
+
+        var expectedJsonResponse = """{"id":"entry123","description":"Updated running description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":null}}""";
+        
+        mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{runningTimeEntry.Id}")
+                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Updated running description""}")
+                 .Respond("application/json", expectedJsonResponse);
+
+        var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
+
+        // Act
+        var result = await clockifyClient.UpdateRunningTimeEntry(workspace, runningTimeEntry, newStartTime, newDescription);
+
+        // Assert
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Id, Is.EqualTo("entry123"));
+        Assert.That(result.Description, Is.EqualTo("Updated running description"));
+    }
+
+    [Test]
+    public async Task UpdateRunningTimeEntry_WithNullDescription_ShouldKeepOriginalDescription()
+    {
+        // Arrange
+        var workspace = new WorkspaceInfo("workspace123", "Test Workspace");
+        var runningTimeEntry = new TimeEntry(
+            "entry123",
+            "Original description",
+            "task123",
+            "project123",
+            "regular",
+            new TimeInterval("2024-01-01T09:00:00Z", null!)
+        );
+        var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
+
+        var expectedJsonResponse = """{"id":"entry123","description":"Original description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":null}}""";
+        
+        mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{runningTimeEntry.Id}")
+                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Original description""}")
+                 .Respond("application/json", expectedJsonResponse);
+
+        var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
+
+        // Act
+        var result = await clockifyClient.UpdateRunningTimeEntry(workspace, runningTimeEntry, newStartTime, null);
+
+        // Assert
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Id, Is.EqualTo("entry123"));
+        Assert.That(result.Description, Is.EqualTo("Original description"));
+    }
+
+    [Test]
+    public void UpdateTimeEntry_WithHttpError_ShouldThrowHttpRequestException()
+    {
+        // Arrange
+        var workspace = new WorkspaceInfo("workspace123", "Test Workspace");
+        var timeEntry = new TimeEntry(
+            "entry123",
+            "Original description",
+            "task123",
+            "project123",
+            "regular",
+            new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")
+        );
+        var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
+        var newEndTime = new DateTime(2024, 1, 1, 11, 0, 0, DateTimeKind.Utc);
+
+        mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{timeEntry.Id}")
+                 .Respond(HttpStatusCode.BadRequest, "application/json", """{"message":"Bad Request"}""");
+
+        var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
+
+        // Act & Assert
+        Assert.ThrowsAsync<HttpRequestException>(async () => 
+            await clockifyClient.UpdateTimeEntry(workspace, timeEntry, newStartTime, newEndTime, "New description"));
+    }
+
+    [Test]
+    public void UpdateRunningTimeEntry_WithHttpError_ShouldThrowHttpRequestException()
+    {
+        // Arrange
+        var workspace = new WorkspaceInfo("workspace123", "Test Workspace");
+        var runningTimeEntry = new TimeEntry(
+            "entry123",
+            "Original description",
+            "task123",
+            "project123",
+            "regular",
+            new TimeInterval("2024-01-01T09:00:00Z", null!)
+        );
+        var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
+
+        mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{runningTimeEntry.Id}")
+                 .Respond(HttpStatusCode.BadRequest, "application/json", """{"message":"Bad Request"}""");
+
+        var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
+
+        // Act & Assert
+        Assert.ThrowsAsync<HttpRequestException>(async () => 
+            await clockifyClient.UpdateRunningTimeEntry(workspace, runningTimeEntry, newStartTime, "New description"));
+    }
 }

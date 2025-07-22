@@ -279,6 +279,44 @@ public class ClockifyClient : IClockifyClient
         }
     }
 
+    public async Task<TimeEntry> UpdateRunningTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, string? description = null)
+    {
+        try
+        {
+            var updateData = new
+            {
+                start = newStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                projectId = timeEntry.ProjectId,
+                taskId = string.IsNullOrEmpty(timeEntry.TaskId) ? (string?)null : timeEntry.TaskId,
+                description = description ?? timeEntry.Description
+            };
+
+            var serializerSettings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+
+            var updateJson = JsonConvert.SerializeObject(updateData, serializerSettings);
+            var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+
+            var response = await client.PutAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Failed to update running time entry. Status: {response.StatusCode}, Response: {errorContent}");
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<TimeEntry>(responseContent)!;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error updating running time entry: {e}");
+            throw;
+        }
+    }
+
     public async Task DeleteTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry)
     {
         try

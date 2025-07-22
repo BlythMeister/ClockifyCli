@@ -57,6 +57,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         List<TimeEntry> timeEntries = new();
         List<ProjectInfo> projects = new();
         List<TaskWithProject> allTasks = new();
+        TimeEntry? currentRunningEntry = null;
 
         await console.Status()
                          .StartAsync("Loading time entries...", async ctx =>
@@ -64,8 +65,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                                     ctx.Status("Getting time entries from Clockify...");
                                                                     timeEntries = await clockifyClient.GetTimeEntries(workspace, user, startDate, endDate);
 
-                                                                    // Filter out current running entries (they have no end time)
-                                                                    timeEntries = timeEntries.Where(e => !string.IsNullOrEmpty(e.TimeInterval.End)).ToList();
+                                                                    ctx.Status("Checking for running timer...");
+                                                                    currentRunningEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
 
                                                                     ctx.Status("Getting projects and tasks from Clockify...");
                                                                     projects = await clockifyClient.GetProjects(workspace);
@@ -80,26 +81,52 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         if (!timeEntries.Any())
         {
-            console.MarkupLine("[yellow]No completed time entries found in the specified date range.[/]");
+            console.MarkupLine("[yellow]No time entries found in the specified date range.[/]");
             console.MarkupLine("[dim]Try increasing the number of days with --days option.[/]");
             return;
         }
 
         // Step 1: Select date
-        var entriesByDate = timeEntries
-                            .GroupBy(e => e.TimeInterval.StartDate.Date)
-                            .OrderByDescending(g => g.Key)
-                            .ToList();
+        // Get all dates that have entries or the running timer
+        var allDates = timeEntries.Select(e => e.TimeInterval.StartDate.Date).ToList();
+        
+        if (currentRunningEntry != null)
+        {
+            allDates.Add(currentRunningEntry.TimeInterval.StartDate.Date);
+        }
+        
+        var entriesByDate = allDates.Distinct()
+                                  .OrderByDescending(date => date)
+                                  .Select(date => new { Date = date, Entries = timeEntries.Where(e => e.TimeInterval.StartDate.Date == date).ToList() })
+                                  .ToList();
 
         var selectedDate = console.Prompt(
                                               new SelectionPrompt<DateTime>()
                                                   .Title("Select a [green]date[/] to edit entries from:")
                                                   .PageSize(10)
-                                                  .AddChoices(entriesByDate.Select(g => g.Key))
-                                                  .UseConverter(date => Markup.Escape($"{date:ddd, MMM dd, yyyy} ({entriesByDate.First(g => g.Key == date).Count()} entries)")));
+                                                  .AddChoices(entriesByDate.Select(g => g.Date))
+                                                  .UseConverter(date => 
+                                                  {
+                                                      var entryCount = entriesByDate.First(g => g.Date == date).Entries.Count();
+                                                      var hasRunningTimer = currentRunningEntry != null && currentRunningEntry.TimeInterval.StartDate.Date == date.Date;
+                                                      var runningIndicator = hasRunningTimer ? " 🏃" : "";
+                                                      return Markup.Escape($"{date:ddd, MMM dd, yyyy} ({entryCount} entries{runningIndicator})");
+                                                  }));
 
         // Step 2: Select specific time entry from that date
-        var entriesForDate = entriesByDate.First(g => g.Key == selectedDate).OrderBy(e => e.TimeInterval.StartDate).ToList();
+        var entriesForDate = entriesByDate.First(g => g.Date == selectedDate).Entries.OrderBy(e => e.TimeInterval.StartDate).ToList();
+        
+        // Add running timer to the list only if it's on the selected date
+        if (currentRunningEntry != null && currentRunningEntry.TimeInterval.StartDate.Date == selectedDate.Date)
+        {
+            // Check if it's not already in the list (it might be if it was started today)
+            if (!entriesForDate.Any(e => e.Id == currentRunningEntry.Id))
+            {
+                entriesForDate.Add(currentRunningEntry);
+                // Re-sort to maintain chronological order
+                entriesForDate = entriesForDate.OrderBy(e => e.TimeInterval.StartDate).ToList();
+            }
+        }
 
         var selectedEntry = console.Prompt(
                                                new SelectionPrompt<TimeEntry>()
@@ -112,25 +139,45 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                                      var task = allTasks.FirstOrDefault(t => t.TaskId == entry.TaskId);
                                                                      var projectName = project?.Name ?? "Unknown Project";
                                                                      var taskName = task?.TaskName ?? "No Task";
-                                                                     var startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
-                                                                     var endTime = entry.TimeInterval.EndDate.ToLocalTime().ToString("HH:mm");
-                                                                     var duration = TimeFormatter.FormatDurationCompact(entry.TimeInterval.DurationSpan);
                                                                      var description = string.IsNullOrWhiteSpace(entry.Description) ? "No description" : entry.Description;
 
-                                                                     return Markup.Escape($"{startTime}-{endTime} ({duration}) | {projectName} > {taskName} | {description}");
+                                                                     // Check if this is the running timer
+                                                                     var isRunning = currentRunningEntry != null && entry.Id == currentRunningEntry.Id;
+                                                                     
+                                                                     if (isRunning)
+                                                                     {
+                                                                         var startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
+                                                                         var elapsed = TimeFormatter.FormatDurationCompact(DateTime.UtcNow - entry.TimeInterval.StartDate);
+                                                                         return Markup.Escape($"🏃 {startTime}-NOW ({elapsed}) | {projectName} > {taskName} | {description} [RUNNING]");
+                                                                     }
+                                                                     else
+                                                                     {
+                                                                         var startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
+                                                                         var endTime = entry.TimeInterval.EndDate.ToLocalTime().ToString("HH:mm");
+                                                                         var duration = TimeFormatter.FormatDurationCompact(entry.TimeInterval.DurationSpan);
+                                                                         return Markup.Escape($"{startTime}-{endTime} ({duration}) | {projectName} > {taskName} | {description}");
+                                                                     }
                                                                  }));
 
         // Step 3: Show current details and edit
-        await EditSelectedEntry(clockifyClient, workspace, selectedEntry, projects, allTasks);
+        await EditSelectedEntry(clockifyClient, workspace, selectedEntry, projects, allTasks, currentRunningEntry);
     }
 
-        private async Task EditSelectedEntry(IClockifyClient clockifyClient, WorkspaceInfo workspace, TimeEntry selectedEntry, List<ProjectInfo> projects, List<TaskWithProject> allTasks)
+        private async Task EditSelectedEntry(IClockifyClient clockifyClient, WorkspaceInfo workspace, TimeEntry selectedEntry, List<ProjectInfo> projects, List<TaskWithProject> allTasks, TimeEntry? currentRunningEntry)
     {
         var project = projects.FirstOrDefault(p => p.Id == selectedEntry.ProjectId);
         var task = allTasks.FirstOrDefault(t => t.TaskId == selectedEntry.TaskId);
+        var isRunning = currentRunningEntry != null && selectedEntry.Id == currentRunningEntry.Id;
 
         console.WriteLine();
-        console.MarkupLine("[bold]Current Time Entry Details[/]");
+        if (isRunning)
+        {
+            console.MarkupLine("[bold green]Current Running Timer Details[/]");
+        }
+        else
+        {
+            console.MarkupLine("[bold]Current Time Entry Details[/]");
+        }
         console.WriteLine();
 
         var table = new Table();
@@ -141,15 +188,25 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         var taskName = task?.TaskName != null ? Markup.Escape(task.TaskName) : "No Task";
         var description = string.IsNullOrWhiteSpace(selectedEntry.Description) ? "No description" : Markup.Escape(selectedEntry.Description);
         var currentStartTime = selectedEntry.TimeInterval.StartDate.ToLocalTime();
-        var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
-        var currentDuration = TimeFormatter.FormatDurationCompact(selectedEntry.TimeInterval.DurationSpan);
 
         table.AddRow("Project", projectName);
         table.AddRow("Task", taskName);
         table.AddRow("Description", description);
         table.AddRow("Start Time", currentStartTime.ToString("MMM dd, yyyy HH:mm"));
-        table.AddRow("End Time", currentEndTime.ToString("MMM dd, yyyy HH:mm"));
-        table.AddRow("Duration", currentDuration);
+
+        if (isRunning)
+        {
+            var elapsed = TimeFormatter.FormatDurationCompact(DateTime.UtcNow - selectedEntry.TimeInterval.StartDate);
+            table.AddRow("Status", "[green]RUNNING[/]");
+            table.AddRow("Elapsed Time", elapsed);
+        }
+        else
+        {
+            var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
+            var currentDuration = TimeFormatter.FormatDurationCompact(selectedEntry.TimeInterval.DurationSpan);
+            table.AddRow("End Time", currentEndTime.ToString("MMM dd, yyyy HH:mm"));
+            table.AddRow("Duration", currentDuration);
+        }
 
         console.Write(table);
         console.WriteLine();
@@ -171,32 +228,38 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         }
 
         // Get new end time
-        var newEndTimeStr = console.Ask<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):");
-
-        var newEndTime = currentEndTime;
-        if (!string.IsNullOrWhiteSpace(newEndTimeStr))
+        DateTime? newEndTime = null;
+        
+        if (!isRunning)
         {
-            if (TimeSpan.TryParseExact(newEndTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var endTimeSpan))
-            {
-                newEndTime = newStartTime.Date.Add(endTimeSpan);
+            var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
+            var newEndTimeStr = console.Ask<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):");
 
-                // Handle case where end time is next day
-                if (newEndTime <= newStartTime)
+            newEndTime = currentEndTime;
+            if (!string.IsNullOrWhiteSpace(newEndTimeStr))
+            {
+                if (TimeSpan.TryParseExact(newEndTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var endTimeSpan))
                 {
-                    newEndTime = newEndTime.AddDays(1);
+                    newEndTime = newStartTime.Date.Add(endTimeSpan);
+
+                    // Handle case where end time is next day
+                    if (newEndTime <= newStartTime)
+                    {
+                        newEndTime = newEndTime.Value.AddDays(1);
+                    }
+                }
+                else
+                {
+                    console.MarkupLine("[red]Invalid time format. Keeping original end time.[/]");
                 }
             }
-            else
-            {
-                console.MarkupLine("[red]Invalid time format. Keeping original end time.[/]");
-            }
-        }
 
-        // Validate times
-        if (newEndTime <= newStartTime)
-        {
-            console.MarkupLine("[red]End time must be after start time. Operation cancelled.[/]");
-            return;
+            // Validate times for completed entries
+            if (newEndTime <= newStartTime)
+            {
+                console.MarkupLine("[red]End time must be after start time. Operation cancelled.[/]");
+                return;
+            }
         }
 
         // Get new description (optional)
@@ -216,20 +279,33 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         summaryTable.AddColumn("Current");
         summaryTable.AddColumn("New");
 
-        var newDuration = TimeFormatter.FormatDurationCompact(newEndTime - newStartTime);
-
         summaryTable.AddRow(
                             "Start Time",
                             currentStartTime.ToString("HH:mm"),
                             newStartTime.ToString("HH:mm"));
-        summaryTable.AddRow(
-                            "End Time",
-                            currentEndTime.ToString("HH:mm"),
-                            newEndTime.ToString("HH:mm"));
-        summaryTable.AddRow(
-                            "Duration",
-                            currentDuration,
-                            newDuration);
+
+        if (!isRunning)
+        {
+            var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
+            var currentDuration = TimeFormatter.FormatDurationCompact(selectedEntry.TimeInterval.DurationSpan);
+            var newDuration = TimeFormatter.FormatDurationCompact(newEndTime!.Value - newStartTime);
+
+            summaryTable.AddRow(
+                                "End Time",
+                                currentEndTime.ToString("HH:mm"),
+                                newEndTime.Value.ToString("HH:mm"));
+            summaryTable.AddRow(
+                                "Duration",
+                                currentDuration,
+                                newDuration);
+        }
+        else
+        {
+            summaryTable.AddRow(
+                                "Status",
+                                "[green]RUNNING[/]",
+                                "[green]RUNNING[/]");
+        }
         summaryTable.AddRow(
                             "Description",
                             string.IsNullOrWhiteSpace(selectedEntry.Description) ? "[dim]No description[/]" : Markup.Escape(selectedEntry.Description),
@@ -242,7 +318,17 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         if (console.Confirm("Apply these changes?"))
         {
             await console.Status()
-                             .StartAsync("Updating time entry...", async ctx => { await clockifyClient.UpdateTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newEndTime.ToUniversalTime(), newDescription); });
+                             .StartAsync("Updating time entry...", async ctx => 
+                             { 
+                                 if (isRunning)
+                                 {
+                                     await clockifyClient.UpdateRunningTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newDescription);
+                                 }
+                                 else
+                                 {
+                                     await clockifyClient.UpdateTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newEndTime!.Value.ToUniversalTime(), newDescription);
+                                 }
+                             });
 
             console.MarkupLine("[green]✓ Time entry updated successfully![/]");
         }

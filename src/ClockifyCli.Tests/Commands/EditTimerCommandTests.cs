@@ -48,6 +48,8 @@ public class EditTimerCommandTests
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                          .ReturnsAsync(mockTimeEntries);
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser))
+                         .ReturnsAsync((TimeEntry?)null);
 
         // Act
         var result = await command.ExecuteAsync(context, settings);
@@ -96,8 +98,11 @@ public class EditTimerCommandTests
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(new List<TaskInfo>());
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                          .ReturnsAsync(mockTimeEntries);
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser))
+                         .ReturnsAsync((TimeEntry?)null);
 
         // Act
         var result = await command.ExecuteAsync(context, settings);
@@ -105,12 +110,12 @@ public class EditTimerCommandTests
         // Assert
         Assert.That(result, Is.EqualTo(0));
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("No completed time entries found"));
+        Assert.That(output, Does.Contain("No time entries found"));
         Assert.That(output, Does.Contain("Try increasing the number of days"));
     }
 
     [Test]
-    public async Task ExecuteAsync_WithRunningTimeEntry_FiltersOutRunningEntry()
+    public async Task ExecuteAsync_WithOnlyRunningTimeEntry_ShowsRunningEntryForEdit()
     {
         // Arrange
         var settings = new EditTimerCommand.Settings { Days = 7 };
@@ -121,7 +126,7 @@ public class EditTimerCommandTests
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockProjects = new List<ProjectInfo>();
         
-        // Create a running time entry (no end time) - should be filtered out
+        // Create only a running time entry (no completed ones)
         var runningEntry = new TimeEntry(
             "entry1",
             "Running Task",
@@ -131,7 +136,7 @@ public class EditTimerCommandTests
             new TimeInterval(DateTime.UtcNow.AddHours(-2).ToString("o"), null!)
         );
 
-        var mockTimeEntries = new List<TimeEntry> { runningEntry }; // Only running entry, no completed ones
+        var mockTimeEntries = new List<TimeEntry>(); // No completed entries
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
@@ -139,16 +144,140 @@ public class EditTimerCommandTests
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(new List<TaskInfo>());
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                          .ReturnsAsync(mockTimeEntries);
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser))
+                         .ReturnsAsync(runningEntry);
 
         // Act
         var result = await command.ExecuteAsync(context, settings);
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        // Should process the entries but filter out running ones, leaving none to edit
-        mockClockifyClient.Verify(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        // Should find the running timer's date and make it available for editing
+        mockClockifyClient.Verify(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser), Times.Once);
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("No completed time entries found"));
+        // Should not show "no entries" message since running timer is available
+        Assert.That(output, Does.Not.Contain("No time entries found"));
+    }
+
+    [Test]
+    public void EditTimerCommand_Constructor_ShouldAcceptDependencies()
+    {
+        // Arrange & Act
+        var command = new EditTimerCommand(mockClockifyClient.Object, testConsole);
+
+        // Assert
+        Assert.That(command, Is.Not.Null);
+        Assert.That(command, Is.InstanceOf<EditTimerCommand>());
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithRunningTimeEntry_IncludesRunningEntryOnSameDate()
+    {
+        // Arrange
+        var settings = new EditTimerCommand.Settings { Days = 7 };
+        var mockRemainingArgs = new Mock<IRemainingArguments>();
+        var context = new CommandContext([], mockRemainingArgs.Object, "", null);
+        
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        var mockProjects = new List<ProjectInfo>();
+        
+        // Create a completed time entry and a running time entry on the same date
+        var today = DateTime.Today;
+        var completedEntry = new TimeEntry(
+            "entry1",
+            "Completed Task",
+            "task1",
+            "project1",
+            "regular",
+            new TimeInterval(today.AddHours(9).ToString("o"), today.AddHours(10).ToString("o"))
+        );
+        
+        var runningEntry = new TimeEntry(
+            "entry2",
+            "Running Task",
+            "task2",
+            "project1",
+            "regular",
+            new TimeInterval(today.AddHours(11).ToString("o"), null!)
+        );
+
+        var mockTimeEntries = new List<TimeEntry> { completedEntry };
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(new List<TaskInfo>());
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                         .ReturnsAsync(mockTimeEntries);
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser))
+                         .ReturnsAsync(runningEntry);
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        mockClockifyClient.Verify(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser), Times.Once);
+        // The command should find both entries for today's date
+        var output = testConsole.Output;
+        Assert.That(output, Does.Not.Contain("No time entries found"));
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithRunningTimeEntryOnDifferentDate_DoesNotIncludeInOtherDates()
+    {
+        // Arrange
+        var settings = new EditTimerCommand.Settings { Days = 7 };
+        var mockRemainingArgs = new Mock<IRemainingArguments>();
+        var context = new CommandContext([], mockRemainingArgs.Object, "", null);
+        
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        var mockProjects = new List<ProjectInfo>();
+        
+        // Create entries on different dates
+        var yesterday = DateTime.Today.AddDays(-1);
+        var today = DateTime.Today;
+        
+        var yesterdayEntry = new TimeEntry(
+            "entry1",
+            "Yesterday Task",
+            "task1",
+            "project1",
+            "regular",
+            new TimeInterval(yesterday.AddHours(9).ToString("o"), yesterday.AddHours(10).ToString("o"))
+        );
+        
+        var runningEntry = new TimeEntry(
+            "entry2",
+            "Running Task",
+            "task2",
+            "project1",
+            "regular",
+            new TimeInterval(today.AddHours(11).ToString("o"), null!)
+        );
+
+        var mockTimeEntries = new List<TimeEntry> { yesterdayEntry };
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(new List<TaskInfo>());
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                         .ReturnsAsync(mockTimeEntries);
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser))
+                         .ReturnsAsync(runningEntry);
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        mockClockifyClient.Verify(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser), Times.Once);
+        // Should show both yesterday (with 1 entry) and today (with running timer)
+        var output = testConsole.Output;
+        Assert.That(output, Does.Not.Contain("No time entries found"));
     }
 
     [Test]

@@ -1,8 +1,8 @@
+using ClockifyCli.Models;
+using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
-using ClockifyCli.Models;
-using Newtonsoft.Json;
 
 namespace ClockifyCli.Services;
 
@@ -169,16 +169,26 @@ public class TempoClient : ITempoClient
             var returnItems = new List<T>();
             var url = baseUrl;
             var moreToGet = true;
+            var visitedUrls = new HashSet<string>();
+
             while (moreToGet)
             {
+                // Check if we've already called this URL to prevent infinite loops
+                if (visitedUrls.Contains(url, StringComparer.InvariantCultureIgnoreCase))
+                {
+                    break;
+                }
+
+                visitedUrls.Add(url);
+
                 var response = await client.GetAsync(url);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     throw new HttpRequestException($"Tempo API Error: {responseContent} (Status: {response.StatusCode})");
                 }
-                
+
                 var page = JsonConvert.DeserializeObject<TempoPage<T>>(responseContent)!;
 
                 returnItems.AddRange(page.Results);

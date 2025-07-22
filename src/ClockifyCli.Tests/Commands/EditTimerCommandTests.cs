@@ -20,7 +20,8 @@ public class EditTimerCommandTests
     public void Setup()
     {
         mockClockifyClient = new Mock<IClockifyClient>();
-        testConsole = new TestConsole();
+        testConsole = new TestConsole()
+            .Interactive();
         command = new EditTimerCommand(mockClockifyClient.Object, testConsole);
     }
 
@@ -115,7 +116,6 @@ public class EditTimerCommandTests
     }
 
     [Test]
-    [Ignore("Test requires interactive prompts that cannot run in test environment")]
     public async Task ExecuteAsync_WithOnlyRunningTimeEntry_ShowsRunningEntryForEdit()
     {
         // Arrange
@@ -148,6 +148,18 @@ public class EditTimerCommandTests
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser))
                          .ReturnsAsync(runningEntry);
 
+        // Simulate user input for interactive prompts
+        // First prompt: Select date (the running entry's date should be the only option)
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first (only) date option
+        // Second prompt: Select time entry (the running entry should be the only option)  
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first (only) time entry option
+        // Third prompt: Enter new start time (leave blank to keep current)
+        testConsole.Input.PushTextWithEnter(""); // Keep current start time
+        // Fourth prompt: Enter new description (leave blank to keep current) 
+        testConsole.Input.PushTextWithEnter(""); // Keep current description
+        // Fifth prompt: Confirm changes
+        testConsole.Input.PushTextWithEnter("n"); // Don't apply changes (just testing the flow)
+
         // Act
         var result = await command.ExecuteAsync(context, settings);
 
@@ -172,7 +184,6 @@ public class EditTimerCommandTests
     }
 
     [Test]
-    [Ignore("Test requires interactive prompts that cannot run in test environment")]
     public async Task ExecuteAsync_WithRunningTimeEntry_IncludesRunningEntryOnSameDate()
     {
         // Arrange
@@ -215,6 +226,14 @@ public class EditTimerCommandTests
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser))
                          .ReturnsAsync(runningEntry);
 
+        // Simulate user input for interactive prompts
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select the date (today)
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first time entry (could be completed or running)
+        testConsole.Input.PushTextWithEnter(""); // Keep current start time
+        testConsole.Input.PushTextWithEnter(""); // Keep current end time (if not running) or description (if running)
+        testConsole.Input.PushTextWithEnter(""); // Keep current description (if not running entry)
+        testConsole.Input.PushTextWithEnter("n"); // Don't apply changes
+
         // Act
         var result = await command.ExecuteAsync(context, settings);
 
@@ -227,7 +246,6 @@ public class EditTimerCommandTests
     }
 
     [Test]
-    [Ignore("Test requires interactive prompts that cannot run in test environment")]
     public async Task ExecuteAsync_WithRunningTimeEntryOnDifferentDate_DoesNotIncludeInOtherDates()
     {
         // Arrange
@@ -271,6 +289,14 @@ public class EditTimerCommandTests
                          .ReturnsAsync(mockTimeEntries);
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser))
                          .ReturnsAsync(runningEntry);
+
+        // Simulate user input for interactive prompts - choose yesterday's date first
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first date (should be yesterday)
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select the yesterday entry
+        testConsole.Input.PushTextWithEnter(""); // Keep current start time
+        testConsole.Input.PushTextWithEnter(""); // Keep current end time
+        testConsole.Input.PushTextWithEnter(""); // Keep current description
+        testConsole.Input.PushTextWithEnter("n"); // Don't apply changes
 
         // Act
         var result = await command.ExecuteAsync(context, settings);

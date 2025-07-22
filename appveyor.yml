@@ -18,9 +18,12 @@ dotnet_csproj:
   informational_version: '$(appveyor_build_version)'
 build_script:
 - cmd: >-
-    dotnet restore
-    dotnet build
-    dotnet test
+    dotnet restore src\ClockifyCli.sln --configuration Release
+    
+    dotnet build src\ClockifyCli.sln --configuration Release
+    
+    dotnet test src\ClockifyCli.sln --configuration Release
+    
     dotnet pack src\ClockifyCli.sln --configuration Release
 test: off
 artifacts:

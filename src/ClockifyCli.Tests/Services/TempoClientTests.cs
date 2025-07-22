@@ -411,12 +411,12 @@ public class TempoClientTests
         }
         """;
         
-        // Mock the first page - initial API call (relative to base address)
-        mockTempoHttp.When(HttpMethod.Get, $"https://api.tempo.io/4/worklogs/user/{TestAccountId}?from=2024-01-15&to=2024-01-21")
+        // Mock the first page - initial API call
+        mockTempoHttp.When(HttpMethod.Get, $"worklogs/user/{TestAccountId}?from=2024-01-15&to=2024-01-21")
                      .Respond("application/json", tempoResponsePage1);
         
-        // Mock the second page - should be called with just the relative part after base address stripping
-        mockTempoHttp.When(HttpMethod.Get, "https://api.tempo.io/4/worklogs/user/account123?from=2024-01-15&to=2024-01-21&offset=1")
+        // Mock the second page - the implementation strips the base address, so we expect just the relative part
+        mockTempoHttp.When(HttpMethod.Get, "worklogs/user/account123?from=2024-01-15&to=2024-01-21&offset=1")
                      .Respond("application/json", tempoResponsePage2);
 
         var tempoClient = new TempoClient(tempoHttpClient, TestApiKey, jiraClient);

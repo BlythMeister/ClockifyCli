@@ -345,7 +345,8 @@ public class TempoClientTests
         }
         """;
 
-        mockTempoHttp.When(HttpMethod.Get, $"https://api.tempo.io/4/worklogs/user/{TestAccountId}?from=2024-01-15&to=2024-01-21")
+        mockTempoHttp.When(HttpMethod.Get, $"https://api.tempo.io/4/worklogs/user/{TestAccountId}")
+                     .WithExactQueryString("from=2024-01-15&to=2024-01-21")
                      .Respond("application/json", tempoResponse);
 
         var tempoClient = new TempoClient(tempoHttpClient, TestApiKey, jiraClient);
@@ -411,12 +412,14 @@ public class TempoClientTests
         }
         """;
 
-        // Mock the first page - initial API call with exact URL matching
-        mockTempoHttp.When(HttpMethod.Get, "https://api.tempo.io/4/worklogs/user/account123?from=2024-01-15&to=2024-01-21")
+        // Mock the first page - initial API call 
+        var firstPageMock = mockTempoHttp.When(HttpMethod.Get, "https://api.tempo.io/4/worklogs/user/account123")
+                     .WithExactQueryString("from=2024-01-15&to=2024-01-21")
                      .Respond("application/json", tempoResponsePage1);
 
-        // Mock the second page - use the exact URL that will be used after base address stripping
-        mockTempoHttp.When(HttpMethod.Get, "https://api.tempo.io/4/worklogs/user/account123?from=2024-01-15&to=2024-01-21&offset=1")
+        // Mock the second page - with offset parameter
+        var secondPageMock = mockTempoHttp.When(HttpMethod.Get, "https://api.tempo.io/4/worklogs/user/account123")
+                     .WithExactQueryString("from=2024-01-15&to=2024-01-21&offset=1")
                      .Respond("application/json", tempoResponsePage2);
 
         var tempoClient = new TempoClient(tempoHttpClient, TestApiKey, jiraClient);
@@ -438,7 +441,8 @@ public class TempoClientTests
         var startDate = new DateTime(2024, 1, 15);
         var endDate = new DateTime(2024, 1, 21);
 
-        mockTempoHttp.When(HttpMethod.Get, $"https://api.tempo.io/4/worklogs/user/{TestAccountId}?from=2024-01-15&to=2024-01-21")
+        mockTempoHttp.When(HttpMethod.Get, $"https://api.tempo.io/4/worklogs/user/{TestAccountId}")
+                     .WithExactQueryString("from=2024-01-15&to=2024-01-21")
                      .Respond(HttpStatusCode.Unauthorized, "application/json", """{"message":"Unauthorized"}""");
 
         var tempoClient = new TempoClient(tempoHttpClient, TestApiKey, jiraClient);

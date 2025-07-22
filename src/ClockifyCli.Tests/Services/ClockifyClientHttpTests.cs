@@ -90,7 +90,8 @@ public class ClockifyClientHttpTests
         var workspace = new WorkspaceInfo("workspace123", "Test Workspace");
         var jsonResponse = """[{"id":"project1","name":"Test Project","clientName":"Test Client"}]""";
 
-        mockHttp.When(HttpMethod.Get, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/projects?page=1&page-size=100")
+        mockHttp.When(HttpMethod.Get, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/projects")
+                 .WithExactQueryString("page=1&page-size=100")
                  .Respond("application/json", jsonResponse);
 
         var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
@@ -115,8 +116,10 @@ public class ClockifyClientHttpTests
         var endDate = DateTime.Today;
         var jsonResponse = """[{"id":"entry1","description":"Test entry","timeInterval":{"start":"2024-01-01T09:00:00Z","end":"2024-01-01T10:00:00Z"}}]""";
 
-        var expectedUrl = $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/user/{user.Id}/time-entries?start={startDate:yyyy-MM-dd}T00:00:00Z&end={endDate:yyyy-MM-dd}T23:59:59Z&in-progress=false&page=1&page-size=100";
+        var expectedUrl = $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/user/{user.Id}/time-entries";
+        var expectedQueryString = $"start={startDate:yyyy-MM-dd}T00:00:00Z&end={endDate:yyyy-MM-dd}T23:59:59Z&in-progress=false&page=1&page-size=100";
         mockHttp.When(HttpMethod.Get, expectedUrl)
+                 .WithExactQueryString(expectedQueryString)
                  .Respond("application/json", jsonResponse);
 
         var clockifyClient = new ClockifyClient(httpClient, TestApiKey);

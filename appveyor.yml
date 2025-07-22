@@ -16,12 +16,13 @@ dotnet_csproj:
   assembly_version: '$(appveyor_build_version)'
   file_version: '$(appveyor_build_version)'
   informational_version: '$(appveyor_build_version)'
-configuration: Release
-platform: Any CPU
-build:
-  project: src\ClockifyCli.sln
-  publish_nuget: true
-  verbosity: minimal
+build_script:
+- cmd: >-
+    dotnet restore
+    dotnet build
+    dotnet test
+    dotnet pack src\ClockifyCli.sln --configuration Release
+test: off
 artifacts:
 - path: src\ClockifyCli\nupkg\ClockifyCli.$(appveyor_build_version).nupkg
   name: ClockifyCli.$(appveyor_build_version).nupkg

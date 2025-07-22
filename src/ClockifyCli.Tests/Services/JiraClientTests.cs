@@ -46,7 +46,7 @@ public class JiraClientTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.Id, Is.EqualTo("10001"));
+        Assert.That(result.Id, Is.EqualTo(10001));
         Assert.That(result.Key, Is.EqualTo("TEST"));
         Assert.That(result.Name, Is.EqualTo("Test Project"));
     }
@@ -120,7 +120,7 @@ public class JiraClientTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.Id, Is.EqualTo("10002"));
+        Assert.That(result.Id, Is.EqualTo(10002));
         Assert.That(result.Key, Is.EqualTo("TEST-456"));
         Assert.That(result.Fields.Summary, Is.EqualTo("Test Issue"));
     }
@@ -162,7 +162,7 @@ public class JiraClientTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.Id, Is.EqualTo("10003"));
+        Assert.That(result.Id, Is.EqualTo(10003));
         Assert.That(result.Key, Is.EqualTo("TEST-789"));
         Assert.That(result.Fields.Summary, Is.EqualTo("Another Test Issue"));
     }
@@ -288,7 +288,8 @@ public class JiraClientTests
         // Assert
         Assert.That(result1, Is.Not.Null);
         Assert.That(result2, Is.Not.Null);
-        Assert.That(result1.Id, Is.EqualTo(result2.Id));
+        // Verify it's the same instance (caching working)
+        Assert.That(result1, Is.SameAs(result2));
         Assert.That(result1.Key, Is.EqualTo("TEST-CACHE"));
         Assert.That(result2.Key, Is.EqualTo("TEST-CACHE"));
     }

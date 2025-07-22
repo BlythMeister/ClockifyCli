@@ -39,7 +39,7 @@ public class TypeResolverTests
     public void Constructor_WithNullServiceProvider_ShouldThrowArgumentNullException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new TypeResolver(null));
+        Assert.Throws<ArgumentNullException>(() => new TypeResolver(null!));
     }
 
     [Test]
@@ -88,7 +88,7 @@ public class TypeResolverTests
     public void Resolve_WithNullType_ShouldReturnNull()
     {
         // Act
-        var result = typeResolver.Resolve(null);
+        var result = typeResolver.Resolve(null!);
 
         // Assert
         Assert.That(result, Is.Null);

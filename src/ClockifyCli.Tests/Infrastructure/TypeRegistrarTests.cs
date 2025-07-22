@@ -28,7 +28,7 @@ public class TypeRegistrarTests
     public void Constructor_WithNullServiceCollection_ShouldThrowArgumentNullException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new TypeRegistrar(null));
+        Assert.Throws<ArgumentNullException>(() => new TypeRegistrar(null!));
     }
 
     [Test]

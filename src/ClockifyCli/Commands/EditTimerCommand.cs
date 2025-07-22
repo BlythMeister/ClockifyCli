@@ -212,7 +212,9 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         console.WriteLine();
 
         // Get new start time
-        var newStartTimeStr = console.Ask<string>($"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):");
+        var newStartTimeStr = console.Prompt(
+            new TextPrompt<string>($"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):")
+                .AllowEmpty());
 
         var newStartTime = currentStartTime;
         if (!string.IsNullOrWhiteSpace(newStartTimeStr))
@@ -233,7 +235,9 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         if (!isRunning)
         {
             var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
-            var newEndTimeStr = console.Ask<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):");
+            var newEndTimeStr = console.Prompt(
+                new TextPrompt<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):")
+                    .AllowEmpty());
 
             newEndTime = currentEndTime;
             if (!string.IsNullOrWhiteSpace(newEndTimeStr))
@@ -263,11 +267,17 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         }
 
         // Get new description (optional)
-        var newDescription = console.Ask<string>("Enter new [green]description[/] (or leave blank to keep current):");
+        var newDescription = console.Prompt(
+            new TextPrompt<string>("Enter new [green]description[/] (leave blank to keep current, or enter [red]-[/] to clear):")
+                .AllowEmpty());
 
         if (string.IsNullOrWhiteSpace(newDescription))
         {
             newDescription = selectedEntry.Description;
+        }
+        else if (newDescription.Trim() == "-")
+        {
+            newDescription = "";
         }
 
         // Show summary of changes

@@ -57,7 +57,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
     }
     
     # Get available commands and options
-    $commands = @('add-task-from-jira', 'archive-tasks-for-completed-jiras', 'config', 'delete', 'discard', 'edit', 'full-view', 'start', 'add', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $commands = @('add', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'config', 'delete', 'discard', 'edit', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
     $options = @('--help', '--version')
     
     # Filter suggestions based on what user has typed
@@ -115,10 +115,6 @@ This shows your current configuration status and masks sensitive values for secu
 
 ### Basic Time Tracking
 
-#### Start a Timer
-
-`clockify-cli start` - Interactive selection of available tasks with option to start now or at an earlier time
-
 #### Add Manual Time Entry
 
 `clockify-cli add` - Add a completed time entry with both start and end times
@@ -134,9 +130,9 @@ This command is useful for logging time you've already spent working on a task. 
 
 `clockify-cli status` - See what timer is currently running
 
-#### Stop Current Timer
+#### Delete Completed Timer
 
-`clockify-cli stop` - Stop the currently running timer
+`clockify-cli delete` - Delete completed timers from this week (newest first)
 
 #### Discard Current Timer
 
@@ -148,9 +144,13 @@ This command is useful for logging time you've already spent working on a task. 
 
 `clockify-cli edit --days 3` - Look for entries from the last 3 days
 
-#### Delete Completed Timer
+#### Start a Timer
 
-`clockify-cli delete` - Delete completed timers from this week (newest first)
+`clockify-cli start` - Interactive selection of available tasks with option to start now or at an earlier time
+
+#### Stop Current Timer
+
+`clockify-cli stop` - Stop the currently running timer
 
 #### View This Week's Time Entries
 
@@ -237,13 +237,13 @@ The configuration is stored securely in your user profile:
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `start` | Start a new timer by selecting from available tasks with customizable start time | `clockify-cli start` |
 | `add` | Add a completed time entry with both start and end times | `clockify-cli add` |
-| `stop` | Stop the currently running timer | `clockify-cli stop` |
+| `delete` | Delete completed timers from this week | `clockify-cli delete` |
 | `discard` | Permanently delete the currently running timer | `clockify-cli discard` |
 | `edit` | Edit start/end times of existing time entries | `clockify-cli edit --days 7` |
-| `delete` | Delete completed timers from this week | `clockify-cli delete` |
+| `start` | Start a new timer by selecting from available tasks with customizable start time | `clockify-cli start` |
 | `status` | Display current in-progress time entry | `clockify-cli status` |
+| `stop` | Stop the currently running timer | `clockify-cli stop` |
 | `week-view` | Display current week's time entries | `clockify-cli week-view --include-current --detailed --week-start Sunday` |
 
 ### Task Management Commands
@@ -257,16 +257,16 @@ The configuration is stored securely in your user profile:
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `upload-to-tempo` | Upload time entries from Clockify to Tempo | `clockify-cli upload-to-tempo --days 7` |
 | `timer-monitor` | Monitor timer status with notifications | `clockify-cli timer-monitor --silent` |
+| `upload-to-tempo` | Upload time entries from Clockify to Tempo | `clockify-cli upload-to-tempo --days 7` |
 
 ### CLI Utility Commands
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `full-view` | Open Clockify web app in browser | `clockify-cli full-view` |
 | `config set` | Configure API keys and credentials | `clockify-cli config set` |
 | `config view` | View current configuration | `clockify-cli config view` |
+| `full-view` | Open Clockify web app in browser | `clockify-cli full-view` |
 
 ## 🤝 Contributing
 

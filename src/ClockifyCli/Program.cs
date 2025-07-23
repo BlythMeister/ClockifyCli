@@ -94,12 +94,10 @@ app.Configure(config =>
                   config.SetApplicationVersion("1.0.0");
                   config.UseAssemblyInformationalVersion();
 
-                  // Add the upload-to-tempo command with proper settings
-                  config.AddCommand<UploadToTempoCommand>("upload-to-tempo")
-                        .WithDescription("Upload time entries from Clockify to Tempo")
-                        .WithExample(new[] { "upload-to-tempo" })
-                        .WithExample(new[] { "upload-to-tempo", "--days", "7" })
-                        .WithExample(new[] { "upload-to-tempo", "--days", "30", "--cleanup-orphaned" });
+                  // Add the add manual timer command
+                  config.AddCommand<AddManualTimerCommand>("add")
+                        .WithDescription("Add a completed time entry with specified start and end times")
+                        .WithExample(new[] { "add" });
 
                   // Add the add-task-from-jira command
                   config.AddCommand<AddTaskFromJiraCommand>("add-task-from-jira")
@@ -110,63 +108,6 @@ app.Configure(config =>
                   config.AddCommand<ArchiveTasksForCompletedJirasCommand>("archive-tasks-for-completed-jiras")
                         .WithDescription("Archive Tasks For Completed Jiras")
                         .WithExample(new[] { "archive-tasks-for-completed-jiras" });
-
-                  // Add the week-view command
-                  config.AddCommand<WeekViewCommand>("week-view")
-                        .WithDescription("Display current week's time entries from Clockify")
-                        .WithExample(new[] { "week-view" })
-                        .WithExample(new[] { "week-view", "--include-current" })
-                        .WithExample(new[] { "week-view", "--detailed" })
-                        .WithExample(new[] { "week-view", "--include-current", "--detailed" });
-
-                  // Add the status command
-                  config.AddCommand<StatusCommand>("status")
-                        .WithDescription("Display current in-progress time entry from Clockify")
-                        .WithExample(new[] { "status" });
-
-                  // Add the stop command
-                  config.AddCommand<StopCommand>("stop")
-                        .WithDescription("Stop the currently running time entry in Clockify")
-                        .WithExample(new[] { "stop" });
-
-                  // Add the start command
-                  config.AddCommand<StartCommand>("start")
-                        .WithDescription("Start a new time entry by selecting from available tasks")
-                        .WithExample(new[] { "start" });
-
-                  // Add the add manual timer command
-                  config.AddCommand<AddManualTimerCommand>("add")
-                        .WithDescription("Add a completed time entry with specified start and end times")
-                        .WithExample(new[] { "add" });
-
-                  // Add the edit command
-                  config.AddCommand<EditTimerCommand>("edit")
-                        .WithDescription("Edit start/end times of existing time entries")
-                        .WithExample(new[] { "edit" })
-                        .WithExample(new[] { "edit", "--days", "3" })
-                        .WithExample(new[] { "edit", "--days", "14" });
-
-                  // Add the discard command
-                  config.AddCommand<DiscardTimerCommand>("discard")
-                        .WithDescription("Discard the currently running timer (permanently deletes it)")
-                        .WithExample(new[] { "discard" });
-
-                  // Add the delete command
-                  config.AddCommand<DeleteTimerCommand>("delete")
-                        .WithDescription("Delete completed timers from this week")
-                        .WithExample(new[] { "delete" });
-
-                  // Add the timer-monitor command
-                  config.AddCommand<TimerMonitorCommand>("timer-monitor")
-                        .WithDescription("Monitor timer status and show notifications (ideal for scheduled tasks)")
-                        .WithExample(new[] { "timer-monitor" })
-                        .WithExample(new[] { "timer-monitor", "--silent" })
-                        .WithExample(new[] { "timer-monitor", "--always-notify" });
-
-                  // Add the full-view command
-                  config.AddCommand<FullViewCommand>("full-view")
-                        .WithDescription("Open Clockify web app in your default browser")
-                        .WithExample(new[] { "full-view" });
 
                   // Add config branch with subcommands
                   config.AddBranch("config", config =>
@@ -187,6 +128,65 @@ app.Configure(config =>
                                                        .WithExample(new[] { "config", "schedule-monitor", "--interval", "60" })
                                                        .WithExample(new[] { "config", "schedule-monitor", "--remove" });
                                              });
+
+                  // Add the delete command
+                  config.AddCommand<DeleteTimerCommand>("delete")
+                        .WithDescription("Delete completed timers from this week")
+                        .WithExample(new[] { "delete" });
+
+                  // Add the discard command
+                  config.AddCommand<DiscardTimerCommand>("discard")
+                        .WithDescription("Discard the currently running timer (permanently deletes it)")
+                        .WithExample(new[] { "discard" });
+
+                  // Add the edit command
+                  config.AddCommand<EditTimerCommand>("edit")
+                        .WithDescription("Edit start/end times of existing time entries")
+                        .WithExample(new[] { "edit" })
+                        .WithExample(new[] { "edit", "--days", "3" })
+                        .WithExample(new[] { "edit", "--days", "14" });
+
+                  // Add the full-view command
+                  config.AddCommand<FullViewCommand>("full-view")
+                        .WithDescription("Open Clockify web app in your default browser")
+                        .WithExample(new[] { "full-view" });
+
+                  // Add the start command
+                  config.AddCommand<StartCommand>("start")
+                        .WithDescription("Start a new time entry by selecting from available tasks")
+                        .WithExample(new[] { "start" });
+
+                  // Add the status command
+                  config.AddCommand<StatusCommand>("status")
+                        .WithDescription("Display current in-progress time entry from Clockify")
+                        .WithExample(new[] { "status" });
+
+                  // Add the stop command
+                  config.AddCommand<StopCommand>("stop")
+                        .WithDescription("Stop the currently running time entry in Clockify")
+                        .WithExample(new[] { "stop" });
+
+                  // Add the timer-monitor command
+                  config.AddCommand<TimerMonitorCommand>("timer-monitor")
+                        .WithDescription("Monitor timer status and show notifications (ideal for scheduled tasks)")
+                        .WithExample(new[] { "timer-monitor" })
+                        .WithExample(new[] { "timer-monitor", "--silent" })
+                        .WithExample(new[] { "timer-monitor", "--always-notify" });
+
+                  // Add the upload-to-tempo command with proper settings
+                  config.AddCommand<UploadToTempoCommand>("upload-to-tempo")
+                        .WithDescription("Upload time entries from Clockify to Tempo")
+                        .WithExample(new[] { "upload-to-tempo" })
+                        .WithExample(new[] { "upload-to-tempo", "--days", "7" })
+                        .WithExample(new[] { "upload-to-tempo", "--days", "30", "--cleanup-orphaned" });
+
+                  // Add the week-view command
+                  config.AddCommand<WeekViewCommand>("week-view")
+                        .WithDescription("Display current week's time entries from Clockify")
+                        .WithExample(new[] { "week-view" })
+                        .WithExample(new[] { "week-view", "--include-current" })
+                        .WithExample(new[] { "week-view", "--detailed" })
+                        .WithExample(new[] { "week-view", "--include-current", "--detailed" });
 
                   // Customize help and error messages
                   config.SetExceptionHandler((ex, resolver) =>

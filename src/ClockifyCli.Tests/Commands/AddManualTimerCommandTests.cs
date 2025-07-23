@@ -215,5 +215,5 @@ public class AddManualTimerCommandTests
         // Cleanup
         clockifyMockHttp.Dispose();
         clockifyHttpClient.Dispose();
-}
+    }
 }

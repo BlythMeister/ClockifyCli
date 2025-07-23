@@ -127,13 +127,13 @@ public class AddManualTimerCommand : BaseCommand
                     if (TimeSpan.TryParse(input, out var time))
                     {
                         var proposedEndTime = DateTime.Today.Add(time);
-                        
+
                         // Handle case where end time might be next day
                         if (time < startTime.TimeOfDay)
                         {
                             proposedEndTime = proposedEndTime.AddDays(1);
                         }
-                        
+
                         if (proposedEndTime <= DateTime.Now)
                         {
                             return ValidationResult.Success();
@@ -147,7 +147,7 @@ public class AddManualTimerCommand : BaseCommand
         if (TimeSpan.TryParse(endTimeInput, out var parsedEndTime))
         {
             endTime = startTime.Date.Add(parsedEndTime);
-            
+
             // If end time is before start time, assume it's the next day
             if (endTime <= startTime)
             {

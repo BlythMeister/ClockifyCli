@@ -62,9 +62,9 @@ public class WeekCalculationTests
         var (actualWeekStart, actualWeekEnd) = CalculateWeekRange(referenceDate, weekStartDay);
 
         // Assert
-        Assert.That(actualWeekStart.Date, Is.EqualTo(expectedWeekStart.Date), 
+        Assert.That(actualWeekStart.Date, Is.EqualTo(expectedWeekStart.Date),
             $"Week start incorrect for {weekStartDay} week starting from {referenceDate:yyyy-MM-dd dddd}");
-        Assert.That(actualWeekEnd.Date, Is.EqualTo(expectedWeekEnd.Date), 
+        Assert.That(actualWeekEnd.Date, Is.EqualTo(expectedWeekEnd.Date),
             $"Week end incorrect for {weekStartDay} week starting from {referenceDate:yyyy-MM-dd dddd}");
     }
 

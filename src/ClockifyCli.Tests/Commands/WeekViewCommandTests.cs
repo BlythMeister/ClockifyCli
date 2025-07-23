@@ -218,10 +218,10 @@ public class WeekViewCommandTests
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
-        
+
         DateTime capturedStartDate = default;
         DateTime capturedEndDate = default;
-        
+
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                          .Callback<WorkspaceInfo, UserInfo, DateTime, DateTime>((w, u, start, end) =>
                          {
@@ -240,7 +240,7 @@ public class WeekViewCommandTests
         // Assert
         Assert.That(result, Is.EqualTo(0));
         mockClockifyClient.Verify(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
-        
+
         // Note: The actual date verification would require dependency injection of a date/time provider
         // This test ensures the command executes successfully with different week start days
     }
@@ -299,11 +299,11 @@ public class WeekViewCommandTests
     public async Task ExecuteAsync_WithWeekStartDayAndDetailedFlag_CombinesOptionsCorrectly()
     {
         // Arrange
-        var settings = new WeekViewCommand.Settings 
-        { 
-            WeekStartDay = DayOfWeek.Wednesday, 
-            Detailed = true, 
-            IncludeCurrent = true 
+        var settings = new WeekViewCommand.Settings
+        {
+            WeekStartDay = DayOfWeek.Wednesday,
+            Detailed = true,
+            IncludeCurrent = true
         };
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
 

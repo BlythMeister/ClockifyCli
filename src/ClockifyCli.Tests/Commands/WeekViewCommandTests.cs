@@ -1,6 +1,7 @@
 using ClockifyCli.Commands;
 using ClockifyCli.Models;
 using ClockifyCli.Services;
+using ClockifyCli.Tests.Infrastructure;
 using Moq;
 using NUnit.Framework;
 using Spectre.Console;
@@ -23,7 +24,8 @@ public class WeekViewCommandTests
     {
         mockClockifyClient = new Mock<IClockifyClient>();
         testConsole = new TestConsole();
-        command = new WeekViewCommand(mockClockifyClient.Object, testConsole);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        command = new WeekViewCommand(mockClockifyClient.Object, testConsole, mockClock);
     }
 
     [TearDown]

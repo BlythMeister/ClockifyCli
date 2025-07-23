@@ -21,6 +21,7 @@ services.AddHttpClient();
 
 // Register our services
 services.AddSingleton<ConfigurationService>();
+services.AddSingleton<IClock, SystemClock>();
 
 // Register client factories that will create clients on-demand
 services.AddTransient<ClockifyClient>(provider =>
@@ -37,7 +38,8 @@ services.AddTransient<ClockifyClient>(provider =>
     }
 
     var httpClient = httpClientFactory.CreateClient();
-    return new ClockifyClient(httpClient, config.ClockifyApiKey);
+    var clock = provider.GetRequiredService<IClock>();
+    return new ClockifyClient(httpClient, config.ClockifyApiKey, clock);
 });
 
 // Register the interface that points to the same instance

@@ -12,12 +12,14 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
 {
     private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
+    private readonly IClock clock;
 
     // Constructor for dependency injection (now required)
-    public WeekViewCommand(IClockifyClient clockifyClient, IAnsiConsole console)
+    public WeekViewCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
+        this.clock = clock;
     }
 
     public class Settings : CommandSettings
@@ -68,7 +70,7 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
         }
 
         // Get current week dates based on configured week start day
-        var today = DateTime.Today;
+        var today = clock.Today;
         var daysFromWeekStart = ((int)today.DayOfWeek - (int)weekStartDay + 7) % 7;
         var startOfWeek = today.AddDays(-daysFromWeekStart);
         var endOfWeek = startOfWeek.AddDays(6);
@@ -189,7 +191,7 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                             if (isCurrentEntry)
                                                                             {
                                                                                 // For current entry, calculate elapsed time
-                                                                                duration = DateTime.UtcNow - entry.TimeInterval.StartDate;
+                                                                                duration = clock.UtcNow - entry.TimeInterval.StartDate;
                                                                                 status = "[green]:stopwatch: Running[/]";
                                                                                 startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
                                                                                 endTime = "[green]Running[/]";

@@ -1,6 +1,7 @@
 using ClockifyCli.Commands;
 using ClockifyCli.Models;
 using ClockifyCli.Services;
+using ClockifyCli.Tests.Infrastructure;
 using NUnit.Framework;
 using RichardSzalay.MockHttp;
 using Spectre.Console.Testing;
@@ -19,9 +20,10 @@ public class AddManualTimerCommandTests
 
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole();
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
 
         // Act & Assert
-        Assert.DoesNotThrow(() => new AddManualTimerCommand(clockifyClient, testConsole));
+        Assert.DoesNotThrow(() => new AddManualTimerCommand(clockifyClient, testConsole, mockClock));
 
         // Cleanup
         clockifyMockHttp.Dispose();
@@ -47,7 +49,7 @@ public class AddManualTimerCommandTests
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole();
 
-        var command = new AddManualTimerCommand(clockifyClient, testConsole);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -88,7 +90,7 @@ public class AddManualTimerCommandTests
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole();
 
-        var command = new AddManualTimerCommand(clockifyClient, testConsole);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -146,7 +148,7 @@ public class AddManualTimerCommandTests
         testConsole.Input.PushTextWithEnter("10:00"); // Enter end time
         testConsole.Input.PushTextWithEnter("y"); // Confirm add
 
-        var command = new AddManualTimerCommand(clockifyClient, testConsole);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -200,7 +202,7 @@ public class AddManualTimerCommandTests
         testConsole.Input.PushTextWithEnter("10:00"); // Enter end time
         testConsole.Input.PushTextWithEnter("n"); // Decline to add
 
-        var command = new AddManualTimerCommand(clockifyClient, testConsole);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -217,3 +219,4 @@ public class AddManualTimerCommandTests
         clockifyHttpClient.Dispose();
     }
 }
+

@@ -8,14 +8,21 @@ namespace ClockifyCli.Services;
 public class ClockifyClient : IClockifyClient
 {
     private readonly HttpClient client;
+    private readonly IClock clock;
 
-    // Constructor for dependency injection with HttpClient
-    public ClockifyClient(HttpClient httpClient, string apiKey)
+    // Constructor for dependency injection with HttpClient and IClock
+    public ClockifyClient(HttpClient httpClient, string apiKey, IClock clock)
     {
         client = httpClient;
+        this.clock = clock;
         client.BaseAddress = new Uri("https://api.clockify.me/api/v1/");
         client.DefaultRequestHeaders.Clear();
         client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+    }
+
+    // Constructor for dependency injection with HttpClient only (uses SystemClock)
+    public ClockifyClient(HttpClient httpClient, string apiKey) : this(httpClient, apiKey, new SystemClock())
+    {
     }
 
     // Original constructor for backward compatibility
@@ -154,7 +161,7 @@ public class ClockifyClient : IClockifyClient
     {
         try
         {
-            var stopTimeData = new { end = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") };
+            var stopTimeData = new { end = clock.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") };
             var stopTimeJson = JsonConvert.SerializeObject(stopTimeData);
             var content = new StringContent(stopTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
@@ -189,7 +196,7 @@ public class ClockifyClient : IClockifyClient
     {
         try
         {
-            var effectiveStartTime = startTime ?? DateTime.UtcNow;
+            var effectiveStartTime = startTime ?? clock.UtcNow;
             var startTimeEntry = new StartTimeEntry(
                                                     effectiveStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                                                     projectId,

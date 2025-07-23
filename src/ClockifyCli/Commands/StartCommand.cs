@@ -9,21 +9,23 @@ public class StartCommand : BaseCommand
 {
     private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
+    private readonly IClock clock;
 
     // Constructor for dependency injection (now required)
-    public StartCommand(IClockifyClient clockifyClient, IAnsiConsole console)
+    public StartCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
+        this.clock = clock;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        await StartNewTimer(clockifyClient, console);
+        await StartNewTimer(clockifyClient, console, clock);
         return 0;
     }
 
-    private async Task StartNewTimer(IClockifyClient clockifyClient, IAnsiConsole console)
+    private async Task StartNewTimer(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
     {
         console.MarkupLine("[bold]Start New Timer[/]");
         console.WriteLine();
@@ -128,21 +130,36 @@ public class StartCommand : BaseCommand
                     {
                         if (TimeSpan.TryParse(input, out var time))
                         {
-                            var proposedStartTime = DateTime.Today.Add(time);
-                            if (proposedStartTime <= DateTime.Now)
+                            var proposedStartTime = clock.Today.Add(time);
+                            DateTime actualStartTime;
+                            
+                            // If the time is in the future (later today), we'll assume they mean yesterday
+                            if (proposedStartTime > clock.Now)
                             {
-                                return ValidationResult.Success();
+                                actualStartTime = proposedStartTime.AddDays(-1);
                             }
-                            return ValidationResult.Error("Start time cannot be in the future");
+                            else
+                            {
+                                // Time is earlier today
+                                actualStartTime = proposedStartTime;
+                            }
+                            
+                            // Validate that the actual start time is within 10 hours of now
+                            if (actualStartTime < clock.Now.AddHours(-10))
+                            {
+                                return ValidationResult.Error("Start time cannot be more than 10 hours ago");
+                            }
+                            
+                            return ValidationResult.Success();
                         }
                         return ValidationResult.Error("Please enter a valid time format (HH:mm or HH:mm:ss)");
                     }));
 
             if (TimeSpan.TryParse(timeInput, out var parsedTime))
             {
-                startTime = DateTime.Today.Add(parsedTime);
+                startTime = clock.Today.Add(parsedTime);
                 // If the time is after current time, assume it's for yesterday
-                if (startTime > DateTime.Now)
+                if (startTime > clock.Now)
                 {
                     startTime = startTime.Value.AddDays(-1);
                 }
@@ -157,7 +174,19 @@ public class StartCommand : BaseCommand
         var descriptionDisplay = string.IsNullOrWhiteSpace(description)
                                      ? "[dim]No description[/]"
                                      : Markup.Escape(description);
-        var startTimeDisplay = startTime?.ToString("HH:mm:ss") ?? "Now";
+        
+        var startTimeDisplay = "Now";
+        if (startTime.HasValue)
+        {
+            if (startTime.Value.Date == clock.Today)
+            {
+                startTimeDisplay = startTime.Value.ToString("HH:mm:ss");
+            }
+            else
+            {
+                startTimeDisplay = $"{startTime.Value.ToString("HH:mm:ss")} (yesterday)";
+            }
+        }
 
         console.MarkupLine($"[yellow]About to start timer for:[/]");
         console.MarkupLine($"  [bold]Project:[/] {projectName}");
@@ -183,7 +212,7 @@ public class StartCommand : BaseCommand
                                                                                                                          startTime);
                                                               });
 
-            var displayTime = startTime?.ToString("HH:mm:ss") ?? DateTime.Now.ToString("HH:mm:ss");
+            var displayTime = startTime?.ToString("HH:mm:ss") ?? clock.Now.ToString("HH:mm:ss");
             console.MarkupLine("[green]:check_mark: Timer started successfully![/]");
             console.MarkupLine($"[dim]Started at: {displayTime}[/]");
             console.MarkupLine("[dim]Use 'clockify-cli status' to see the running timer or 'clockify-cli stop' to stop it.[/]");

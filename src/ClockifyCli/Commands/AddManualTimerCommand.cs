@@ -9,21 +9,23 @@ public class AddManualTimerCommand : BaseCommand
 {
     private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
+    private readonly IClock clock;
 
     // Constructor for dependency injection (now required)
-    public AddManualTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console)
+    public AddManualTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
+        this.clock = clock;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        await AddManualTimeEntry(clockifyClient, console);
+        await AddManualTimeEntry(clockifyClient, console, clock);
         return 0;
     }
 
-    private async Task AddManualTimeEntry(IClockifyClient clockifyClient, IAnsiConsole console)
+    private async Task AddManualTimeEntry(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
     {
         console.MarkupLine("[bold]Add Manual Time Entry[/]");
         console.WriteLine();
@@ -98,8 +100,8 @@ public class AddManualTimerCommand : BaseCommand
                 {
                     if (TimeSpan.TryParse(input, out var time))
                     {
-                        var proposedStartTime = DateTime.Today.Add(time);
-                        if (proposedStartTime <= DateTime.Now)
+                        var proposedStartTime = clock.Today.Add(time);
+                        if (proposedStartTime <= clock.Now)
                         {
                             return ValidationResult.Success();
                         }
@@ -108,12 +110,12 @@ public class AddManualTimerCommand : BaseCommand
                     return ValidationResult.Error("Please enter a valid time format (HH:mm or HH:mm:ss)");
                 }));
 
-        DateTime startTime = DateTime.Today;
+        DateTime startTime = clock.Today;
         if (TimeSpan.TryParse(startTimeInput, out var parsedStartTime))
         {
-            startTime = DateTime.Today.Add(parsedStartTime);
+            startTime = clock.Today.Add(parsedStartTime);
             // If the time is after current time, assume it's for yesterday
-            if (startTime > DateTime.Now)
+            if (startTime > clock.Now)
             {
                 startTime = startTime.AddDays(-1);
             }
@@ -126,7 +128,7 @@ public class AddManualTimerCommand : BaseCommand
                 {
                     if (TimeSpan.TryParse(input, out var time))
                     {
-                        var proposedEndTime = DateTime.Today.Add(time);
+                        var proposedEndTime = clock.Today.Add(time);
 
                         // Handle case where end time might be next day
                         if (time < startTime.TimeOfDay)
@@ -134,7 +136,7 @@ public class AddManualTimerCommand : BaseCommand
                             proposedEndTime = proposedEndTime.AddDays(1);
                         }
 
-                        if (proposedEndTime <= DateTime.Now)
+                        if (proposedEndTime <= clock.Now)
                         {
                             return ValidationResult.Success();
                         }
@@ -143,7 +145,7 @@ public class AddManualTimerCommand : BaseCommand
                     return ValidationResult.Error("Please enter a valid time format (HH:mm or HH:mm:ss)");
                 }));
 
-        DateTime endTime = DateTime.Today;
+        DateTime endTime = clock.Today;
         if (TimeSpan.TryParse(endTimeInput, out var parsedEndTime))
         {
             endTime = startTime.Date.Add(parsedEndTime);

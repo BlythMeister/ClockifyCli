@@ -139,22 +139,22 @@ app.Configure(config =>
                         .WithDescription("Add a completed time entry with specified start and end times")
                         .WithExample(new[] { "add" });
 
-                  // Add the edit-timer command
-                  config.AddCommand<EditTimerCommand>("edit-timer")
+                  // Add the edit command
+                  config.AddCommand<EditTimerCommand>("edit")
                         .WithDescription("Edit start/end times of existing time entries")
-                        .WithExample(new[] { "edit-timer" })
-                        .WithExample(new[] { "edit-timer", "--days", "3" })
-                        .WithExample(new[] { "edit-timer", "--days", "14" });
+                        .WithExample(new[] { "edit" })
+                        .WithExample(new[] { "edit", "--days", "3" })
+                        .WithExample(new[] { "edit", "--days", "14" });
 
-                  // Add the discard-timer command
-                  config.AddCommand<DiscardTimerCommand>("discard-timer")
+                  // Add the discard command
+                  config.AddCommand<DiscardTimerCommand>("discard")
                         .WithDescription("Discard the currently running timer (permanently deletes it)")
-                        .WithExample(new[] { "discard-timer" });
+                        .WithExample(new[] { "discard" });
 
-                  // Add the delete-timer command
-                  config.AddCommand<DeleteTimerCommand>("delete-timer")
+                  // Add the delete command
+                  config.AddCommand<DeleteTimerCommand>("delete")
                         .WithDescription("Delete completed timers from this week")
-                        .WithExample(new[] { "delete-timer" });
+                        .WithExample(new[] { "delete" });
 
                   // Add the timer-monitor command
                   config.AddCommand<TimerMonitorCommand>("timer-monitor")

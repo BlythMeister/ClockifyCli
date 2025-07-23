@@ -57,7 +57,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
     }
     
     # Get available commands and options
-    $commands = @('add-task-from-jira', 'archive-tasks-for-completed-jiras', 'config', 'delete-timer', 'discard-timer', 'edit-timer', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $commands = @('add-task-from-jira', 'archive-tasks-for-completed-jiras', 'config', 'delete', 'discard', 'edit', 'full-view', 'start', 'add', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
     $options = @('--help', '--version')
     
     # Filter suggestions based on what user has typed
@@ -140,17 +140,17 @@ This command is useful for logging time you've already spent working on a task. 
 
 #### Discard Current Timer
 
-`clockify-cli discard-timer` - Permanently delete the currently running timer (cannot be undone)
+`clockify-cli discard` - Permanently delete the currently running timer (cannot be undone)
 
 #### Edit Existing Timer
 
-`clockify-cli edit-timer` - Edit start/end times of existing time entries
+`clockify-cli edit` - Edit start/end times of existing time entries
 
-`clockify-cli edit-timer --days 3` - Look for entries from the last 3 days
+`clockify-cli edit --days 3` - Look for entries from the last 3 days
 
 #### Delete Completed Timer
 
-`clockify-cli delete-timer` - Delete completed timers from this week (newest first)
+`clockify-cli delete` - Delete completed timers from this week (newest first)
 
 #### View This Week's Time Entries
 
@@ -240,9 +240,9 @@ The configuration is stored securely in your user profile:
 | `start` | Start a new timer by selecting from available tasks with customizable start time | `clockify-cli start` |
 | `add` | Add a completed time entry with both start and end times | `clockify-cli add` |
 | `stop` | Stop the currently running timer | `clockify-cli stop` |
-| `discard-timer` | Permanently delete the currently running timer | `clockify-cli discard-timer` |
-| `edit-timer` | Edit start/end times of existing time entries | `clockify-cli edit-timer --days 7` |
-| `delete-timer` | Delete completed timers from this week | `clockify-cli delete-timer` |
+| `discard` | Permanently delete the currently running timer | `clockify-cli discard` |
+| `edit` | Edit start/end times of existing time entries | `clockify-cli edit --days 7` |
+| `delete` | Delete completed timers from this week | `clockify-cli delete` |
 | `status` | Display current in-progress time entry | `clockify-cli status` |
 | `week-view` | Display current week's time entries | `clockify-cli week-view --include-current --detailed --week-start Sunday` |
 

@@ -134,6 +134,11 @@ app.Configure(config =>
                         .WithDescription("Start a new time entry by selecting from available tasks")
                         .WithExample(new[] { "start" });
 
+                  // Add the add manual timer command
+                  config.AddCommand<AddManualTimerCommand>("add")
+                        .WithDescription("Add a completed time entry with specified start and end times")
+                        .WithExample(new[] { "add" });
+
                   // Add the edit-timer command
                   config.AddCommand<EditTimerCommand>("edit-timer")
                         .WithDescription("Edit start/end times of existing time entries")

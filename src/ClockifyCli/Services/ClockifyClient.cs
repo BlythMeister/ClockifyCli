@@ -223,6 +223,51 @@ public class ClockifyClient : IClockifyClient
         }
     }
 
+    public async Task<TimeEntry> AddTimeEntry(WorkspaceInfo workspace, string projectId, string? taskId, string? description, DateTime startTime, DateTime endTime)
+    {
+        try
+        {
+            var timeInterval = new
+            {
+                start = startTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                end = endTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+            };
+
+            var addTimeEntry = new
+            {
+                start = startTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                end = endTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                projectId = projectId,
+                taskId = string.IsNullOrEmpty(taskId) ? null : taskId,
+                description = string.IsNullOrWhiteSpace(description) ? null : description
+            };
+
+            var serializerSettings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+
+            var addTimeJson = JsonConvert.SerializeObject(addTimeEntry, serializerSettings);
+            var content = new StringContent(addTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+
+            var response = await client.PostAsync($"workspaces/{workspace.Id}/time-entries", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Failed to add time entry. Status: {response.StatusCode}, Response: {errorContent}");
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<TimeEntry>(responseContent)!;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error adding time entry: {e}");
+            throw;
+        }
+    }
+
     public async Task UpdateTaskStatus(WorkspaceInfo workspace, ProjectInfo project, TaskInfo task, string status)
     {
         try

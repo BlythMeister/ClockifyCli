@@ -119,6 +119,17 @@ This shows your current configuration status and masks sensitive values for secu
 
 `clockify-cli start` - Interactive selection of available tasks with option to start now or at an earlier time
 
+#### Add Manual Time Entry
+
+`clockify-cli add` - Add a completed time entry with both start and end times
+
+This command is useful for logging time you've already spent working on a task. It allows you to:
+
+- Select the task from your available Clockify tasks
+- Enter a description for the work performed
+- Specify both start and end times for the time entry
+- Confirm the details before adding to Clockify
+
 #### Check Current Status
 
 `clockify-cli status` - See what timer is currently running
@@ -227,6 +238,7 @@ The configuration is stored securely in your user profile:
 | Command | Description | Examples |
 |---------|-------------|----------|
 | `start` | Start a new timer by selecting from available tasks with customizable start time | `clockify-cli start` |
+| `add` | Add a completed time entry with both start and end times | `clockify-cli add` |
 | `stop` | Stop the currently running timer | `clockify-cli stop` |
 | `discard-timer` | Permanently delete the currently running timer | `clockify-cli discard-timer` |
 | `edit-timer` | Edit start/end times of existing time entries | `clockify-cli edit-timer --days 7` |

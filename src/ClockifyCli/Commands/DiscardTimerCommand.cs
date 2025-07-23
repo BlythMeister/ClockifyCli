@@ -64,7 +64,7 @@ public class DiscardTimerCommand : BaseCommand
         // Check if there's a timer running
         if (currentEntry == null)
         {
-            console.MarkupLine("[yellow]⚠️ No time entry is currently running[/]");
+            console.MarkupLine("[yellow]:warning: No time entry is currently running[/]");
             console.MarkupLine("[dim]There's nothing to discard.[/]");
             return;
         }
@@ -81,7 +81,7 @@ public class DiscardTimerCommand : BaseCommand
         console.MarkupLine($"  [bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
         console.WriteLine();
 
-        console.MarkupLine("[red]⚠️ WARNING: This will permanently delete the running timer![/]");
+        console.MarkupLine("[red]:warning: WARNING: This will permanently delete the running timer![/]");
         console.MarkupLine("[dim]All elapsed time will be lost and cannot be recovered.[/]");
         console.WriteLine();
 
@@ -95,7 +95,7 @@ public class DiscardTimerCommand : BaseCommand
                     await clockifyClient.DeleteTimeEntry(workspace, currentEntry);
                 });
 
-            console.MarkupLine("[green]✅ Timer discarded successfully![/]");
+            console.MarkupLine("[green]:check_mark: Timer discarded successfully![/]");
             console.MarkupLine($"[dim]Discarded {TimeFormatter.FormatDuration(elapsed)} of elapsed time[/]");
         }
         else

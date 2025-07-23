@@ -38,11 +38,11 @@ public class ConfigViewCommand : ConfigCommand
 
         if (config.IsComplete())
         {
-            console.MarkupLine("\n[green]✓ All configuration values are set[/]");
+            console.MarkupLine("\n[green]:check_mark: All configuration values are set[/]");
         }
         else
         {
-            console.MarkupLine("\n[yellow]⚠ Some configuration values are missing[/]");
+            console.MarkupLine("\n[yellow]:warning: Some configuration values are missing[/]");
             console.MarkupLine("Use '[green]config set[/]' to configure missing values.");
         }
 

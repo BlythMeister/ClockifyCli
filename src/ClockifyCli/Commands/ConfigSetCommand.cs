@@ -57,15 +57,15 @@ public class ConfigSetCommand : ConfigCommand
                                                                              string.IsNullOrWhiteSpace(tempoApiKey) ? null : tempoApiKey
                                                                             );
 
-            console.MarkupLine("\n[green]✓ Configuration saved successfully![/]");
+            console.MarkupLine("\n[green]:check_mark: Configuration saved successfully![/]");
 
             if (updatedConfig.IsComplete())
             {
-                console.MarkupLine("[green]✓ All required configuration values are now set[/]");
+                console.MarkupLine("[green]:check_mark: All required configuration values are now set[/]");
             }
             else
             {
-                console.MarkupLine("[yellow]⚠ Some configuration values are still missing[/]");
+                console.MarkupLine("[yellow]:warning: Some configuration values are still missing[/]");
                 console.MarkupLine("Run '[green]config view[/]' to see what's missing.");
             }
 
@@ -73,7 +73,7 @@ public class ConfigSetCommand : ConfigCommand
         }
         catch (Exception ex)
         {
-            console.MarkupLine($"[red]✗ Failed to save configuration: {ex.Message}[/]");
+            console.MarkupLine($"[red]:cross_mark: Failed to save configuration: {ex.Message}[/]");
             return 1;
         }
     }

@@ -183,7 +183,7 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                             {
                                                                                 // For current entry, calculate elapsed time
                                                                                 duration = DateTime.UtcNow - entry.TimeInterval.StartDate;
-                                                                                status = "[green]⏱️ Running[/]";
+                                                                                status = "[green]:stopwatch: Running[/]";
                                                                                 startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
                                                                                 endTime = "[green]Running[/]";
                                                                             }

@@ -40,7 +40,7 @@ public class StartCommand : BaseCommand
         var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
         if (currentEntry != null)
         {
-            console.MarkupLine("[yellow]⚠️  A timer is already running![/]");
+            console.MarkupLine("[yellow]:warning:  A timer is already running![/]");
             console.MarkupLine($"[dim]Current timer: {currentEntry.Description}[/]");
             console.WriteLine();
 
@@ -54,7 +54,7 @@ public class StartCommand : BaseCommand
             // Stop the current timer
             console.MarkupLine("[dim]Stopping current timer...[/]");
             await clockifyClient.StopCurrentTimeEntry(workspace, user);
-            console.MarkupLine("[green]✓ Current timer stopped[/]");
+            console.MarkupLine("[green]:check_mark: Current timer stopped[/]");
             console.WriteLine();
         }
 
@@ -144,7 +144,7 @@ public class StartCommand : BaseCommand
                                                                                                                          finalDescription);
                                                               });
 
-            console.MarkupLine("[green]✓ Timer started successfully![/]");
+            console.MarkupLine("[green]:check_mark: Timer started successfully![/]");
             console.MarkupLine($"[dim]Started at: {DateTime.Now:HH:mm:ss}[/]");
             console.MarkupLine("[dim]Use 'clockify-cli status' to see the running timer or 'clockify-cli stop' to stop it.[/]");
         }

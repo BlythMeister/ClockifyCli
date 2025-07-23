@@ -60,7 +60,7 @@ public class ArchiveTasksForCompletedJirasCommand : BaseCommand
 
         if (tasksToArchive.Count == 0)
         {
-            console.MarkupLine("[green]✓ No tasks need to be archived - all tasks are up to date![/]");
+            console.MarkupLine("[green]:check_mark: No tasks need to be archived - all tasks are up to date![/]");
             return;
         }
 
@@ -125,21 +125,21 @@ public class ArchiveTasksForCompletedJirasCommand : BaseCommand
         {
             if (success)
             {
-                console.MarkupLine($"[green]✓ Archived:[/] {Markup.Escape(taskName)}");
+                console.MarkupLine($"[green]:check_mark: Archived:[/] {Markup.Escape(taskName)}");
             }
             else
             {
-                console.MarkupLine($"[red]✗ Failed to archive:[/] {Markup.Escape(taskName)} - {Markup.Escape(errorMessage ?? "Unknown error")}");
+                console.MarkupLine($"[red]:cross_mark: Failed to archive:[/] {Markup.Escape(taskName)} - {Markup.Escape(errorMessage ?? "Unknown error")}");
             }
         }
 
         console.WriteLine();
         console.MarkupLine($"[bold]Archive Summary:[/]");
-        console.MarkupLine($"[green]✓ Successfully archived: {successCount} task(s)[/]");
+        console.MarkupLine($"[green]:check_mark: Successfully archived: {successCount} task(s)[/]");
 
         if (failureCount > 0)
         {
-            console.MarkupLine($"[red]✗ Failed to archive: {failureCount} task(s)[/]");
+            console.MarkupLine($"[red]:cross_mark: Failed to archive: {failureCount} task(s)[/]");
         }
     }
 }

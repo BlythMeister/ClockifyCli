@@ -45,7 +45,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         console.MarkupLine($"[dim]Processing last {days} days...[/]");
         if (cleanupOrphaned)
         {
-            console.MarkupLine("[yellow]⚠ Orphaned entry cleanup is enabled[/]");
+            console.MarkupLine("[yellow]:warning: Orphaned entry cleanup is enabled[/]");
         }
 
         console.WriteLine();
@@ -95,7 +95,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
             var startTime = runningEntry.TimeInterval.StartDate;
             var elapsed = DateTime.UtcNow - startTime;
 
-            console.MarkupLine("[yellow]⚠️  Warning: A timer is currently running![/]");
+            console.MarkupLine("[yellow]:warning:  Warning: A timer is currently running![/]");
             console.WriteLine();
 
             var projectName = project != null ? Markup.Escape(project.Name) : "Unknown Project";
@@ -163,7 +163,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                                                                                         }
                                                                                         else
                                                                                         {
-                                                                                            console.MarkupLine("[green]✓ No orphaned entries found[/]");
+                                                                                            console.MarkupLine("[green]:check_mark: No orphaned entries found[/]");
                                                                                         }
                                                                                     }
 
@@ -179,7 +179,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                                                                                     if (!entriesToUpload.Any())
                                                                                     {
                                                                                         ctx.Status("No new time entries to upload.");
-                                                                                        console.MarkupLine("[green]✓ All time entries are already up to date in Tempo[/]");
+                                                                                        console.MarkupLine("[green]:check_mark: All time entries are already up to date in Tempo[/]");
                                                                                         return;
                                                                                     }
 
@@ -216,20 +216,20 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
         {
             if (success)
             {
-                console.MarkupLine($"[green]✓ Uploaded entry {entryId}[/] [dim]({date})[/]");
+                console.MarkupLine($"[green]:check_mark: Uploaded entry {entryId}[/] [dim]({date})[/]");
             }
             else
             {
-                console.MarkupLine($"[red]✗ Failed to upload entry {entryId}: {Markup.Escape(errorMessage ?? "Unknown error")}[/]");
+                console.MarkupLine($"[red]:cross_mark: Failed to upload entry {entryId}: {Markup.Escape(errorMessage ?? "Unknown error")}[/]");
             }
         }
 
         console.WriteLine();
         console.MarkupLine($"[bold]Upload Summary:[/]");
-        console.MarkupLine($"[green]✓ Successfully uploaded: {successCount} entries[/]");
+        console.MarkupLine($"[green]:check_mark: Successfully uploaded: {successCount} entries[/]");
         if (errorCount > 0)
         {
-            console.MarkupLine($"[red]✗ Failed to upload: {errorCount} entries[/]");
+            console.MarkupLine($"[red]:cross_mark: Failed to upload: {errorCount} entries[/]");
         }
     }
 }

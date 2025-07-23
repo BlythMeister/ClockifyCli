@@ -48,7 +48,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
         // Check if running on Windows for notification support
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !settings.Silent)
         {
-            console.MarkupLine("[yellow]⚠️ Toast notifications are only supported on Windows[/]");
+            console.MarkupLine("[yellow]:warning: Toast notifications are only supported on Windows[/]");
             console.MarkupLine("[dim]Running in console-only mode...[/]");
             console.WriteLine();
         }
@@ -103,7 +103,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
             // No timer running - show reminder notification
             if (!settings.Silent)
             {
-                console.MarkupLine("[yellow]⏸️ No timer is currently running[/]");
+                console.MarkupLine("[yellow]:pause_button: No timer is currently running[/]");
                 console.MarkupLine("[dim]Showing reminder notification...[/]");
             }
 
@@ -115,7 +115,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
             if (!settings.Silent)
             {
-                console.MarkupLine("[green]✓ Notification sent successfully[/]");
+                console.MarkupLine("[green]:check_mark: Notification sent successfully[/]");
                 console.MarkupLine("[dim]Start a timer with 'clockify-cli start'[/]");
             }
 
@@ -131,7 +131,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
             if (!settings.Silent)
             {
-                console.MarkupLine("[green]✅ Timer is running[/]");
+                console.MarkupLine("[green]:check_mark: Timer is running[/]");
                 console.MarkupLine($"[bold]Project:[/] {Markup.Escape(projectName)}");
                 console.MarkupLine($"[bold]Task:[/] {Markup.Escape(taskName)}");
                 console.MarkupLine($"[bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
@@ -144,7 +144,7 @@ public class TimerMonitorCommand : BaseCommand<TimerMonitorCommand.Settings>
 
                 if (!settings.Silent)
                 {
-                    console.MarkupLine("[green]✓ Status notification sent[/]");
+                    console.MarkupLine("[green]:check_mark: Status notification sent[/]");
                 }
             }
 

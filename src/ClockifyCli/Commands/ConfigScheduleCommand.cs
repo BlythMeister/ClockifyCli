@@ -53,7 +53,7 @@ public class ConfigScheduleCommand : AsyncCommand<ConfigScheduleCommand.Settings
         // Check if tool is installed as global tool
         if (!ScheduledTaskService.IsToolInstalledAsGlobalTool())
         {
-            console.MarkupLine("[red]✗ ClockifyCli is not installed as a global .NET tool[/]");
+            console.MarkupLine("[red]:cross_mark: ClockifyCli is not installed as a global .NET tool[/]");
             console.WriteLine();
             console.MarkupLine("[yellow]To install as a global tool, run:[/]");
             console.MarkupLine("[green]dotnet tool install --global ClockifyCli[/]");
@@ -62,12 +62,12 @@ public class ConfigScheduleCommand : AsyncCommand<ConfigScheduleCommand.Settings
             return 1;
         }
 
-        console.MarkupLine("[green]✓ ClockifyCli is installed as a global tool[/]");
+        console.MarkupLine("[green]:check_mark: ClockifyCli is installed as a global tool[/]");
 
         // Check if task already exists
         if (ScheduledTaskService.TaskExists(taskName))
         {
-            console.MarkupLine($"[yellow]⚠ Scheduled task '{taskName}' already exists[/]");
+            console.MarkupLine($"[yellow]:warning: Scheduled task '{taskName}' already exists[/]");
 
             if (!console.Confirm("Do you want to replace the existing task?"))
             {
@@ -103,7 +103,7 @@ public class ConfigScheduleCommand : AsyncCommand<ConfigScheduleCommand.Settings
 
         if (success)
         {
-            console.MarkupLine("[green]✓ Scheduled task created successfully![/]");
+            console.MarkupLine("[green]:check_mark: Scheduled task created successfully![/]");
             console.WriteLine();
             console.MarkupLine("[bold]Task Details:[/]");
             console.MarkupLine($"• [green]Name:[/] {taskName}");
@@ -115,7 +115,7 @@ public class ConfigScheduleCommand : AsyncCommand<ConfigScheduleCommand.Settings
         }
         else
         {
-            console.MarkupLine("[red]✗ Failed to create scheduled task[/]");
+            console.MarkupLine("[red]:cross_mark: Failed to create scheduled task[/]");
             console.MarkupLine("[yellow]This may require administrator privileges[/]");
             console.MarkupLine("[dim]Try running the command as administrator[/]");
             return 1;
@@ -145,11 +145,11 @@ public class ConfigScheduleCommand : AsyncCommand<ConfigScheduleCommand.Settings
 
         if (success)
         {
-            console.MarkupLine("[green]✓ Scheduled task removed successfully[/]");
+            console.MarkupLine("[green]:check_mark: Scheduled task removed successfully[/]");
         }
         else
         {
-            console.MarkupLine("[red]✗ Failed to remove scheduled task[/]");
+            console.MarkupLine("[red]:cross_mark: Failed to remove scheduled task[/]");
             console.MarkupLine("[yellow]This may require administrator privileges[/]");
             return 1;
         }

@@ -26,12 +26,12 @@ public class FullViewCommand : BaseCommand
 
             OpenUrl(ClockifyUrl);
 
-            console.MarkupLine("[green]✓ Clockify web app opened in your default browser[/]");
+            console.MarkupLine("[green]:check_mark: Clockify web app opened in your default browser[/]");
             return Task.FromResult(0);
         }
         catch (Exception ex)
         {
-            console.MarkupLine($"[red]✗ Failed to open browser: {ex.Message}[/]");
+            console.MarkupLine($"[red]:cross_mark: Failed to open browser: {ex.Message}[/]");
             console.MarkupLine($"[yellow]You can manually open: {ClockifyUrl}[/]");
             return Task.FromResult(1);
         }

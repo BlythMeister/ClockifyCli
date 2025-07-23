@@ -109,7 +109,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                   {
                                                       var entryCount = entriesByDate.First(g => g.Date == date).Entries.Count();
                                                       var hasRunningTimer = currentRunningEntry != null && currentRunningEntry.TimeInterval.StartDate.Date == date.Date;
-                                                      var runningIndicator = hasRunningTimer ? " 🏃" : "";
+                                                      var runningIndicator = hasRunningTimer ? " :stopwatch:" : "";
                                                       return Markup.Escape($"{date:ddd, MMM dd, yyyy} ({entryCount} entries{runningIndicator})");
                                                   }));
 
@@ -148,7 +148,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                                      {
                                                                          var startTime = entry.TimeInterval.StartDate.ToLocalTime().ToString("HH:mm");
                                                                          var elapsed = TimeFormatter.FormatDurationCompact(DateTime.UtcNow - entry.TimeInterval.StartDate);
-                                                                         return Markup.Escape($"🏃 {startTime}-NOW ({elapsed}) | {projectName} > {taskName} | {description} [RUNNING]");
+                                                                         return Markup.Escape($":stopwatch: {startTime}-NOW ({elapsed}) | {projectName} > {taskName} | {description} [RUNNING]");
                                                                      }
                                                                      else
                                                                      {
@@ -340,7 +340,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                  }
                              });
 
-            console.MarkupLine("[green]✓ Time entry updated successfully![/]");
+            console.MarkupLine("[green]:check_mark: Time entry updated successfully![/]");
         }
         else
         {

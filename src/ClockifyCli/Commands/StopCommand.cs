@@ -66,7 +66,7 @@ public class StopCommand : BaseCommand
         // Check if there's a timer running (outside Status block)
         if (currentEntry == null)
         {
-            console.MarkupLine("[yellow]⏸️  No time entry is currently running[/]");
+            console.MarkupLine("[yellow]:pause_button:  No time entry is currently running[/]");
             console.MarkupLine("[dim]There's nothing to stop.[/]");
             return;
         }
@@ -93,7 +93,7 @@ public class StopCommand : BaseCommand
                                                               var stoppedEntry = await clockifyClient.StopCurrentTimeEntry(workspace, user);
                                                           });
 
-            console.MarkupLine("[green]✓ Timer stopped successfully![/]");
+            console.MarkupLine("[green]:check_mark: Timer stopped successfully![/]");
             console.MarkupLine($"[dim]Final duration: {TimeFormatter.FormatDuration(elapsed)}[/]");
         }
         else

@@ -43,7 +43,7 @@ public class StatusCommand : BaseCommand
 
                                                                       if (currentEntry == null)
                                                                       {
-                                                                          console.MarkupLine("[yellow]⏸️  No time entry currently running[/]");
+                                                                          console.MarkupLine("[yellow]:pause_button:  No time entry currently running[/]");
                                                                           console.MarkupLine("[dim]Start a new time entry by running 'clockify-cli start' to see it here.[/]");
                                                                           return;
                                                                       }
@@ -61,7 +61,7 @@ public class StatusCommand : BaseCommand
 
                                                                       // Create status panel
                                                                       var panel = new Panel(CreateStatusContent(currentEntry, project, task, startTime, elapsed))
-                                                                                  .Header("[green]⏱️  Currently Running[/]")
+                                                                                  .Header("[green]:stopwatch:  Currently Running[/]")
                                                                                   .BorderColor(Color.Green)
                                                                                   .Padding(1, 1);
 

@@ -31,15 +31,20 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
         [CommandOption("--detailed")]
         [DefaultValue(false)]
         public bool Detailed { get; init; } = false;
+
+        [Description("Day of the week to start the week view (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)")]
+        [CommandOption("--week-start")]
+        [DefaultValue(DayOfWeek.Monday)]
+        public DayOfWeek WeekStartDay { get; init; } = DayOfWeek.Monday;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        await ShowCurrentWeekTimeEntries(clockifyClient, console, settings.IncludeCurrent, settings.Detailed);
+        await ShowCurrentWeekTimeEntries(clockifyClient, console, settings.IncludeCurrent, settings.Detailed, settings.WeekStartDay);
         return 0;
     }
 
-    private async Task ShowCurrentWeekTimeEntries(IClockifyClient clockifyClient, IAnsiConsole console, bool includeCurrent, bool detailed)
+    private async Task ShowCurrentWeekTimeEntries(IClockifyClient clockifyClient, IAnsiConsole console, bool includeCurrent, bool detailed, DayOfWeek weekStartDay)
     {
         console.MarkupLine("[bold]Current Week Time Entries[/]");
         if (includeCurrent)
@@ -62,12 +67,14 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
             return;
         }
 
-        // Get current week dates (Monday to Sunday)
+        // Get current week dates based on configured week start day
         var today = DateTime.Today;
-        var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
+        var daysFromWeekStart = ((int)today.DayOfWeek - (int)weekStartDay + 7) % 7;
+        var startOfWeek = today.AddDays(-daysFromWeekStart);
         var endOfWeek = startOfWeek.AddDays(6);
 
-        console.MarkupLine($"[dim]Week: {startOfWeek:MMM dd} - {endOfWeek:MMM dd, yyyy}[/]");
+        var weekStartName = weekStartDay.ToString();
+        console.MarkupLine($"[dim]Week ({weekStartName} - {GetEndDayName(weekStartDay)}): {startOfWeek:MMM dd} - {endOfWeek:MMM dd, yyyy}[/]");
         console.WriteLine();
 
         await console.Status()
@@ -289,5 +296,10 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                         console.MarkupLine("[dim]Note: Running timer duration is calculated in real-time and will continue to increase.[/]");
                                                                     }
                                                                 });
+    }
+
+    private static string GetEndDayName(DayOfWeek weekStartDay)
+    {
+        return ((DayOfWeek)(((int)weekStartDay + 6) % 7)).ToString();
     }
 }

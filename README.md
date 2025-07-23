@@ -17,7 +17,7 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - **⏱️ Start/Stop timers** with an intuitive command-line interface
 - **🗑️ Discard/Delete timers** with safety confirmations and time restrictions
 - **✏️ Edit existing timers** with precise start/end time adjustments
-- **📊 View time reports** for current week and specific periods with optional detailed breakdown
+- **📊 View time reports** for current week and specific periods with optional detailed breakdown and configurable week start day
 - **🔔 Monitor timers** with desktop notifications
 - **🗂️ Archive Tasks For Completed Jiras** automatically
 - **⚙️ Easy configuration** management for API keys
@@ -149,7 +149,9 @@ This shows your current configuration status and masks sensitive values for secu
 
 `clockify-cli week-view --detailed` - Show detailed view with start time, end time, and duration
 
-`clockify-cli week-view --include-current --detailed` - Detailed view including current timer
+`clockify-cli week-view --week-start Sunday` - Start the week on Sunday instead of Monday
+
+`clockify-cli week-view --include-current --detailed --week-start Wednesday` - Detailed view with custom week start day
 
 ### Task Management
 
@@ -230,7 +232,7 @@ The configuration is stored securely in your user profile:
 | `edit-timer` | Edit start/end times of existing time entries | `clockify-cli edit-timer --days 7` |
 | `delete-timer` | Delete completed timers from this week | `clockify-cli delete-timer` |
 | `status` | Display current in-progress time entry | `clockify-cli status` |
-| `week-view` | Display current week's time entries | `clockify-cli week-view --include-current --detailed` |
+| `week-view` | Display current week's time entries | `clockify-cli week-view --include-current --detailed --week-start Sunday` |
 
 ### Task Management Commands
 

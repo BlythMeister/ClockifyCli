@@ -14,7 +14,7 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 
 - **🔄 Sync time entries** from Clockify to Tempo automatically
 - **📋 Manage tasks** directly from Jira issues in Clockify
-- **⏱️ Start/Stop timers** with an intuitive command-line interface
+- **⏱️ Start/Stop timers** with an intuitive command-line interface and customizable start times
 - **🗑️ Discard/Delete timers** with safety confirmations and time restrictions
 - **✏️ Edit existing timers** with precise start/end time adjustments
 - **📊 View time reports** for current week and specific periods with optional detailed breakdown and configurable week start day
@@ -117,7 +117,7 @@ This shows your current configuration status and masks sensitive values for secu
 
 #### Start a Timer
 
-`clockify-cli start` - Interactive selection of available tasks
+`clockify-cli start` - Interactive selection of available tasks with option to start now or at an earlier time
 
 #### Check Current Status
 
@@ -226,7 +226,7 @@ The configuration is stored securely in your user profile:
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `start` | Start a new timer by selecting from available tasks | `clockify-cli start` |
+| `start` | Start a new timer by selecting from available tasks with customizable start time | `clockify-cli start` |
 | `stop` | Stop the currently running timer | `clockify-cli stop` |
 | `discard-timer` | Permanently delete the currently running timer | `clockify-cli discard-timer` |
 | `edit-timer` | Edit start/end times of existing time entries | `clockify-cli edit-timer --days 7` |

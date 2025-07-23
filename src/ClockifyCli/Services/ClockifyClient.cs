@@ -185,12 +185,13 @@ public class ClockifyClient : IClockifyClient
         }
     }
 
-    public async Task<TimeEntry> StartTimeEntry(WorkspaceInfo workspace, string projectId, string? taskId, string? description)
+    public async Task<TimeEntry> StartTimeEntry(WorkspaceInfo workspace, string projectId, string? taskId, string? description, DateTime? startTime = null)
     {
         try
         {
+            var effectiveStartTime = startTime ?? DateTime.UtcNow;
             var startTimeEntry = new StartTimeEntry(
-                                                    DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                                                    effectiveStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                                                     projectId,
                                                     string.IsNullOrEmpty(taskId) ? null : taskId,
                                                     string.IsNullOrWhiteSpace(description) ? null : description

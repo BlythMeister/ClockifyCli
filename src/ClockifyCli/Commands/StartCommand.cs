@@ -113,6 +113,42 @@ public class StartCommand : BaseCommand
         // Prompt for optional description
         var description = console.Prompt(new TextPrompt<string>("[blue]Description[/] (optional):").AllowEmpty());
 
+        // Prompt for start time
+        var startTimeOption = console.Prompt(
+            new SelectionPrompt<string>()
+                .Title("When do you want to [green]start[/] the timer?")
+                .AddChoices("Now", "Earlier time"));
+
+        DateTime? startTime = null;
+        if (startTimeOption == "Earlier time")
+        {
+            var timeInput = console.Prompt(
+                new TextPrompt<string>("[blue]Start time[/] (HH:mm or HH:mm:ss):")
+                    .Validate(input =>
+                    {
+                        if (TimeSpan.TryParse(input, out var time))
+                        {
+                            var proposedStartTime = DateTime.Today.Add(time);
+                            if (proposedStartTime <= DateTime.Now)
+                            {
+                                return ValidationResult.Success();
+                            }
+                            return ValidationResult.Error("Start time cannot be in the future");
+                        }
+                        return ValidationResult.Error("Please enter a valid time format (HH:mm or HH:mm:ss)");
+                    }));
+
+            if (TimeSpan.TryParse(timeInput, out var parsedTime))
+            {
+                startTime = DateTime.Today.Add(parsedTime);
+                // If the time is after current time, assume it's for yesterday
+                if (startTime > DateTime.Now)
+                {
+                    startTime = startTime.Value.AddDays(-1);
+                }
+            }
+        }
+
         // Show confirmation
         var projectName = Markup.Escape(selectedOption.ProjectName);
         var taskName = selectedOption.TaskName == "No specific task"
@@ -121,11 +157,13 @@ public class StartCommand : BaseCommand
         var descriptionDisplay = string.IsNullOrWhiteSpace(description)
                                      ? "[dim]No description[/]"
                                      : Markup.Escape(description);
+        var startTimeDisplay = startTime?.ToString("HH:mm:ss") ?? "Now";
 
         console.MarkupLine($"[yellow]About to start timer for:[/]");
         console.MarkupLine($"  [bold]Project:[/] {projectName}");
         console.MarkupLine($"  [bold]Task:[/] {taskName}");
         console.MarkupLine($"  [bold]Description:[/] {descriptionDisplay}");
+        console.MarkupLine($"  [bold]Start time:[/] {startTimeDisplay}");
         console.WriteLine();
 
         if (console.Confirm("Start this timer?"))
@@ -141,11 +179,13 @@ public class StartCommand : BaseCommand
                                                                                                                          workspace,
                                                                                                                          selectedOption.ProjectId,
                                                                                                                          taskId,
-                                                                                                                         finalDescription);
+                                                                                                                         finalDescription,
+                                                                                                                         startTime);
                                                               });
 
+            var displayTime = startTime?.ToString("HH:mm:ss") ?? DateTime.Now.ToString("HH:mm:ss");
             console.MarkupLine("[green]:check_mark: Timer started successfully![/]");
-            console.MarkupLine($"[dim]Started at: {DateTime.Now:HH:mm:ss}[/]");
+            console.MarkupLine($"[dim]Started at: {displayTime}[/]");
             console.MarkupLine("[dim]Use 'clockify-cli status' to see the running timer or 'clockify-cli stop' to stop it.[/]");
         }
         else

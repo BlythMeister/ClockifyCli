@@ -18,9 +18,9 @@ public class MockClock : IClock
     /// <param name="utcNow">The current UTC time to return (optional, defaults to now)</param>
     public MockClock(DateTime now, DateTime? utcNow = null)
     {
-        _now = now;
-        _utcNow = utcNow ?? now;
-        _today = now.Date;
+        _now = DateTime.SpecifyKind(now, DateTimeKind.Local);
+        _utcNow = utcNow.HasValue ? DateTime.SpecifyKind(utcNow.Value, DateTimeKind.Utc) : DateTime.SpecifyKind(now, DateTimeKind.Utc);
+        _today = DateTime.SpecifyKind(now.Date, DateTimeKind.Local);
     }
 
     /// <summary>
@@ -45,8 +45,8 @@ public class MockClock : IClock
     /// <param name="utcNow">The new UTC time (optional, defaults to now)</param>
     public void SetTime(DateTime now, DateTime? utcNow = null)
     {
-        _now = now;
-        _utcNow = utcNow ?? now;
-        _today = now.Date;
+        _now = DateTime.SpecifyKind(now, DateTimeKind.Local);
+        _utcNow = utcNow.HasValue ? DateTime.SpecifyKind(utcNow.Value, DateTimeKind.Utc) : DateTime.SpecifyKind(now, DateTimeKind.Utc);
+        _today = DateTime.SpecifyKind(now.Date, DateTimeKind.Local);
     }
 }

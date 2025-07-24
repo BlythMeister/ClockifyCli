@@ -197,6 +197,14 @@ public class ClockifyClient : IClockifyClient
         try
         {
             var effectiveStartTime = startTime ?? clock.UtcNow;
+            
+            // Convert local time to UTC if startTime was provided (user input is local)
+            // If no startTime provided, clock.UtcNow is already UTC
+            if (startTime.HasValue && startTime.Value.Kind != DateTimeKind.Utc)
+            {
+                effectiveStartTime = startTime.Value.ToUniversalTime();
+            }
+            
             var startTimeEntry = new StartTimeEntry(
                                                     effectiveStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                                                     projectId,
@@ -234,16 +242,20 @@ public class ClockifyClient : IClockifyClient
     {
         try
         {
+            // Convert local times to UTC if they aren't already UTC
+            var utcStartTime = startTime.Kind == DateTimeKind.Utc ? startTime : startTime.ToUniversalTime();
+            var utcEndTime = endTime.Kind == DateTimeKind.Utc ? endTime : endTime.ToUniversalTime();
+
             var timeInterval = new
             {
-                start = startTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                end = endTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                start = utcStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                end = utcEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
             };
 
             var addTimeEntry = new
             {
-                start = startTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                end = endTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                start = utcStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                end = utcEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 projectId = projectId,
                 taskId = string.IsNullOrEmpty(taskId) ? null : taskId,
                 description = string.IsNullOrWhiteSpace(description) ? null : description

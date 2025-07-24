@@ -109,8 +109,13 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                   {
                                                       var entryCount = entriesByDate.First(g => g.Date == date).Entries.Count();
                                                       var hasRunningTimer = currentRunningEntry != null && currentRunningEntry.TimeInterval.StartDate.Date == date.Date;
-                                                      var runningIndicator = hasRunningTimer ? " :stopwatch:" : "";
-                                                      return Markup.Escape($"{date:ddd, MMM dd, yyyy} ({entryCount} entries{runningIndicator})");
+                                                      
+                                                      // Include running timer in the total count
+                                                      var totalCount = hasRunningTimer ? entryCount + 1 : entryCount;
+                                                      
+                                                      // Use proper singular/plural form
+                                                      var entryText = totalCount == 1 ? "entry" : "entries";
+                                                      return Markup.Escape($"{date:ddd, MMM dd, yyyy} ({totalCount} {entryText})");
                                                   }));
 
         // Step 2: Select specific time entry from that date

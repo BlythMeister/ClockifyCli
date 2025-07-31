@@ -1,4 +1,5 @@
 using ClockifyCli.Models;
+using ClockifyCli.Utilities;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Text;
@@ -9,12 +10,14 @@ public class ClockifyClient : IClockifyClient
 {
     private readonly HttpClient client;
     private readonly IClock clock;
+    private readonly RateLimiter rateLimiter;
 
     // Constructor for dependency injection with HttpClient and IClock
     public ClockifyClient(HttpClient httpClient, string apiKey, IClock clock)
     {
         client = httpClient;
         this.clock = clock;
+        this.rateLimiter = RateLimiter.ForClockifyApi();
         client.BaseAddress = new Uri("https://api.clockify.me/api/v1/");
         client.DefaultRequestHeaders.Clear();
         client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
@@ -30,11 +33,41 @@ public class ClockifyClient : IClockifyClient
     {
     }
 
+    private async Task<HttpResponseMessage> GetWithRateLimitAsync(string requestUri, CancellationToken cancellationToken = default)
+    {
+        await rateLimiter.WaitIfNeededAsync(cancellationToken);
+        return await client.GetAsync(requestUri, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> PostWithRateLimitAsync(string requestUri, HttpContent content, CancellationToken cancellationToken = default)
+    {
+        await rateLimiter.WaitIfNeededAsync(cancellationToken);
+        return await client.PostAsync(requestUri, content, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> PutWithRateLimitAsync(string requestUri, HttpContent content, CancellationToken cancellationToken = default)
+    {
+        await rateLimiter.WaitIfNeededAsync(cancellationToken);
+        return await client.PutAsync(requestUri, content, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> PatchWithRateLimitAsync(string requestUri, HttpContent content, CancellationToken cancellationToken = default)
+    {
+        await rateLimiter.WaitIfNeededAsync(cancellationToken);
+        return await client.PatchAsync(requestUri, content, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> DeleteWithRateLimitAsync(string requestUri, CancellationToken cancellationToken = default)
+    {
+        await rateLimiter.WaitIfNeededAsync(cancellationToken);
+        return await client.DeleteAsync(requestUri, cancellationToken);
+    }
+
     public async Task<UserInfo> GetLoggedInUser()
     {
         try
         {
-            var response = await client.GetAsync("user");
+            var response = await GetWithRateLimitAsync("user");
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -65,7 +98,7 @@ public class ClockifyClient : IClockifyClient
     {
         try
         {
-            var response = await client.GetAsync("workspaces");
+            var response = await GetWithRateLimitAsync("workspaces");
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -100,7 +133,7 @@ public class ClockifyClient : IClockifyClient
             var newTaskJson = JsonConvert.SerializeObject(newTask);
             var content = new StringContent(newTaskJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await client.PostAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks", content);
+            var response = await PostWithRateLimitAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks", content);
             response.EnsureSuccessStatusCode();
         }
         catch (Exception e)
@@ -129,7 +162,7 @@ public class ClockifyClient : IClockifyClient
     {
         try
         {
-            var response = await client.GetAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?in-progress=true");
+            var response = await GetWithRateLimitAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?in-progress=true");
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -165,7 +198,7 @@ public class ClockifyClient : IClockifyClient
             var stopTimeJson = JsonConvert.SerializeObject(stopTimeData);
             var content = new StringContent(stopTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await client.PatchAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries", content);
+            var response = await PatchWithRateLimitAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -220,7 +253,7 @@ public class ClockifyClient : IClockifyClient
             var startTimeJson = JsonConvert.SerializeObject(startTimeEntry, serializerSettings);
             var content = new StringContent(startTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await client.PostAsync($"workspaces/{workspace.Id}/time-entries", content);
+            var response = await PostWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -269,7 +302,7 @@ public class ClockifyClient : IClockifyClient
             var addTimeJson = JsonConvert.SerializeObject(addTimeEntry, serializerSettings);
             var content = new StringContent(addTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await client.PostAsync($"workspaces/{workspace.Id}/time-entries", content);
+            var response = await PostWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -295,7 +328,7 @@ public class ClockifyClient : IClockifyClient
             var updateJson = JsonConvert.SerializeObject(updateData);
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await client.PutAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks/{task.Id}", content);
+            var response = await PutWithRateLimitAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks/{task.Id}", content);
             response.EnsureSuccessStatusCode();
         }
         catch (Exception e)
@@ -326,7 +359,7 @@ public class ClockifyClient : IClockifyClient
             var updateJson = JsonConvert.SerializeObject(updateData, serializerSettings);
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await client.PutAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
+            var response = await PutWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -364,7 +397,7 @@ public class ClockifyClient : IClockifyClient
             var updateJson = JsonConvert.SerializeObject(updateData, serializerSettings);
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await client.PutAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
+            var response = await PutWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -386,7 +419,7 @@ public class ClockifyClient : IClockifyClient
     {
         try
         {
-            var response = await client.DeleteAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}");
+            var response = await DeleteWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -412,7 +445,7 @@ public class ClockifyClient : IClockifyClient
             while (moreToGet)
             {
                 var pageInfo = baseUrl.Contains("?") ? $"&page={page}&page-size={pageSize}" : $"?page={page}&page-size={pageSize}";
-                var response = await client.GetAsync($"{baseUrl}{pageInfo}");
+                var response = await GetWithRateLimitAsync($"{baseUrl}{pageInfo}");
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)

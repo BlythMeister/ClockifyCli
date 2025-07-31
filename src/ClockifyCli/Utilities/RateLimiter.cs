@@ -35,7 +35,7 @@ public class RateLimiter
     {
         // Use a very conservative rate limit: 1 request per second
         // This ensures we never hit rate limits during pagination or bulk operations
-        return new RateLimiter(1, TimeSpan.FromSeconds(1));
+        return new RateLimiter(10, TimeSpan.FromSeconds(1));
     }
 
     /// <summary>

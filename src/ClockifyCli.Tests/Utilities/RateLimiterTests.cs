@@ -91,16 +91,20 @@ public class RateLimiterTests
     {
         // Arrange & Act
         var rateLimiter = RateLimiter.ForClockifyApi();
-
-        // Assert - Should allow the first request quickly
         var stopwatch = Stopwatch.StartNew();
-        await rateLimiter.WaitIfNeededAsync();
-        stopwatch.Stop();
 
-        // First request should be fast
-        Assert.That(stopwatch.ElapsedMilliseconds, Is.LessThan(50), "First request should be fast");
+		for(int i = 0; i < 10; i++)
+		{
+	        // Assert - Should allow the first 10 request quickly
+	        stopwatch.Restart();
+	        await rateLimiter.WaitIfNeededAsync();
+	        stopwatch.Stop();
+	
+	        // First request should be fast
+	        Assert.That(stopwatch.ElapsedMilliseconds, Is.LessThan(50), "First 10 requests should be fast");
+        }
 
-        // Second request should wait since ForClockifyApi uses 1 request per second
+        // 11th request should wait since ForClockifyApi uses 1 request per second
         stopwatch.Restart();
         await rateLimiter.WaitIfNeededAsync();
         stopwatch.Stop();

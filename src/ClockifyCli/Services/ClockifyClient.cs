@@ -324,11 +324,23 @@ public class ClockifyClient : IClockifyClient
     {
         try
         {
-            var updateData = new { status = status };
+            // Use the full task update endpoint instead of just updating status
+            var updateData = new 
+            { 
+                name = task.Name,
+                status = status
+            };
             var updateJson = JsonConvert.SerializeObject(updateData);
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
             var response = await PutWithRateLimitAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks/{task.Id}", content);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Response status code does not indicate success: {response.StatusCode} ({response.ReasonPhrase}). Response: {responseContent}");
+            }
+            
             response.EnsureSuccessStatusCode();
         }
         catch (Exception e)

@@ -28,12 +28,12 @@ public class RateLimiter
 
     /// <summary>
     /// Creates a rate limiter configured for Clockify's API limits.
-    /// Very conservative approach: 1 request per second to avoid "Too Many Requests" errors.
+    /// Conservative approach: 10 requests per second to avoid "Too Many Requests" errors.
     /// </summary>
     /// <returns>A RateLimiter configured for Clockify API</returns>
     public static RateLimiter ForClockifyApi()
     {
-        // Use a very conservative rate limit: 1 request per second
+        // Use a conservative rate limit: 10 requests per second
         // This ensures we never hit rate limits during pagination or bulk operations
         return new RateLimiter(10, TimeSpan.FromSeconds(1));
     }

@@ -210,6 +210,7 @@ public class StartCommandTests
         var testConsole = new TestConsole().Interactive();
 
         // Simulate user selections
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
         testConsole.Input.PushTextWithEnter("Test description"); // Enter description
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Now" for start time
@@ -274,6 +275,7 @@ public class StartCommandTests
         var testConsole = new TestConsole().Interactive();
 
         // Simulate user selections
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
         testConsole.Input.PushTextWithEnter("Test description"); // Enter description
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Earlier time"
@@ -413,9 +415,10 @@ public class StartCommandTests
         var futureTime = "23:00";
         
         // Simulate user selections
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
         testConsole.Input.PushTextWithEnter("Test description"); // Enter description
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Earlier time"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Earlier time"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Earlier time"
         testConsole.Input.PushTextWithEnter(futureTime); // Enter future time (should be interpreted as yesterday)
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
@@ -486,6 +489,7 @@ public class StartCommandTests
         var validTime = "09:00"; // Within 10 hours (5 hours ago when interpreted as yesterday)
         
         // Simulate user selections - first try invalid time, then valid time
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
         testConsole.Input.PushTextWithEnter("Test description"); // Enter description
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Earlier time"
@@ -558,6 +562,7 @@ public class StartCommandTests
         var validTime = "12:00"; // Within 10 hours (2 hours ago)
         
         // Simulate user selections - first try invalid past time, then valid time
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
         testConsole.Input.PushTextWithEnter("Test description"); // Enter description
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Earlier time"
@@ -576,6 +581,242 @@ public class StartCommandTests
 
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("Start time cannot be more than 10 hours ago"), "Should show validation error for past time more than 10 hours ago");
+
+        // Cleanup
+        clockifyMockHttp.Dispose();
+        clockifyHttpClient.Dispose();
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithNoProjects_ShouldDisplayErrorMessage()
+    {
+        // Arrange
+        var clockifyMockHttp = new MockHttpMessageHandler();
+        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
+
+        // Mock user info
+        var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
+                        .Respond("application/json", userJson);
+
+        // Mock workspaces response
+        var workspacesJson = """[{"id":"workspace1","name":"Test Workspace"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
+                        .Respond("application/json", workspacesJson);
+
+        // Mock no current time entry
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
+                        .Respond("application/json", "[]");
+
+        // Mock empty projects response
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                        .Respond("application/json", "[]");
+
+        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+        var testConsole = new TestConsole();
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+
+        // Act
+        var result = await command.ExecuteAsync(null!);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("No projects found!"), "Should display no projects error message");
+        Assert.That(output, Does.Contain("Create some projects in Clockify first"), "Should display helpful message");
+
+        // Cleanup
+        clockifyMockHttp.Dispose();
+        clockifyHttpClient.Dispose();
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithNoTasksInSelectedProject_ShouldDisplayErrorMessage()
+    {
+        // Arrange
+        var clockifyMockHttp = new MockHttpMessageHandler();
+        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
+
+        // Mock user info
+        var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
+                        .Respond("application/json", userJson);
+
+        // Mock workspaces response
+        var workspacesJson = """[{"id":"workspace1","name":"Test Workspace"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
+                        .Respond("application/json", workspacesJson);
+
+        // Mock no current time entry
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
+                        .Respond("application/json", "[]");
+
+        // Mock projects response
+        var projectsJson = """[{"id":"project1","name":"Empty Project"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                        .Respond("application/json", projectsJson);
+
+        // Mock empty tasks response
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project1/tasks")
+                        .Respond("application/json", "[]");
+
+        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+        var testConsole = new TestConsole().Interactive();
+
+        // Simulate user selecting the first (and only) project
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
+
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+
+        // Act
+        var result = await command.ExecuteAsync(null!);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Select a project:"), "Should display project selection prompt");
+        Assert.That(output, Does.Contain("No active tasks found for project 'Empty Project'!"), "Should display no tasks error message");
+        Assert.That(output, Does.Contain("Add some tasks to this project first"), "Should display helpful message");
+
+        // Cleanup
+        clockifyMockHttp.Dispose();
+        clockifyHttpClient.Dispose();
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithTasksFilteredByStatus_ShouldOnlyShowActiveTasks()
+    {
+        // Arrange
+        var clockifyMockHttp = new MockHttpMessageHandler();
+        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
+
+        // Mock user info
+        var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
+                        .Respond("application/json", userJson);
+
+        // Mock workspaces response
+        var workspacesJson = """[{"id":"workspace1","name":"Test Workspace"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
+                        .Respond("application/json", workspacesJson);
+
+        // Mock no current time entry
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
+                        .Respond("application/json", "[]");
+
+        // Mock projects response
+        var projectsJson = """[{"id":"project1","name":"Test Project"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                        .Respond("application/json", projectsJson);
+
+        // Mock tasks response with mixed statuses - only Active task should be shown
+        var tasksJson = """[{"id":"task1","name":"Active Task","status":"Active"},{"id":"task2","name":"Done Task","status":"Done"},{"id":"task3","name":"Another Active Task","status":"Active"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project1/tasks")
+                        .Respond("application/json", tasksJson);
+
+        // Mock start time entry response
+        var startedEntryJson = """{"id":"entry456","description":"Test timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
+        clockifyMockHttp.When(HttpMethod.Post, "https://api.clockify.me/api/v1/workspaces/workspace1/time-entries")
+                        .Respond("application/json", startedEntryJson);
+
+        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+        var testConsole = new TestConsole().Interactive();
+
+        // Simulate user selections
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first active task
+        testConsole.Input.PushTextWithEnter("Test description"); // Enter description
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Now" for start time
+        testConsole.Input.PushTextWithEnter("y"); // Confirm start
+
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+
+        // Act
+        var result = await command.ExecuteAsync(null!);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Select a project:"), "Should display project selection prompt");
+        Assert.That(output, Does.Contain("Select a task from 'Test Project':"), "Should display task selection prompt with project name");
+        Assert.That(output, Does.Contain("Timer started successfully!"), "Should display success message");
+
+        // Verify that "Done Task" is not shown in the output (filtered out)
+        Assert.That(output, Does.Not.Contain("Done Task"), "Should not show tasks with Done status");
+
+        // Cleanup
+        clockifyMockHttp.Dispose();
+        clockifyHttpClient.Dispose();
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithTwoLevelSelection_ShouldDisplayCorrectPromptTitles()
+    {
+        // Arrange
+        var clockifyMockHttp = new MockHttpMessageHandler();
+        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
+
+        // Mock user info
+        var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
+                        .Respond("application/json", userJson);
+
+        // Mock workspaces response
+        var workspacesJson = """[{"id":"workspace1","name":"Test Workspace"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
+                        .Respond("application/json", workspacesJson);
+
+        // Mock no current time entry
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
+                        .Respond("application/json", "[]");
+
+        // Mock projects response with multiple projects
+        var projectsJson = """[{"id":"project1","name":"Project Alpha"},{"id":"project2","name":"Project Beta"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                        .Respond("application/json", projectsJson);
+
+        // Mock tasks response for Project Beta (user will select second project)
+        var tasksJson = """[{"id":"task1","name":"Beta Task 1","status":"Active"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project2/tasks")
+                        .Respond("application/json", tasksJson);
+
+        // Mock start time entry response
+        var startedEntryJson = """{"id":"entry456","description":"Test timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
+        clockifyMockHttp.When(HttpMethod.Post, "https://api.clockify.me/api/v1/workspaces/workspace1/time-entries")
+                        .Respond("application/json", startedEntryJson);
+
+        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+        var testConsole = new TestConsole().Interactive();
+
+        // Simulate user selections - select second project
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to second project
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select Project Beta
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
+        testConsole.Input.PushTextWithEnter("Test description"); // Enter description
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Now" for start time
+        testConsole.Input.PushTextWithEnter("y"); // Confirm start
+
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+
+        // Act
+        var result = await command.ExecuteAsync(null!);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Select a project:"), "Should display project selection prompt");
+        Assert.That(output, Does.Contain("Select a task from 'Project Beta':"), "Should display task selection prompt with selected project name");
+        Assert.That(output, Does.Contain("Project: Project Beta"), "Should show selected project in confirmation");
+        Assert.That(output, Does.Contain("Task: Beta Task 1"), "Should show selected task in confirmation");
+        Assert.That(output, Does.Contain("Timer started successfully!"), "Should display success message");
 
         // Cleanup
         clockifyMockHttp.Dispose();

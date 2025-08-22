@@ -60,57 +60,65 @@ public class StartCommand : BaseCommand
             console.WriteLine();
         }
 
-        // Load data first (inside Status block)
-        List<TaskWithProject> allOptions = new();
+        // First, load projects
+        List<ProjectInfo> projects = new();
         await console.Status()
-                     .StartAsync("Loading projects and tasks...", async ctx =>
-                                                                      {
-                                                                          ctx.Status("Getting projects from Clockify...");
-                                                                          var projects = await clockifyClient.GetProjects(workspace);
+                     .StartAsync("Loading projects...", async ctx =>
+                                                        {
+                                                            ctx.Status("Getting projects from Clockify...");
+                                                            projects = await clockifyClient.GetProjects(workspace);
+                                                        });
 
-                                                                          if (!projects.Any())
-                                                                          {
-                                                                              return;
-                                                                          }
-
-                                                                          // Collect all tasks with their project information
-                                                                          ctx.Status("Getting tasks from all projects...");
-                                                                          var tasksWithProjects = new List<TaskWithProject>();
-
-                                                                          foreach (var project in projects)
-                                                                          {
-                                                                              var projectTasks = await clockifyClient.GetTasks(workspace, project);
-                                                                              foreach (var task in projectTasks.Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase)))
-                                                                              {
-                                                                                  tasksWithProjects.Add(new TaskWithProject(
-                                                                                                                            task.Id,
-                                                                                                                            task.Name,
-                                                                                                                            project.Id,
-                                                                                                                            project.Name
-                                                                                                                           ));
-                                                                              }
-                                                                          }
-
-                                                                          allOptions.AddRange(tasksWithProjects
-                                                                                              .OrderBy(t => t.ProjectName)
-                                                                                              .ThenBy(t => t.TaskName));
-                                                                      });
-
-        // Check if we have options after loading
-        if (!allOptions.Any())
+        if (!projects.Any())
         {
-            console.MarkupLine("[yellow]No tasks found![/]");
-            console.MarkupLine("[dim]Add some tasks to your projects first using 'clockify-cli add-task-from-jira'.[/]");
+            console.MarkupLine("[yellow]No projects found![/]");
+            console.MarkupLine("[dim]Create some projects in Clockify first.[/]");
             return;
         }
 
-        // Now do user interaction (outside Status block)
-        var selectedOption = console.Prompt(
-                                           new SelectionPrompt<TaskWithProject>()
-                                               .Title("Select a [green]task[/] to start timing:")
-                                               .PageSize(15)
-                                               .AddChoices(allOptions)
-                                               .UseConverter(task => task.SafeDisplayName));
+        // Let user select a project
+        var selectedProject = console.Prompt(
+                                            new SelectionPrompt<ProjectInfo>()
+                                                .Title("Select a [green]project[/]:")
+                                                .PageSize(15)
+                                                .AddChoices(projects.OrderBy(p => p.Name))
+                                                .UseConverter(project => Markup.Escape(project.Name)));
+
+        // Now load tasks for the selected project
+        List<TaskInfo> availableTasks = new();
+        await console.Status()
+                     .StartAsync($"Loading tasks for {selectedProject.Name}...", async ctx =>
+                                                                                  {
+                                                                                      ctx.Status($"Getting tasks from {selectedProject.Name}...");
+                                                                                      var projectTasks = await clockifyClient.GetTasks(workspace, selectedProject);
+                                                                                      availableTasks = projectTasks
+                                                                                                      .Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase))
+                                                                                                      .OrderBy(t => t.Name)
+                                                                                                      .ToList();
+                                                                                  });
+
+        if (!availableTasks.Any())
+        {
+            console.MarkupLine($"[yellow]No active tasks found for project '{selectedProject.Name}'![/]");
+            console.MarkupLine("[dim]Add some tasks to this project first using 'clockify-cli add-task-from-jira'.[/]");
+            return;
+        }
+
+        // Let user select a task
+        var selectedTask = console.Prompt(
+                                         new SelectionPrompt<TaskInfo>()
+                                             .Title($"Select a [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
+                                             .PageSize(15)
+                                             .AddChoices(availableTasks)
+                                             .UseConverter(task => Markup.Escape(task.Name)));
+
+        // Create TaskWithProject for compatibility with existing code
+        var selectedOption = new TaskWithProject(
+                                                selectedTask.Id,
+                                                selectedTask.Name,
+                                                selectedProject.Id,
+                                                selectedProject.Name
+                                               );
 
         // Prompt for optional description
         var description = console.Prompt(new TextPrompt<string>("[blue]Description[/] (optional):").AllowEmpty());

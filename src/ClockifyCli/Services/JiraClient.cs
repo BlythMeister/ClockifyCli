@@ -83,6 +83,38 @@ public class JiraClient : IJiraClient
         }
     }
 
+    public async Task<JiraSearchResult> SearchIssues(string jql, int maxResults = 50)
+    {
+        try
+        {
+            var requestBody = new
+            {
+                jql = jql,
+                maxResults = maxResults,
+                startAt = 0
+            };
+
+            var json = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync("search", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Failed to search JIRA issues. Status: {response.StatusCode}, Response: {responseContent}");
+            }
+
+            var searchResult = JsonConvert.DeserializeObject<JiraSearchResult>(responseContent);
+            return searchResult ?? new JiraSearchResult();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            throw;
+        }
+    }
+
     public async Task<string> GetUser()
     {
         try

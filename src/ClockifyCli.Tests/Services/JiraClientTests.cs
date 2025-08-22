@@ -239,4 +239,112 @@ public class JiraClientTests
         Assert.That(result1.Key, Is.EqualTo("TEST-CACHE"));
         Assert.That(result2.Key, Is.EqualTo("TEST-CACHE"));
     }
+
+    [Test]
+    public async Task SearchIssues_WithValidJql_ShouldReturnSearchResults()
+    {
+        // Arrange
+        var jql = "project = TEST AND status = 'In Progress'";
+        var jsonResponse = """
+        {
+            "startAt": 0,
+            "maxResults": 50,
+            "total": 2,
+            "issues": [
+                {
+                    "id": "10001",
+                    "key": "TEST-123",
+                    "fields": {
+                        "summary": "First Test Issue",
+                        "status": {
+                            "name": "In Progress",
+                            "statusCategory": {
+                                "key": "indeterminate",
+                                "name": "In Progress"
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "10002",
+                    "key": "TEST-456",
+                    "fields": {
+                        "summary": "Second Test Issue",
+                        "status": {
+                            "name": "In Progress",
+                            "statusCategory": {
+                                "key": "indeterminate",
+                                "name": "In Progress"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+        """;
+
+        mockHttp.When("https://15below.atlassian.net/rest/api/3/search")
+            .Respond(HttpStatusCode.OK, "application/json", jsonResponse);
+
+        var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);
+
+        // Act
+        var result = await jiraClient.SearchIssues(jql, 50);
+
+        // Assert
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Total, Is.EqualTo(2));
+        Assert.That(result.Issues, Has.Count.EqualTo(2));
+        Assert.That(result.Issues[0].Key, Is.EqualTo("TEST-123"));
+        Assert.That(result.Issues[0].Fields?.Summary, Is.EqualTo("First Test Issue"));
+        Assert.That(result.Issues[1].Key, Is.EqualTo("TEST-456"));
+        Assert.That(result.Issues[1].Fields?.Summary, Is.EqualTo("Second Test Issue"));
+    }
+
+    [Test]
+    public async Task SearchIssues_WithNoResults_ShouldReturnEmptySearchResults()
+    {
+        // Arrange
+        var jql = "project = NONEXISTENT";
+        var jsonResponse = """
+        {
+            "startAt": 0,
+            "maxResults": 50,
+            "total": 0,
+            "issues": []
+        }
+        """;
+
+        mockHttp.When("https://15below.atlassian.net/rest/api/3/search")
+            .Respond(HttpStatusCode.OK, "application/json", jsonResponse);
+
+        var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);
+
+        // Act
+        var result = await jiraClient.SearchIssues(jql, 50);
+
+        // Assert
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result.Total, Is.EqualTo(0));
+        Assert.That(result.Issues, Is.Empty);
+    }
+
+    [Test]
+    public void SearchIssues_WithApiError_ShouldThrowHttpRequestException()
+    {
+        // Arrange
+        var jql = "invalid JQL syntax";
+        mockHttp.When("https://15below.atlassian.net/rest/api/3/search")
+            .Respond(HttpStatusCode.BadRequest, "application/json", "{\"errorMessages\":[\"Invalid JQL\"]}");
+
+        var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);
+
+        // Act & Assert
+        var exception = Assert.ThrowsAsync<HttpRequestException>(async () =>
+        {
+            await jiraClient.SearchIssues(jql, 50);
+        });
+        
+        Assert.That(exception?.Message, Contains.Substring("Failed to search JIRA issues"));
+    }
 }

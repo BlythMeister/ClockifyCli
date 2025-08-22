@@ -216,35 +216,89 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         console.Write(table);
         console.WriteLine();
 
-        // Get new start time
-        var newStartTimeStr = console.Prompt(
-            new TextPrompt<string>($"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):")
-                .AllowEmpty());
+        // Ask user what they want to edit with simple Y/N questions
+        var changeProject = console.Confirm("Do you want to [green]change the project[/]?", false);
+        var changeTimes = console.Confirm("Do you want to [green]change the times[/]?", false);
+        var changeDescription = console.Confirm("Do you want to [green]change the description[/]?", false);
 
-        var newStartTime = currentStartTime;
-        if (!string.IsNullOrWhiteSpace(newStartTimeStr))
+        if (!changeProject && !changeTimes && !changeDescription)
         {
-            if (TimeSpan.TryParseExact(newStartTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var startTimeSpan))
+            console.MarkupLine("[yellow]No changes selected. Operation cancelled.[/]");
+            return;
+        }
+
+        console.WriteLine();
+        console.MarkupLine("[bold]Editing Selected Fields[/]");
+        console.WriteLine();
+
+        // Initialize variables with current values
+        var newStartTime = currentStartTime;
+        DateTime? newEndTime = isRunning ? null : selectedEntry.TimeInterval.EndDate.ToLocalTime();
+        var newDescription = selectedEntry.Description;
+        var newProjectId = selectedEntry.ProjectId;
+        var newTaskId = selectedEntry.TaskId;
+
+        // Step 2: Edit each selected field
+        if (changeProject)
+        {
+            var selectedProject = console.Prompt(
+                new SelectionPrompt<ProjectInfo>()
+                    .Title("Select new [green]project[/]:")
+                    .PageSize(15)
+                    .AddChoices(projects.OrderBy(p => p.Name))
+                    .UseConverter(p => Markup.Escape(p.Name)));
+            
+            newProjectId = selectedProject.Id;
+
+            // If project changed, also ask for task within that project
+            var projectTasks = allTasks.Where(t => t.ProjectId == selectedProject.Id)
+                                      .OrderBy(t => t.TaskName)
+                                      .ToList();
+
+            if (projectTasks.Any())
             {
-                newStartTime = currentStartTime.Date.Add(startTimeSpan);
+                var selectedTaskOption = console.Prompt(
+                    new SelectionPrompt<TaskWithProject>()
+                        .Title($"Select new [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
+                        .PageSize(15)
+                        .AddChoices(projectTasks)
+                        .UseConverter(t => Markup.Escape(t.TaskName)));
+                
+                newTaskId = selectedTaskOption.TaskId;
             }
             else
             {
-                console.MarkupLine("[red]Invalid time format. Keeping original start time.[/]");
+                console.MarkupLine($"[yellow]No tasks found for project '{Markup.Escape(selectedProject.Name)}'. Task will be cleared.[/]");
+                newTaskId = null;
             }
         }
 
-        // Get new end time
-        DateTime? newEndTime = null;
+        if (changeTimes)
+        {
+            var newStartTimeStr = console.Prompt(
+                new TextPrompt<string>($"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):")
+                    .AllowEmpty());
 
-        if (!isRunning)
+            if (!string.IsNullOrWhiteSpace(newStartTimeStr))
+            {
+                if (TimeSpan.TryParseExact(newStartTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var startTimeSpan))
+                {
+                    newStartTime = currentStartTime.Date.Add(startTimeSpan);
+                }
+                else
+                {
+                    console.MarkupLine("[red]Invalid time format. Keeping original start time.[/]");
+                }
+            }
+        }
+
+        if (changeTimes && !isRunning)
         {
             var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
             var newEndTimeStr = console.Prompt(
                 new TextPrompt<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):")
                     .AllowEmpty());
 
-            newEndTime = currentEndTime;
             if (!string.IsNullOrWhiteSpace(newEndTimeStr))
             {
                 if (TimeSpan.TryParseExact(newEndTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var endTimeSpan))
@@ -271,21 +325,23 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             }
         }
 
-        // Get new description (optional)
-        var newDescription = console.Prompt(
-            new TextPrompt<string>("Enter new [green]description[/] (leave blank to keep current, or enter [red]-[/] to clear):")
-                .AllowEmpty());
-
-        if (string.IsNullOrWhiteSpace(newDescription))
+        if (changeDescription)
         {
-            newDescription = selectedEntry.Description;
-        }
-        else if (newDescription.Trim() == "-")
-        {
-            newDescription = "";
+            newDescription = console.Prompt(
+                new TextPrompt<string>("Enter new [green]description[/] (leave blank to keep current, or enter [red]-[/] to clear):")
+                    .AllowEmpty());
+
+            if (string.IsNullOrWhiteSpace(newDescription))
+            {
+                newDescription = selectedEntry.Description;
+            }
+            else if (newDescription.Trim() == "-")
+            {
+                newDescription = "";
+            }
         }
 
-        // Show summary of changes
+        // Step 3: Show summary of changes
         console.WriteLine();
         console.MarkupLine("[bold]Summary of Changes[/]");
 
@@ -293,6 +349,22 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         summaryTable.AddColumn("Field");
         summaryTable.AddColumn("Current");
         summaryTable.AddColumn("New");
+
+        // Get new project and task names for display
+        var newProject = projects.FirstOrDefault(p => p.Id == newProjectId);
+        var newTask = allTasks.FirstOrDefault(t => t.TaskId == newTaskId);
+        var newProjectName = newProject?.Name ?? "Unknown Project";
+        var newTaskName = newTask?.TaskName ?? "No Task";
+
+        summaryTable.AddRow(
+            "Project",
+            projectName,
+            Markup.Escape(newProjectName));
+
+        summaryTable.AddRow(
+            "Task", 
+            taskName,
+            Markup.Escape(newTaskName));
 
         summaryTable.AddRow(
                             "Start Time",
@@ -329,7 +401,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         console.Write(summaryTable);
         console.WriteLine();
 
-        // Confirm changes
+        // Step 4: Confirm changes
         if (console.Confirm("Apply these changes?"))
         {
             await console.Status()
@@ -337,11 +409,11 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                              {
                                  if (isRunning)
                                  {
-                                     await clockifyClient.UpdateRunningTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newDescription);
+                                     await clockifyClient.UpdateRunningTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newDescription, newProjectId, newTaskId);
                                  }
                                  else
                                  {
-                                     await clockifyClient.UpdateTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newEndTime!.Value.ToUniversalTime(), newDescription);
+                                     await clockifyClient.UpdateTimeEntry(workspace, selectedEntry, newStartTime.ToUniversalTime(), newEndTime!.Value.ToUniversalTime(), newDescription, newProjectId, newTaskId);
                                  }
                              });
 

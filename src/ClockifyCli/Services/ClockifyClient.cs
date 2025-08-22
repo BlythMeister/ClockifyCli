@@ -350,7 +350,7 @@ public class ClockifyClient : IClockifyClient
         }
     }
 
-    public async Task<TimeEntry> UpdateTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, DateTime newEndTime, string? description = null)
+    public async Task<TimeEntry> UpdateTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, DateTime newEndTime, string? description = null, string? newProjectId = null, string? newTaskId = null)
     {
         try
         {
@@ -358,8 +358,8 @@ public class ClockifyClient : IClockifyClient
             {
                 start = newStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 end = newEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                projectId = timeEntry.ProjectId,
-                taskId = string.IsNullOrEmpty(timeEntry.TaskId) ? (string?)null : timeEntry.TaskId,
+                projectId = newProjectId ?? timeEntry.ProjectId,
+                taskId = string.IsNullOrEmpty(newTaskId ?? timeEntry.TaskId) ? (string?)null : (newTaskId ?? timeEntry.TaskId),
                 description = description ?? timeEntry.Description
             };
 
@@ -389,15 +389,15 @@ public class ClockifyClient : IClockifyClient
         }
     }
 
-    public async Task<TimeEntry> UpdateRunningTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, string? description = null)
+    public async Task<TimeEntry> UpdateRunningTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, string? description = null, string? newProjectId = null, string? newTaskId = null)
     {
         try
         {
             var updateData = new
             {
                 start = newStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                projectId = timeEntry.ProjectId,
-                taskId = string.IsNullOrEmpty(timeEntry.TaskId) ? (string?)null : timeEntry.TaskId,
+                projectId = newProjectId ?? timeEntry.ProjectId,
+                taskId = string.IsNullOrEmpty(newTaskId ?? timeEntry.TaskId) ? (string?)null : (newTaskId ?? timeEntry.TaskId),
                 description = description ?? timeEntry.Description
             };
 

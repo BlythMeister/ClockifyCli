@@ -14,8 +14,8 @@ public interface IClockifyClient
     Task<TimeEntry> StartTimeEntry(WorkspaceInfo workspace, string projectId, string? taskId, string? description, DateTime? startTime = null);
     Task<TimeEntry> AddTimeEntry(WorkspaceInfo workspace, string projectId, string? taskId, string? description, DateTime startTime, DateTime endTime);
     Task<TimeEntry> StopCurrentTimeEntry(WorkspaceInfo workspace, UserInfo user);
-    Task<TimeEntry> UpdateTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, DateTime newEndTime, string? description = null);
-    Task<TimeEntry> UpdateRunningTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, string? description = null);
+    Task<TimeEntry> UpdateTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, DateTime newEndTime, string? description = null, string? newProjectId = null, string? newTaskId = null);
+    Task<TimeEntry> UpdateRunningTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, string? description = null, string? newProjectId = null, string? newTaskId = null);
     Task DeleteTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry);
     Task AddTask(WorkspaceInfo workspace, ProjectInfo project, string taskName);
 }

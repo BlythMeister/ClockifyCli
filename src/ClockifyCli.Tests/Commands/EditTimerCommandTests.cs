@@ -153,11 +153,14 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first (only) date option
         // Second prompt: Select time entry (the running entry should be the only option)  
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first (only) time entry option
+        // New field selection prompts
+        testConsole.Input.PushTextWithEnter("n"); // Don't edit project
+        testConsole.Input.PushTextWithEnter("n"); // Don't edit task
+        testConsole.Input.PushTextWithEnter("n"); // Don't edit description
+        testConsole.Input.PushTextWithEnter("y"); // Edit start time
         // Third prompt: Enter new start time (leave blank to keep current)
         testConsole.Input.PushTextWithEnter(""); // Keep current start time
-        // Fourth prompt: Enter new description (leave blank to keep current) 
-        testConsole.Input.PushTextWithEnter(""); // Keep current description
-        // Fifth prompt: Confirm changes
+        // Fourth prompt: Confirm changes
         testConsole.Input.PushTextWithEnter("n"); // Don't apply changes (just testing the flow)
 
         // Act
@@ -229,9 +232,16 @@ public class EditTimerCommandTests
         // Simulate user input for interactive prompts
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the date (today)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first time entry (could be completed or running)
+        // New field selection prompts
+        testConsole.Input.PushTextWithEnter("n"); // Don't edit project
+        testConsole.Input.PushTextWithEnter("n"); // Don't edit task
+        testConsole.Input.PushTextWithEnter("n"); // Don't edit description
+        testConsole.Input.PushTextWithEnter("y"); // Edit start time
+        testConsole.Input.PushTextWithEnter("y"); // Edit end time (if applicable)
+        // Field editing prompts
         testConsole.Input.PushTextWithEnter(""); // Keep current start time
-        testConsole.Input.PushTextWithEnter(""); // Keep current end time (if not running) or description (if running)
-        testConsole.Input.PushTextWithEnter(""); // Keep current description (if not running entry)
+        testConsole.Input.PushTextWithEnter(""); // Keep current end time (if not running entry)
+        // Final confirmation
         testConsole.Input.PushTextWithEnter("n"); // Don't apply changes
 
         // Act
@@ -550,5 +560,267 @@ public class EditTimerCommandTests
             Assert.That(newDescription, Is.EqualTo(expected),
                 $"Input '{input}' should result in '{expected}'");
         }
+    }
+
+    [Test]
+    public async Task ExecuteAsync_EditProjectOnly_UpdatesProjectSuccessfully()
+    {
+        // Arrange
+        var settings = new EditTimerCommand.Settings { Days = 7 };
+        var mockRemainingArgs = new Mock<IRemainingArguments>();
+        var context = new CommandContext([], mockRemainingArgs.Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        
+        var originalProject = new ProjectInfo("project1", "Original Project");
+        var newProject = new ProjectInfo("project2", "New Project");
+        var mockProjects = new List<ProjectInfo> { originalProject, newProject };
+
+        var originalTask = new TaskInfo("task1", "Original Task", "Active");
+        var newTask = new TaskInfo("task2", "New Task", "Active");
+        var mockTasks = new List<TaskInfo> { originalTask, newTask };
+
+        var timeEntry = new TimeEntry(
+            "entry1",
+            "Test Description",
+            "task1",
+            "project1",
+            "regular",
+            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o"))
+        );
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        
+        // Setup specific tasks for each project
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, originalProject)).ReturnsAsync(new List<TaskInfo> { originalTask });
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, newProject)).ReturnsAsync(new List<TaskInfo> { newTask });
+        
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                         .ReturnsAsync(new List<TimeEntry> { timeEntry });
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
+        
+        mockClockifyClient.Setup(x => x.UpdateTimeEntry(mockWorkspace, timeEntry, It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), "project2", It.IsAny<string>()))
+                         .ReturnsAsync(timeEntry);
+
+        // Simulate user input
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select entry
+        testConsole.Input.PushTextWithEnter("y"); // Change project
+        testConsole.Input.PushTextWithEnter("n"); // Don't change times
+        testConsole.Input.PushTextWithEnter("n"); // Don't change description
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select new project (first in alphabetical order)
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select task in new project
+        testConsole.Input.PushTextWithEnter("y"); // Confirm changes
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        mockClockifyClient.Verify(x => x.UpdateTimeEntry(
+            mockWorkspace, 
+            timeEntry, 
+            It.IsAny<DateTime>(), 
+            It.IsAny<DateTime>(), 
+            It.IsAny<string>(), 
+            "project2", 
+            It.IsAny<string>()), Times.Once);
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Time entry updated successfully"));
+    }
+
+    [Test]
+    public async Task ExecuteAsync_EditTaskOnly_UpdatesTaskSuccessfully()
+    {
+        // Arrange
+        var settings = new EditTimerCommand.Settings { Days = 7 };
+        var mockRemainingArgs = new Mock<IRemainingArguments>();
+        var context = new CommandContext([], mockRemainingArgs.Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        
+        var project = new ProjectInfo("project1", "Test Project");
+        var mockProjects = new List<ProjectInfo> { project };
+
+        var originalTask = new TaskInfo("task1", "Original Task", "Active");
+        var newTask = new TaskInfo("task2", "New Task", "Active");
+        var mockTasks = new List<TaskInfo> { originalTask, newTask };
+
+        var timeEntry = new TimeEntry(
+            "entry1",
+            "Test Description",
+            "task1",
+            "project1",
+            "regular",
+            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o"))
+        );
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        
+        // For task-only editing, both tasks should be in the same project (the current one)
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.Is<ProjectInfo>(p => p.Id == "project1"))).ReturnsAsync(mockTasks);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.Is<ProjectInfo>(p => p.Id != "project1"))).ReturnsAsync(new List<TaskInfo>());
+        
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                         .ReturnsAsync(new List<TimeEntry> { timeEntry });
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
+        
+        mockClockifyClient.Setup(x => x.UpdateTimeEntry(mockWorkspace, timeEntry, It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), "task2"))
+                         .ReturnsAsync(timeEntry);
+
+        // Simulate user input
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select entry
+        testConsole.Input.PushTextWithEnter("y"); // Change project (to access task selection)
+        testConsole.Input.PushTextWithEnter("n"); // Don't change times
+        testConsole.Input.PushTextWithEnter("n"); // Don't change description
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Keep same project (only one available)
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select new task (first alphabetically)
+        testConsole.Input.PushTextWithEnter("y"); // Confirm changes
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        mockClockifyClient.Verify(x => x.UpdateTimeEntry(
+            mockWorkspace, 
+            timeEntry, 
+            It.IsAny<DateTime>(), 
+            It.IsAny<DateTime>(), 
+            It.IsAny<string>(), 
+            It.IsAny<string>(), 
+            "task2"), Times.Once);
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Time entry updated successfully"));
+    }
+
+    [Test]
+    public async Task ExecuteAsync_EditRunningEntryProjectAndTask_UpdatesSuccessfully()
+    {
+        // Arrange
+        var settings = new EditTimerCommand.Settings { Days = 7 };
+        var mockRemainingArgs = new Mock<IRemainingArguments>();
+        var context = new CommandContext([], mockRemainingArgs.Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        
+        var originalProject = new ProjectInfo("project1", "Original Project");
+        var newProject = new ProjectInfo("project2", "New Project");
+        var mockProjects = new List<ProjectInfo> { originalProject, newProject };
+
+        var originalTask = new TaskInfo("task1", "Original Task", "Active");
+        var newTask = new TaskInfo("task2", "New Task", "Active");
+        var mockTasks = new List<TaskInfo> { originalTask, newTask };
+
+        var runningEntry = new TimeEntry(
+            "entry1",
+            "Running Description",
+            "task1",
+            "project1",
+            "regular",
+            new TimeInterval(DateTime.UtcNow.AddHours(-2).ToString("o"), "")
+        );
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        
+        // Setup specific tasks for each project - this test changes from project1 to project2
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, originalProject)).ReturnsAsync(new List<TaskInfo> { originalTask });
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, newProject)).ReturnsAsync(new List<TaskInfo> { newTask });
+        
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                         .ReturnsAsync(new List<TimeEntry>());
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync(runningEntry);
+        
+        mockClockifyClient.Setup(x => x.UpdateRunningTimeEntry(mockWorkspace, runningEntry, It.IsAny<DateTime>(), It.IsAny<string>(), "project2", "task2"))
+                         .ReturnsAsync(runningEntry);
+
+        // Simulate user input
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select running entry
+        testConsole.Input.PushTextWithEnter("y"); // Change project
+        testConsole.Input.PushTextWithEnter("n"); // Don't change times
+        testConsole.Input.PushTextWithEnter("n"); // Don't change description
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select new project (first in alphabetical order)
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to new task
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select new task
+        testConsole.Input.PushTextWithEnter("y"); // Confirm changes
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        mockClockifyClient.Verify(x => x.UpdateRunningTimeEntry(
+            mockWorkspace, 
+            runningEntry, 
+            It.IsAny<DateTime>(), 
+            It.IsAny<string>(), 
+            "project2", 
+            "task2"), Times.Once);
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Time entry updated successfully"));
+    }
+
+    [Test]
+    public async Task ExecuteAsync_NoFieldsSelected_CancelsOperation()
+    {
+        // Arrange
+        var settings = new EditTimerCommand.Settings { Days = 7 };
+        var mockRemainingArgs = new Mock<IRemainingArguments>();
+        var context = new CommandContext([], mockRemainingArgs.Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        var mockProjects = new List<ProjectInfo>();
+
+        var timeEntry = new TimeEntry(
+            "entry1",
+            "Test Description",
+            "task1",
+            "project1",
+            "regular",
+            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o"))
+        );
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(new List<TaskInfo>());
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                         .ReturnsAsync(new List<TimeEntry> { timeEntry });
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
+
+        // Simulate user input - select no changes
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select entry
+        testConsole.Input.PushTextWithEnter("n"); // Don't change project
+        testConsole.Input.PushTextWithEnter("n"); // Don't change times
+        testConsole.Input.PushTextWithEnter("n"); // Don't change description
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("No changes selected. Operation cancelled."));
+        
+        // Verify no update calls were made
+        mockClockifyClient.Verify(x => x.UpdateTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        mockClockifyClient.Verify(x => x.UpdateRunningTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 }

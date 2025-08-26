@@ -23,6 +23,8 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - **⚙️ Easy configuration** management for API keys
 - **🌐 Cross-platform** support (Windows, macOS, Linux)
 
+> 📝 **What's New?** Check out the [CHANGELOG.md](CHANGELOG.md) for detailed release notes and version history.
+
 ## 🚀 Installation
 
 ### Prerequisites

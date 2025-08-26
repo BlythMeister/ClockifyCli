@@ -1,0 +1,72 @@
+# Changelog
+
+All notable changes to Clockify CLI will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.4] - 2025-08-26
+
+### Added
+
+- **Smart Timer Replacement**: Major improvement to the timer start flow to prevent data loss
+- Better user feedback during timer replacement process
+- Comprehensive test coverage for all timer replacement scenarios
+
+### Changed
+
+- Timer start flow now collects all new timer details before stopping existing timer
+- Original timer is only stopped at the very last moment, just before starting new timer
+- Clear messaging throughout the process ("Collecting new timer details first...")
+
+### Fixed
+
+- **Critical**: Prevents accidental loss of running timer when new timer setup fails or is cancelled
+- Users now receive confirmation when original timer is preserved during cancellation
+
+### Technical Details
+
+- Modified `StartCommand.cs` to use deferred timer stopping approach
+- Added state tracking for timer replacement workflow  
+- Enhanced error handling and user feedback messages
+- Updated and expanded test suite with new scenarios
+
+## [1.0.0] - Initial Release
+
+### Initial Features
+
+- Command-line interface for Clockify time tracking
+- Integration with Jira and Tempo for seamless workflow
+- Timer management (start, stop, status, discard, delete, edit)
+- Time entry management (add, view, upload to Tempo)
+- Task management (add from Jira, archive completed)
+- Configuration management for API keys
+- Cross-platform support (Windows, macOS, Linux)
+- Desktop notifications for timer monitoring
+- Flexible time reporting with customizable options
+- Interactive command selection with auto-completion support
+
+### Core Capabilities
+
+- **Time Tracking**: Start/stop timers with customizable start times
+- **Integration**: Sync between Clockify, Jira, and Tempo
+- **Task Management**: Add Jira issues as Clockify tasks
+- **Reporting**: Week view with detailed breakdown options
+- **Monitoring**: Timer monitoring with desktop notifications
+- **Configuration**: Secure API key management
+- **User Experience**: Intuitive CLI with help and auto-completion
+
+---
+
+## How to Read This Changelog
+
+- **Added** for new features
+- **Changed** for changes in existing functionality  
+- **Deprecated** for soon-to-be removed features
+- **Removed** for now removed features
+- **Fixed** for any bug fixes
+- **Security** for vulnerability fixes
+
+## Contributing to the Changelog
+
+When contributing to this project, please update this changelog with your changes following the format above.

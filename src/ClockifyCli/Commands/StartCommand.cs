@@ -38,25 +38,25 @@ public class StartCommand : BaseCommand
             return;
         }
 
-        // Check if there's already a running timer
+        // Check if there's already a running timer - but don't stop it yet
         var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
-        if (currentEntry != null)
+        bool hasRunningTimer = currentEntry != null;
+        bool shouldReplaceTimer = false;
+        
+        if (hasRunningTimer)
         {
             console.MarkupLine("[yellow]:warning:  A timer is already running![/]");
-            console.MarkupLine($"[dim]Current timer: {currentEntry.Description}[/]");
+            console.MarkupLine($"[dim]Current timer: {currentEntry!.Description}[/]");
             console.WriteLine();
 
-            var shouldStop = console.Confirm("Do you want to stop the current timer and start a new one?", false);
-            if (!shouldStop)
+            shouldReplaceTimer = console.Confirm("Do you want to stop the current timer and start a new one?", false);
+            if (!shouldReplaceTimer)
             {
                 console.MarkupLine("[dim]Timer start cancelled. Use 'clockify-cli status' to see what's running.[/]");
                 return;
             }
-
-            // Stop the current timer
-            console.MarkupLine("[dim]Stopping current timer...[/]");
-            await clockifyClient.StopCurrentTimeEntry(workspace, user);
-            console.MarkupLine("[green]:check_mark: Current timer stopped[/]");
+            
+            console.MarkupLine("[dim]Collecting new timer details first...[/]");
             console.WriteLine();
         }
 
@@ -205,6 +205,15 @@ public class StartCommand : BaseCommand
 
         if (console.Confirm("Start this timer?"))
         {
+            // If we need to replace a running timer, stop it first
+            if (shouldReplaceTimer && hasRunningTimer)
+            {
+                console.MarkupLine("[dim]Stopping current timer...[/]");
+                await clockifyClient.StopCurrentTimeEntry(workspace, user);
+                console.MarkupLine("[green]:check_mark: Current timer stopped[/]");
+                console.WriteLine();
+            }
+            
             // Start the timer (inside Status block for feedback)
             await console.Status()
                          .StartAsync("Starting timer...", async ctx =>
@@ -228,6 +237,10 @@ public class StartCommand : BaseCommand
         else
         {
             console.MarkupLine("[yellow]Timer start cancelled.[/]");
+            if (shouldReplaceTimer && hasRunningTimer)
+            {
+                console.MarkupLine("[dim]Your original timer is still running.[/]");
+            }
         }
     }
 }

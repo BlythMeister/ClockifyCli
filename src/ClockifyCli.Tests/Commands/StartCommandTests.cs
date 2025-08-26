@@ -5,6 +5,7 @@ using ClockifyCli.Tests.Infrastructure;
 using NUnit.Framework;
 using RichardSzalay.MockHttp;
 using Spectre.Console.Testing;
+using System;
 
 namespace ClockifyCli.Tests.Commands;
 
@@ -114,7 +115,61 @@ public class StartCommandTests
     }
 
     [Test]
-    public async Task ExecuteAsync_WithRunningTimer_WhenUserAccepts_ShouldStopCurrentTimer()
+    public async Task ExecuteAsync_WithRunningTimer_WhenUserAccepts_ButNoProjects_ShouldNotStopCurrentTimer()
+    {
+        // Arrange
+        var clockifyMockHttp = new MockHttpMessageHandler();
+        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
+
+        // Mock user info
+        var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
+                        .Respond("application/json", userJson);
+
+        // Mock workspaces response
+        var workspacesJson = """[{"id":"workspace1","name":"Test Workspace"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
+                        .Respond("application/json", workspacesJson);
+
+        // Mock current time entry (running timer)
+        var currentEntryJson = """{"id":"entry123","description":"Running timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
+                        .Respond("application/json", $"[{currentEntryJson}]");
+
+        // Mock projects endpoint (empty projects to stop the selection process)
+        var projectsJson = """[]"""; 
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                        .Respond("application/json", projectsJson);
+
+        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+        var testConsole = new TestConsole();
+
+        // Simulate user accepting to stop current timer
+        testConsole.Input.PushTextWithEnter("y"); // Answer "Yes" to the confirmation prompt
+
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock);
+
+        // Act
+        var result = await command.ExecuteAsync(null!);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+
+        // Verify the appropriate messages were displayed
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("A timer is already running!"), "Should display already running warning message");
+        Assert.That(output, Does.Contain("Do you want to stop the current timer and start a new one?"), "Should ask for confirmation");
+        Assert.That(output, Does.Contain("Collecting new timer details first..."), "Should indicate collecting new timer details first");
+        Assert.That(output, Does.Contain("No projects found!"), "Should display no projects message");
+        Assert.That(output, Does.Not.Contain("Current timer stopped"), "Should NOT stop the timer when no projects are available");
+
+        // Cleanup
+        clockifyMockHttp.Dispose();
+        clockifyHttpClient.Dispose();
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithRunningTimer_WhenUserCompletesFlow_ShouldStopCurrentTimerAndStartNew()
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
@@ -140,18 +195,34 @@ public class StartCommandTests
         clockifyMockHttp.When(HttpMethod.Patch, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries")
                         .Respond("application/json", stoppedEntryJson);
 
-        // Mock projects endpoint (will get called but we'll stop before selecting)
-        var projectsJson = """[]"""; // Empty projects to stop the selection process
+        // Mock projects response
+        var projectsJson = """[{"id":"project1","name":"Test Project"}]""";
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
                         .Respond("application/json", projectsJson);
 
+        // Mock tasks response
+        var tasksJson = """[{"id":"task1","name":"Test Task","status":"Active"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project1/tasks")
+                        .Respond("application/json", tasksJson);
+
+        // Mock start timer endpoint
+        var startedEntryJson = """{"id":"entry124","description":"New timer","timeInterval":{"start":"2024-01-01T14:00:00Z"}}""";
+        clockifyMockHttp.When(HttpMethod.Post, "https://api.clockify.me/api/v1/workspaces/workspace1/time-entries")
+                        .Respond("application/json", startedEntryJson);
+
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
-        var testConsole = new TestConsole();
+        var testConsole = new TestConsole().Interactive();
 
-        // Simulate user accepting to stop current timer
-        testConsole.Input.PushTextWithEnter("y"); // Answer "Yes" to the confirmation prompt
+        // Simulate user inputs
+        testConsole.Input.PushTextWithEnter("y");              // Answer "Yes" to stop current timer
+        testConsole.Input.PushKey(ConsoleKey.Enter);           // Select first project
+        testConsole.Input.PushKey(ConsoleKey.Enter);           // Select first task
+        testConsole.Input.PushTextWithEnter("");               // No description
+        testConsole.Input.PushKey(ConsoleKey.Enter);           // Select "Now" for start time
+        testConsole.Input.PushTextWithEnter("y");              // Confirm start timer
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -162,8 +233,74 @@ public class StartCommandTests
         // Verify the appropriate messages were displayed
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("A timer is already running!"), "Should display already running warning message");
-        Assert.That(output, Does.Contain("Do you want to stop the current timer and start a new one?"), "Should ask for confirmation");
-        Assert.That(output, Does.Contain("Current timer stopped"), "Should display timer stopped message");
+        Assert.That(output, Does.Contain("Collecting new timer details first..."), "Should indicate collecting new timer details first");
+        Assert.That(output, Does.Contain("Current timer stopped"), "Should display timer stopped message when completing the flow");
+        Assert.That(output, Does.Contain("Timer started successfully!"), "Should display timer started message");
+
+        // Cleanup
+        clockifyMockHttp.Dispose();
+        clockifyHttpClient.Dispose();
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithRunningTimer_WhenUserCancelsAtEnd_ShouldKeepOriginalTimer()
+    {
+        // Arrange
+        var clockifyMockHttp = new MockHttpMessageHandler();
+        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
+
+        // Mock user info
+        var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
+                        .Respond("application/json", userJson);
+
+        // Mock workspaces response
+        var workspacesJson = """[{"id":"workspace1","name":"Test Workspace"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
+                        .Respond("application/json", workspacesJson);
+
+        // Mock current time entry (running timer)
+        var currentEntryJson = """{"id":"entry123","description":"Running timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
+                        .Respond("application/json", $"[{currentEntryJson}]");
+
+        // Mock projects response
+        var projectsJson = """[{"id":"project1","name":"Test Project"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                        .Respond("application/json", projectsJson);
+
+        // Mock tasks response
+        var tasksJson = """[{"id":"task1","name":"Test Task","status":"Active"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project1/tasks")
+                        .Respond("application/json", tasksJson);
+
+        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+        var testConsole = new TestConsole().Interactive();
+
+        // Simulate user inputs
+        testConsole.Input.PushTextWithEnter("y");              // Answer "Yes" to stop current timer initially
+        testConsole.Input.PushKey(ConsoleKey.Enter);           // Select first project
+        testConsole.Input.PushKey(ConsoleKey.Enter);           // Select first task
+        testConsole.Input.PushTextWithEnter("");               // No description
+        testConsole.Input.PushKey(ConsoleKey.Enter);           // Select "Now" for start time
+        testConsole.Input.PushTextWithEnter("n");              // Cancel at final confirmation
+
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+
+        // Act
+        var result = await command.ExecuteAsync(null!);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+
+        // Verify the appropriate messages were displayed
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("A timer is already running!"), "Should display already running warning message");
+        Assert.That(output, Does.Contain("Collecting new timer details first..."), "Should indicate collecting new timer details first");
+        Assert.That(output, Does.Contain("Timer start cancelled."), "Should display cancellation message");
+        Assert.That(output, Does.Contain("Your original timer is still running."), "Should confirm original timer is preserved");
+        Assert.That(output, Does.Not.Contain("Current timer stopped"), "Should NOT stop the original timer when cancelled");
 
         // Cleanup
         clockifyMockHttp.Dispose();

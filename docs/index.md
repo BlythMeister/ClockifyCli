@@ -2,7 +2,6 @@
 title: Home
 description: "Streamline your time tracking workflow today! 🚀"
 ---
-
 ## 📖 About
 
 Clockify CLI is a powerful command-line tool that bridges the gap between **Clockify**, **Jira**, and **Tempo**, enabling seamless time tracking workflow automation. Whether you're logging time, syncing data between platforms, or managing tasks, this tool simplifies your daily time tracking routine.
@@ -19,6 +18,8 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - **🗂️ Archive Tasks For Completed Jiras** automatically
 - **⚙️ Easy configuration** management for API keys
 - **🌐 Cross-platform** support (Windows, macOS, Linux)
+
+> 📝 **What's New?** Check out the [CHANGELOG.md](https://github.com/BlythMeister/ClockifyCli/blob/master/CHANGELOG.md) for detailed release notes and version history.
 
 ## 🚀 Installation
 
@@ -357,7 +358,7 @@ When reporting issues, please include:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/BlythMeister/ClockifyCli/blob/master/LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 

@@ -67,7 +67,7 @@ public class AddManualTimerCommandTests
     }
 
     [Test]
-    public async Task ExecuteAsync_WithNoTasks_ShouldDisplayNoTasksMessage()
+    public async Task ExecuteAsync_WithNoProjects_ShouldDisplayNoProjectsMessage()
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
@@ -99,7 +99,7 @@ public class AddManualTimerCommandTests
         Assert.That(result, Is.EqualTo(0));
 
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("No tasks found!"), "Should display no tasks found message");
+        Assert.That(output, Does.Contain("No projects found!"), "Should display no projects found message");
 
         // Cleanup
         clockifyMockHttp.Dispose();

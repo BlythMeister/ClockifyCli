@@ -5,6 +5,19 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5] - 2025-08-28
+
+### Improvements
+
+- **Consistent Task Selection Flow**: All commands now use the same 2-layer task selection (project first, then tasks)
+- Updated Add Manual Entry command to match the Start command's selection flow
+- Improved consistency across all task selection interfaces
+
+### Bug Fixes
+
+- Task selection inconsistency between Start and Add Manual Entry commands
+- Users now have the same selection experience across all commands
+
 ## [1.4] - 2025-08-26
 
 ### Added

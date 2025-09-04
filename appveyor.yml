@@ -18,8 +18,40 @@ dotnet_csproj:
   informational_version: '$(appveyor_build_version)'
 before_build:
 - ps: |
-    Write-Host "Injecting changelog into .csproj for version $env:APPVEYOR_BUILD_VERSION"
-    & ".\scripts\inject-changelog.ps1" -Version $env:APPVEYOR_BUILD_VERSION
+    Write-Host "=== AppVeyor Before Build - Changelog Injection ==="
+    Write-Host "Working directory: $PWD"
+    Write-Host "AppVeyor build version: $env:APPVEYOR_BUILD_VERSION"
+    
+    # Check if the script exists
+    $scriptPath = ".\scripts\inject-changelog.ps1"
+    if (Test-Path $scriptPath) {
+        Write-Host "✓ Found script: $scriptPath"
+        
+        # Set execution policy for this session
+        Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+        
+        # Execute the script with error handling
+        try {
+            Write-Host "Executing changelog injection script..."
+            & $scriptPath -Version $env:APPVEYOR_BUILD_VERSION
+            Write-Host "✓ Changelog injection completed successfully"
+        }
+        catch {
+            Write-Host "❌ Error executing changelog script: $($_.Exception.Message)"
+            Write-Host "Error details: $($_.Exception.ToString())"
+            exit 1
+        }
+    } else {
+        Write-Host "❌ Script not found: $scriptPath"
+        Write-Host "Available files in scripts directory:"
+        if (Test-Path ".\scripts\") {
+            Get-ChildItem ".\scripts\" | ForEach-Object { Write-Host "  - $($_.Name)" }
+        } else {
+            Write-Host "  scripts directory does not exist!"
+        }
+        exit 1
+    }
+    Write-Host "=== End Before Build ==="
 build_script:
 - cmd: >-
     dotnet restore src\ClockifyCli.sln

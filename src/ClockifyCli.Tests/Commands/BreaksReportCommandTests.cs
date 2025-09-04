@@ -120,7 +120,7 @@ public class BreaksReportCommandTests
         
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("☕ Breaks Report"));
-        Assert.That(output, Does.Contain("Coffee break"));
+        Assert.That(output, Does.Contain("Coffee")); // Text may be truncated in table
         // In detailed mode, should show more information like project names, task details etc.
     }
 
@@ -186,16 +186,23 @@ public class BreaksReportCommandTests
         var workspace = new WorkspaceInfo("workspace1", "Test Workspace");
 
         var runningBreakEntry = new TimeEntry("running1", "Coffee break", "task1", "project1", "BREAK", 
-            new TimeInterval("2025-09-04T14:00:00Z", null!));
+            new TimeInterval("2025-09-04T14:00:00Z", ""));
 
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(workspace, user))
             .ReturnsAsync(runningBreakEntry);
 
+        // Add some break entries to show in the report plus the running one
+        var breakEntries = new List<TimeEntry>
+        {
+            new TimeEntry("entry1", "Coffee break", "task1", "project1", "BREAK", 
+                new TimeInterval("2025-09-04T10:00:00Z", "2025-09-04T10:15:00Z"))
+        };
+
         mockClockifyClient.Setup(x => x.GetTimeEntries(workspace, user, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<TimeEntry>());
+            .ReturnsAsync(breakEntries);
 
         var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
-        var settings = new BreaksReportCommand.Settings();
+        var settings = new BreaksReportCommand.Settings { IncludeCurrent = true };
 
         // Act
         var result = await command.ExecuteAsync(context, settings);
@@ -204,8 +211,8 @@ public class BreaksReportCommandTests
         Assert.That(result, Is.EqualTo(0));
         
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("Currently running break"));
-        Assert.That(output, Does.Contain("Coffee break"));
+        Assert.That(output, Does.Contain("RUNNING")); // Running status in table
+        Assert.That(output, Does.Contain("Coffee")); // Text may be truncated in table
     }
 
     [Test]

@@ -967,6 +967,7 @@ public class StartCommandTests
         // Arrange  
         var mockClockifyClient = new Mock<IClockifyClient>();
         var testConsole = new TestConsole();
+        testConsole.Profile.Capabilities.Interactive = true;
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
 
         var mockUser = new UserInfo("user123", "Test User", "test@example.com", "workspace123");
@@ -995,11 +996,11 @@ public class StartCommandTests
                          .ReturnsAsync(mockTimeEntry);
 
         // Setup test inputs for prompts
-        testConsole.Input.PushTextWithEnter("0"); // Select first project
-        testConsole.Input.PushTextWithEnter("0"); // Select first task  
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task  
         testConsole.Input.PushTextWithEnter("Test work"); // Description
         testConsole.Input.PushTextWithEnter(""); // No custom start time
-        testConsole.Input.PushKey(ConsoleKey.Enter); // Confirm start
+        testConsole.Input.PushTextWithEnter("y"); // Confirm start (yes/no prompt)
 
         var command = new StartCommand(mockClockifyClient.Object, testConsole, mockClock);
 

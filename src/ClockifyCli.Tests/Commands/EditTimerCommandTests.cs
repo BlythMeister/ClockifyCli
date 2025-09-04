@@ -154,7 +154,10 @@ public class EditTimerCommandTests
         // Second prompt: Select time entry (the running entry should be the only option)  
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first (only) time entry option
         // New menu-based editing system - select "Done" to exit without changes
-        testConsole.Input.PushTextWithEnter("3"); // Select "Done (apply changes and exit)" from menu
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         
         // Act
         var result = await command.ExecuteAsync(context, settings);
@@ -225,17 +228,11 @@ public class EditTimerCommandTests
         // Simulate user input for interactive prompts
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the date (today)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first time entry (could be completed or running)
-        // New field selection prompts
-        testConsole.Input.PushTextWithEnter("n"); // Don't edit project
-        testConsole.Input.PushTextWithEnter("n"); // Don't edit task
-        testConsole.Input.PushTextWithEnter("n"); // Don't edit description
-        testConsole.Input.PushTextWithEnter("y"); // Edit start time
-        testConsole.Input.PushTextWithEnter("y"); // Edit end time (if applicable)
-        // Field editing prompts
-        testConsole.Input.PushTextWithEnter(""); // Keep current start time
-        testConsole.Input.PushTextWithEnter(""); // Keep current end time (if not running entry)
-        // Final confirmation
-        testConsole.Input.PushTextWithEnter("n"); // Don't apply changes
+        // New menu-based editing system - select "Done" to exit without changes
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
 
         // Act
         var result = await command.ExecuteAsync(context, settings);
@@ -296,10 +293,11 @@ public class EditTimerCommandTests
         // Simulate user input for interactive prompts - choose yesterday's date first
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first date (should be yesterday)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the yesterday entry
-        testConsole.Input.PushTextWithEnter(""); // Keep current start time
-        testConsole.Input.PushTextWithEnter(""); // Keep current end time
-        testConsole.Input.PushTextWithEnter(""); // Keep current description
-        testConsole.Input.PushTextWithEnter("n"); // Don't apply changes
+        // New menu-based editing system - select "Done" to exit without changes
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
 
         // Act
         var result = await command.ExecuteAsync(context, settings);
@@ -675,11 +673,11 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select entry
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Change project/task" from menu
         testConsole.Input.PushKey(ConsoleKey.Enter); // Keep same project (only one available)
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to new task (task2)
-        testConsole.Input.PushKey(ConsoleKey.Enter); // Select new task
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate down from "Change project/task"
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate down from "Change times"
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate down from "Change description"  
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task (task2 "New Task" - alphabetically first)
+        // Back at main menu after project/task change
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
 
@@ -747,11 +745,13 @@ public class EditTimerCommandTests
         // Simulate user input
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select running entry
-        testConsole.Input.PushTextWithEnter("y"); // Change project
-        testConsole.Input.PushTextWithEnter("n"); // Don't change times
-        testConsole.Input.PushTextWithEnter("n"); // Don't change description
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Change project/task"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select new project (first in alphabetical order)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select new task
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
 
         // Act

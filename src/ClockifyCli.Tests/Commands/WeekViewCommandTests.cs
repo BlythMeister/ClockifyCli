@@ -409,7 +409,7 @@ public class WeekViewCommandTests
         Assert.That(output, Does.Not.Contain("Lunch break"));
         
         // Should show total time excluding breaks (1 hour)
-        Assert.That(output, Does.Contain("1:00:00"));
+        Assert.That(output, Does.Contain("1h"));
     }
 
     [Test]

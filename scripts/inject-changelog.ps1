@@ -32,8 +32,16 @@ $content = Get-Content $ChangelogPath -Raw
 $pattern = "## \[$majorMinorVersion\].*?(?=\n## |\n$|\Z)"
 $match = [regex]::Match($content, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
 
+Write-Host "DEBUG: Searching for pattern: $pattern"
+Write-Host "DEBUG: Match found: $($match.Success)"
+
 if (-not $match.Success) {
     Write-Host "WARNING: No changelog section found for version $majorMinorVersion"
+    Write-Host "DEBUG: Available sections in changelog:"
+    $availableSections = [regex]::Matches($content, "## \[([^\]]+)\]")
+    foreach ($section in $availableSections) {
+        Write-Host "  - Found section: $($section.Groups[1].Value)"
+    }
     $env:RELEASE_NOTES = "Release v$Version"
     exit 0
 }
@@ -58,14 +66,10 @@ foreach ($line in $contentLines) {
     $processedLines += $processedLine
 }
 
-# Join with MSBuild NewLine property for proper project file formatting
-$cleanContent = ($processedLines -join '$(NewLine)').Trim()
+# Join with actual newlines for CDATA section (NuGet formatting)
+$cleanContent = ($processedLines -join "`n").Trim()
 
-# Escape XML characters for .csproj
-$cleanContent = $cleanContent -replace '&', '&amp;'
-$cleanContent = $cleanContent -replace '<', '&lt;'
-$cleanContent = $cleanContent -replace '>', '&gt;'
-$cleanContent = $cleanContent -replace '"', '&quot;'
+# No XML escaping needed inside CDATA
 
 Write-Host "SUCCESS: Processed changelog content ($($cleanContent.Length) chars)"
 
@@ -82,9 +86,9 @@ if (-not (Test-Path $CsprojPath)) {
 
 $csprojContent = Get-Content $CsprojPath -Raw
 
-# Insert PackageReleaseNotes before the closing PropertyGroup tag (single line with MSBuild NewLine tokens)
+# Insert PackageReleaseNotes before the closing PropertyGroup tag using CDATA
 $propertyGroupPattern = '(\s*<GeneratePackageOnBuild>false</GeneratePackageOnBuild>\s*)(</PropertyGroup>)'
-$replacement = '$1' + "`n    <PackageReleaseNotes>$cleanContent</PackageReleaseNotes>" + "`n  " + '$2'
+$replacement = '$1' + "`n    <PackageReleaseNotes><![CDATA[$cleanContent]]></PackageReleaseNotes>" + "`n  " + '$2'
 $updatedContent = [regex]::Replace($csprojContent, $propertyGroupPattern, $replacement)
 
 if ($updatedContent -eq $csprojContent) {

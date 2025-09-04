@@ -680,11 +680,14 @@ public class EditTimerCommandTests
         // Simulate user input
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select entry
-        testConsole.Input.PushTextWithEnter("y"); // Change project (to access task selection)
-        testConsole.Input.PushTextWithEnter("n"); // Don't change times
-        testConsole.Input.PushTextWithEnter("n"); // Don't change description
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Change project/task" from menu
         testConsole.Input.PushKey(ConsoleKey.Enter); // Keep same project (only one available)
-        testConsole.Input.PushKey(ConsoleKey.Enter); // Select new task (first alphabetically)
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to new task (task2)
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select new task
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate down from "Change project/task"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate down from "Change times"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate down from "Change description"  
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
 
         // Act

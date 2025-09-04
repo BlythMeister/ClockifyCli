@@ -12,8 +12,9 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - **📋 Manage tasks** directly from Jira issues in Clockify
 - **⏱️ Start/Stop timers** with an intuitive command-line interface and customizable start times
 - **🗑️ Discard/Delete timers** with safety confirmations and time restrictions
-- **✏️ Edit existing timers** with precise start/end time adjustments
+- **✏️ Edit existing timers** with precise start/end time adjustments and menu-based editing
 - **📊 View time reports** for current week and specific periods with optional detailed breakdown and configurable week start day
+- **☕ Break management** with separate tracking and reporting for break time vs work time
 - **🔔 Monitor timers** with desktop notifications
 - **🗂️ Archive Tasks For Completed Jiras** automatically
 - **⚙️ Easy configuration** management for API keys
@@ -55,7 +56,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
     }
     
     # Get available commands and options
-    $commands = @('add', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'config', 'delete', 'discard', 'edit', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $commands = @('add', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
     $options = @('--help', '--version')
     
     # Filter suggestions based on what user has typed
@@ -162,6 +163,16 @@ This command is useful for logging time you've already spent working on a task. 
 
 `clockify-cli week-view --include-current --detailed --week-start Wednesday` - Detailed view with custom week start day
 
+#### View Break Time Entries
+
+`clockify-cli breaks-report` - Display break time entries from the last 14 days
+
+`clockify-cli breaks-report --detailed` - Show detailed view with start time, end time, and duration for breaks
+
+`clockify-cli breaks-report --days 7` - Show break entries from the last 7 days
+
+`clockify-cli breaks-report --include-current --detailed --days 30` - Comprehensive break report with running break
+
 ### Task Management
 
 #### Add Task From Jira
@@ -181,6 +192,34 @@ This command is useful for logging time you've already spent working on a task. 
 `clockify-cli upload-to-tempo --days 7` - Upload last 7 days
 
 `clockify-cli upload-to-tempo --days 30 --cleanup-orphaned` - Upload last 30 days and cleanup orphaned entries
+
+### Break Management
+
+The CLI automatically separates break time from work time to provide accurate reporting and ensure break entries don't get exported to work tracking systems.
+
+#### How Break Detection Works
+
+1. **Project-based**: Entries from projects named "Breaks" (case-insensitive)
+2. **Type-based**: Entries with Type = "BREAK" (regardless of project)
+
+#### Break vs Work Time
+
+- **Work Reports** (`week-view`): Shows only regular work time, excludes all break entries
+- **Break Reports** (`breaks-report`): Shows only break-related time entries  
+- **Tempo Exports** (`upload-to-tempo`): Automatically excludes break time from exports to maintain clean work logs
+
+#### Examples
+
+```bash
+# View work time only (excludes breaks)
+clockify-cli week-view
+
+# View break time only  
+clockify-cli breaks-report
+
+# Export work time to Jira (breaks are automatically filtered out)
+clockify-cli upload-to-tempo
+```
 
 ### Monitoring & Automation
 
@@ -236,6 +275,7 @@ The configuration is stored securely in your user profile:
 | Command | Description | Examples |
 |---------|-------------|----------|
 | `add` | Add a completed time entry with both start and end times | `clockify-cli add` |
+| `breaks-report` | Display break time entries and separate break tracking | `clockify-cli breaks-report --detailed --days 7` |
 | `delete` | Delete completed timers from this week | `clockify-cli delete` |
 | `discard` | Permanently delete the currently running timer | `clockify-cli discard` |
 | `edit` | Edit start/end times of existing time entries | `clockify-cli edit --days 7` |

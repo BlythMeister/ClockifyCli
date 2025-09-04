@@ -9,15 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New Features
 
+- **Breaks Management System**: Complete separation of break tracking from regular work reporting
+  - Added new `breaks-report` command to view break-related time entries
+  - Break entries are excluded from regular reports (`week-view`) and exports (`upload-to-tempo`)
+  - Supports both "Breaks" project name filtering and "BREAK" type entry filtering
+  - Detailed and summary views for break reporting with daily totals
 - **Enhanced Edit Timer Command**: Replaced yes/no prompts with menu-based editing system
   - Shows menu with options: "Change project/task", "Change times", "Change description", "Done"
   - Allows multiple edits in a single session with continuous menu loop
   - "Done" is the default option when no changes have been made
   - Improved user experience with clear feedback on what changes will be applied
 - **Back Navigation in Task Selection**: Added "← Back to project selection" option in task selection menus
-- Users can now go back to project selection if they choose the wrong project during task selection
-- Back option appears at the bottom of task lists when multiple projects are available
-- Implemented in Start Timer, Add Manual Timer, and Edit Timer commands
+  - Users can now go back to project selection if they choose the wrong project during task selection
+  - Back option appears at the bottom of task lists when multiple projects are available
+  - Implemented in Start Timer, Add Manual Timer, and Edit Timer commands
+- **Type-Aware Time Entry Creation**: StartCommand now explicitly creates "REGULAR" type time entries
+  - Ensures proper distinction between regular work time and break time
+  - Maintains compatibility with existing time tracking workflows
 
 ### Improvements
 

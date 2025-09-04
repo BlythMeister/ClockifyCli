@@ -959,5 +959,73 @@ public class StartCommandTests
         clockifyMockHttp.Dispose();
         clockifyHttpClient.Dispose();
     }
+
+    [Test]
+    public async Task ExecuteAsync_WhenStartingTimer_ShouldCreateRegularTypeEntry()
+    {
+        // Arrange
+        var clockifyMockHttp = new MockHttpMessageHandler();
+        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
+
+        // Mock user info
+        var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
+                        .Respond("application/json", userJson);
+
+        // Mock workspaces
+        var workspacesJson = """[{"id":"workspace123","name":"Test Workspace"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
+                        .Respond("application/json", workspacesJson);
+
+        // Mock no current running timer
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace123/user/user123/time-entries?in-progress=true")
+                        .Respond("application/json", "[]");
+
+        // Mock projects
+        var projectsJson = """[{"id":"project123","name":"Test Project"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace123/projects")
+                        .WithExactQueryString("page=1&page-size=100")
+                        .Respond("application/json", projectsJson);
+
+        // Mock tasks
+        var tasksJson = """[{"id":"task123","name":"TEST-456 Test task","status":"ACTIVE"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace123/projects/project123/tasks")
+                        .WithExactQueryString("page=1&page-size=100")
+                        .Respond("application/json", tasksJson);
+
+        // Mock successful time entry start - verify that the request includes type: "REGULAR"
+        var startedEntryJson = """{"id":"entry123","description":"Test work","projectId":"project123","taskId":"task123","type":"REGULAR","timeInterval":{"start":"2024-01-01T14:00:00Z","end":null}}""";
+        clockifyMockHttp.When(HttpMethod.Post, "https://api.clockify.me/api/v1/workspaces/workspace123/time-entries")
+                        .WithContent(@"{""start"":""2024-01-01T14:00:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Test work"",""type"":""REGULAR""}")
+                        .Respond("application/json", startedEntryJson);
+
+        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+        var testConsole = new TestConsole();
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+
+        // Setup test inputs for prompts
+        testConsole.Input.PushTextWithEnter("0"); // Select first project
+        testConsole.Input.PushTextWithEnter("0"); // Select first task  
+        testConsole.Input.PushTextWithEnter("Test work"); // Description
+        testConsole.Input.PushTextWithEnter(""); // No custom start time
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Confirm start
+
+        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+
+        // Act
+        var result = await command.ExecuteAsync(null!);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        
+        // The fact that the mock matched the request with the specific content containing type: "REGULAR" 
+        // proves that StartCommand is sending the correct type
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Timer started successfully!"), "Should display success message");
+
+        // Cleanup
+        clockifyMockHttp.Dispose();
+        clockifyHttpClient.Dispose();
+    }
 }
 

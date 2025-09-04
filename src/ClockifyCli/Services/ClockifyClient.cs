@@ -242,7 +242,8 @@ public class ClockifyClient : IClockifyClient
                                                     effectiveStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                                                     projectId,
                                                     string.IsNullOrEmpty(taskId) ? null : taskId,
-                                                    string.IsNullOrWhiteSpace(description) ? null : description
+                                                    string.IsNullOrWhiteSpace(description) ? null : description,
+                                                    "REGULAR"
                                                    );
 
             var serializerSettings = new JsonSerializerSettings

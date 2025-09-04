@@ -234,4 +234,116 @@ public class UploadToTempoCommandTests
         Assert.Throws<ArgumentNullException>(() =>
             new UploadToTempoCommand(mockClockifyClient.Object, mockTempoClient.Object, null!));
     }
+
+    [Test]
+    public async Task ExecuteAsync_FiltersOutBreakEntries()
+    {
+        // Arrange
+        var settings = new UploadToTempoCommand.Settings { Days = 7 };
+        var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        
+        var projects = new List<ProjectInfo>
+        {
+            new ProjectInfo("work-project", "Work Project"),
+            new ProjectInfo("breaks-project", "Breaks") // Breaks project
+        };
+
+        var timeEntries = new List<TimeEntry>
+        {
+            // Regular work entry - should be uploaded
+            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR", 
+                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
+            
+            // Break type entry - should be excluded
+            new TimeEntry("entry2", "Coffee break", "task2", "work-project", "BREAK", 
+                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
+            
+            // Breaks project entry - should be excluded
+            new TimeEntry("entry3", "Lunch break", "task3", "breaks-project", "REGULAR", 
+                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
+        };
+
+        var tasks = new List<TaskInfo>
+        {
+            new TaskInfo("task1", "PROJ-123 Work task", "ACTIVE")
+        };
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(projects);
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(timeEntries);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(tasks);
+        
+        mockTempoClient.Setup(x => x.GetCurrentTime(It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(new List<TempoTime>());
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        
+        // Verify that only the regular work entry was attempted to be uploaded
+        mockTempoClient.Verify(x => x.ExportTimeEntry(
+            It.Is<TimeEntry>(e => e.Id == "entry1" && e.Description == "Regular work"), 
+            It.IsAny<TaskInfo>()
+        ), Times.Once);
+
+        // Verify that break entries were NOT uploaded
+        mockTempoClient.Verify(x => x.ExportTimeEntry(
+            It.Is<TimeEntry>(e => e.Id == "entry2" || e.Id == "entry3"), 
+            It.IsAny<TaskInfo>()
+        ), Times.Never);
+        
+        var output = testConsole.Output;
+        // Should show that break entries were filtered out
+        Assert.That(output, Does.Contain("Filtered out 2 break-related entries"));
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithOnlyBreakEntries_ShowsNoEntriesToUpload()
+    {
+        // Arrange
+        var settings = new UploadToTempoCommand.Settings { Days = 7 };
+        var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        
+        var projects = new List<ProjectInfo>
+        {
+            new ProjectInfo("breaks-project", "Breaks")
+        };
+
+        var timeEntries = new List<TimeEntry>
+        {
+            // Only break entries
+            new TimeEntry("entry1", "Coffee break", "task1", "breaks-project", "REGULAR", 
+                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
+            
+            new TimeEntry("entry2", "Lunch break", "task2", "breaks-project", "BREAK", 
+                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
+        };
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(projects);
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(timeEntries);
+        
+        mockTempoClient.Setup(x => x.GetCurrentTime(It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(new List<TempoTime>());
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        
+        // Verify that no entries were uploaded
+        mockTempoClient.Verify(x => x.ExportTimeEntry(It.IsAny<TimeEntry>(), It.IsAny<TaskInfo>()), Times.Never);
+        
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("No entries to upload"));
+    }
 }

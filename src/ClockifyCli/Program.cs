@@ -111,6 +111,13 @@ app.Configure(config =>
                         .WithDescription("Archive Tasks For Completed Jiras")
                         .WithExample(new[] { "archive-tasks-for-completed-jiras" });
 
+                  // Add the breaks-report command
+                  config.AddCommand<BreaksReportCommand>("breaks-report")
+                        .WithDescription("Display breaks and break-type time entries")
+                        .WithExample(new[] { "breaks-report" })
+                        .WithExample(new[] { "breaks-report", "--detailed" })
+                        .WithExample(new[] { "breaks-report", "--days", "7" });
+
                   // Add config branch with subcommands
                   config.AddBranch("config", config =>
                                              {

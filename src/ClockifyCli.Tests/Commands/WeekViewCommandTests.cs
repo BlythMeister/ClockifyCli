@@ -355,4 +355,104 @@ public class WeekViewCommandTests
         Assert.That(defaultValueAttribute, Is.Not.Null, "DefaultValue attribute should be present");
         Assert.That(defaultValueAttribute.Value, Is.EqualTo(DayOfWeek.Monday), "Default value should be Monday");
     }
+
+    [Test]
+    public async Task ExecuteAsync_FiltersOutBreakEntries()
+    {
+        // Arrange
+        var settings = new WeekViewCommand.Settings();
+        var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        
+        var projects = new List<ProjectInfo>
+        {
+            new ProjectInfo("work-project", "Work Project"),
+            new ProjectInfo("breaks-project", "Breaks") // Breaks project
+        };
+
+        var timeEntries = new List<TimeEntry>
+        {
+            // Regular work entry - should be included
+            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR", 
+                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
+            
+            // Break type entry - should be excluded
+            new TimeEntry("entry2", "Coffee break", "task2", "work-project", "BREAK", 
+                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
+            
+            // Breaks project entry - should be excluded
+            new TimeEntry("entry3", "Lunch break", "task3", "breaks-project", "REGULAR", 
+                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
+        };
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(projects);
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(timeEntries);
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        
+        var output = testConsole.Output;
+        // Should contain regular work entry
+        Assert.That(output, Does.Contain("Regular work"));
+        
+        // Should NOT contain break entries
+        Assert.That(output, Does.Not.Contain("Coffee break"));
+        Assert.That(output, Does.Not.Contain("Lunch break"));
+        
+        // Should show total time excluding breaks (1 hour)
+        Assert.That(output, Does.Contain("1:00:00"));
+    }
+
+    [Test]
+    public async Task ExecuteAsync_FiltersBreaksByProjectName_CaseInsensitive()
+    {
+        // Arrange
+        var settings = new WeekViewCommand.Settings();
+        var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        
+        var projects = new List<ProjectInfo>
+        {
+            new ProjectInfo("work-project", "Work Project"),
+            new ProjectInfo("breaks-project", "BREAKS") // Uppercase BREAKS
+        };
+
+        var timeEntries = new List<TimeEntry>
+        {
+            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR", 
+                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
+            
+            new TimeEntry("entry2", "Break from uppercase project", "task2", "breaks-project", "REGULAR", 
+                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z"))
+        };
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(projects);
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(timeEntries);
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        
+        var output = testConsole.Output;
+        // Should contain regular work entry
+        Assert.That(output, Does.Contain("Regular work"));
+        
+        // Should NOT contain break entry from uppercase BREAKS project
+        Assert.That(output, Does.Not.Contain("Break from uppercase project"));
+    }
 }

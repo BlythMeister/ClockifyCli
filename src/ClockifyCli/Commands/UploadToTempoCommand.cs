@@ -142,6 +142,24 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                                                                                         tasks.AddRange(projectTasks);
                                                                                     }
 
+                                                                                    // Find "Breaks" project to exclude it from Tempo exports
+                                                                                    var breaksProject = projects.FirstOrDefault(p => 
+                                                                                        string.Equals(p.Name, "Breaks", StringComparison.OrdinalIgnoreCase));
+
+                                                                                    // Filter out break-related time entries from export
+                                                                                    var filteredTimeEntries = timeEntries.Where(entry =>
+                                                                                    {
+                                                                                        // Exclude entries from "Breaks" project
+                                                                                        if (breaksProject != null && entry.ProjectId == breaksProject.Id)
+                                                                                            return false;
+
+                                                                                        // Exclude entries with Type = "BREAK" (case-insensitive)
+                                                                                        if (string.Equals(entry.Type, "BREAK", StringComparison.OrdinalIgnoreCase))
+                                                                                            return false;
+
+                                                                                        return true;
+                                                                                    }).ToList();
+
                                                                                     ctx.Status("Getting existing time entries from Tempo...");
                                                                                     var exportedTimes = await tempoClient.GetCurrentTime(startDate, endDate);
 
@@ -167,8 +185,8 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                                                                                         }
                                                                                     }
 
-                                                                                    // Upload new time entries (exclude running timers)
-                                                                                    var entriesToUpload = timeEntries.Where(e =>
+                                                                                    // Upload new time entries (exclude running timers and break entries)
+                                                                                    var entriesToUpload = filteredTimeEntries.Where(e =>
                                                                                                                                 !string.IsNullOrEmpty(e.TimeInterval.End) && // Exclude running timers
                                                                                                                                 !exportedTimes.Any(et =>
                                                                                                                                                        et.Description.Contains($"[cid:{e.Id}]") &&

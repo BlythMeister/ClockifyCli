@@ -103,8 +103,43 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                         allTasks.AddRange(projectTasks);
                                                                     }
 
+                                                                    // Find "Breaks" project to exclude it from regular reports
+                                                                    var breaksProject = projects.FirstOrDefault(p => 
+                                                                        string.Equals(p.Name, "Breaks", StringComparison.OrdinalIgnoreCase));
+
+                                                                    // Filter out break-related time entries from regular reports
+                                                                    var filteredTimeEntries = timeEntries.Where(entry =>
+                                                                    {
+                                                                        // Exclude entries from "Breaks" project
+                                                                        if (breaksProject != null && entry.ProjectId == breaksProject.Id)
+                                                                            return false;
+
+                                                                        // Exclude entries with Type = "BREAK" (case-insensitive)
+                                                                        if (string.Equals(entry.Type, "BREAK", StringComparison.OrdinalIgnoreCase))
+                                                                            return false;
+
+                                                                        return true;
+                                                                    }).ToList();
+
+                                                                    // Filter current running entry if it's a break
+                                                                    if (currentEntry != null)
+                                                                    {
+                                                                        var isCurrentBreak = false;
+                                                                        
+                                                                        // Check if current entry is from "Breaks" project
+                                                                        if (breaksProject != null && currentEntry.ProjectId == breaksProject.Id)
+                                                                            isCurrentBreak = true;
+
+                                                                        // Check if current entry Type is "BREAK"
+                                                                        if (string.Equals(currentEntry.Type, "BREAK", StringComparison.OrdinalIgnoreCase))
+                                                                            isCurrentBreak = true;
+
+                                                                        if (isCurrentBreak)
+                                                                            currentEntry = null; // Don't include break entries in regular reports
+                                                                    }
+
                                                                     // Group entries by date
-                                                                    var entriesByDate = timeEntries
+                                                                    var entriesByDate = filteredTimeEntries
                                                                                         .Where(e => e.TimeInterval.StartDate.Date >= startOfWeek && e.TimeInterval.StartDate.Date <= endOfWeek)
                                                                                         .GroupBy(e => e.TimeInterval.StartDate.Date)
                                                                                         .OrderBy(g => g.Key)

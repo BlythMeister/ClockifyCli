@@ -1,5 +1,6 @@
 using ClockifyCli.Models;
 using ClockifyCli.Services;
+using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -127,10 +128,10 @@ public class AddManualTimerCommand : BaseCommand
 
         // Prompt for start time
         var startTimeInput = console.Prompt(
-            new TextPrompt<string>("[blue]Start time[/] (HH:mm or HH:mm:ss):")
+            new TextPrompt<string>("[blue]Start time[/] (e.g., 9:30, 2:30 PM, 2:30p, 14:30):")
                 .Validate(input =>
                 {
-                    if (TimeSpan.TryParse(input, out var time))
+                    if (IntelligentTimeParser.TryParseStartTime(input, out var time, clock.Now))
                     {
                         var proposedStartTime = clock.Today.Add(time);
                         if (proposedStartTime <= clock.Now)
@@ -139,11 +140,11 @@ public class AddManualTimerCommand : BaseCommand
                         }
                         return ValidationResult.Error("Start time cannot be in the future");
                     }
-                    return ValidationResult.Error("Please enter a valid time format (HH:mm or HH:mm:ss)");
+                    return ValidationResult.Error("Please enter a valid time format (e.g., 9:30, 2:30p, 14:30)");
                 }));
 
         DateTime startTime = clock.Today;
-        if (TimeSpan.TryParse(startTimeInput, out var parsedStartTime))
+        if (IntelligentTimeParser.TryParseStartTime(startTimeInput, out var parsedStartTime, clock.Now))
         {
             startTime = clock.Today.Add(parsedStartTime);
             // If the time is after current time, assume it's for yesterday
@@ -155,10 +156,10 @@ public class AddManualTimerCommand : BaseCommand
 
         // Prompt for end time
         var endTimeInput = console.Prompt(
-            new TextPrompt<string>("[blue]End time[/] (HH:mm or HH:mm:ss):")
+            new TextPrompt<string>("[blue]End time[/] (e.g., 5:30, 5:30 PM, 5:30p, 17:30):")
                 .Validate(input =>
                 {
-                    if (TimeSpan.TryParse(input, out var time))
+                    if (IntelligentTimeParser.TryParseEndTime(input, out var time, startTime))
                     {
                         var proposedEndTime = clock.Today.Add(time);
 
@@ -174,11 +175,11 @@ public class AddManualTimerCommand : BaseCommand
                         }
                         return ValidationResult.Error("End time cannot be in the future");
                     }
-                    return ValidationResult.Error("Please enter a valid time format (HH:mm or HH:mm:ss)");
+                    return ValidationResult.Error("Please enter a valid time format (e.g., 5:30, 5:30p, 17:30)");
                 }));
 
         DateTime endTime = clock.Today;
-        if (TimeSpan.TryParse(endTimeInput, out var parsedEndTime))
+        if (IntelligentTimeParser.TryParseEndTime(endTimeInput, out var parsedEndTime, startTime))
         {
             endTime = startTime.Date.Add(parsedEndTime);
 
@@ -186,6 +187,13 @@ public class AddManualTimerCommand : BaseCommand
             if (endTime <= startTime)
             {
                 endTime = endTime.AddDays(1);
+            }
+            
+            // Validate the time makes sense in context
+            if (!IntelligentTimeParser.ValidateTimeInContext(parsedEndTime, startTime, isStartTime: false, out var errorMessage))
+            {
+                console.MarkupLine($"[red]Error: {errorMessage}[/]");
+                return;
             }
         }
 

@@ -381,18 +381,29 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             var originalEndTime = newEndTime;
 
             var newStartTimeStr = console.Prompt(
-                new TextPrompt<string>($"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(newStartTime.ToString("HH:mm"))}):")
+                new TextPrompt<string>($"Enter new [green]start time[/] (e.g., 9:30, 2:30 PM, 2:30p, 14:30, or leave blank to keep {Markup.Escape(newStartTime.ToString("HH:mm"))}):")
                     .AllowEmpty());
 
             if (!string.IsNullOrWhiteSpace(newStartTimeStr))
             {
-                if (TimeSpan.TryParseExact(newStartTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var startTimeSpan))
+                if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, newStartTime))
                 {
-                    newStartTime = newStartTime.Date.Add(startTimeSpan);
+                    var proposedStartTime = newStartTime.Date.Add(startTimeSpan);
+                    
+                    // Validate the time makes sense
+                    if (IntelligentTimeParser.ValidateTimeInContext(startTimeSpan, newStartTime, isStartTime: true, out var startErrorMessage))
+                    {
+                        newStartTime = proposedStartTime;
+                    }
+                    else
+                    {
+                        console.MarkupLine($"[red]Error: {startErrorMessage}[/]");
+                        return;
+                    }
                 }
                 else
                 {
-                    console.MarkupLine("[red]Invalid time format. Keeping original start time.[/]");
+                    console.MarkupLine("[red]Invalid time format. Please use formats like 9:30, 2:30 PM, or 14:30.[/]");
                     return;
                 }
             }
@@ -400,24 +411,35 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             if (!isRunning)
             {
                 var newEndTimeStr = console.Prompt(
-                    new TextPrompt<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(newEndTime!.Value.ToString("HH:mm"))}):")
+                    new TextPrompt<string>($"Enter new [green]end time[/] (e.g., 5:30, 5:30 PM, 5:30p, 17:30, or leave blank to keep {Markup.Escape(newEndTime!.Value.ToString("HH:mm"))}):")
                         .AllowEmpty());
 
                 if (!string.IsNullOrWhiteSpace(newEndTimeStr))
                 {
-                    if (TimeSpan.TryParseExact(newEndTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var endTimeSpan))
+                    if (IntelligentTimeParser.TryParseEndTime(newEndTimeStr, out var endTimeSpan, newStartTime))
                     {
-                        newEndTime = newStartTime.Date.Add(endTimeSpan);
+                        var proposedEndTime = newStartTime.Date.Add(endTimeSpan);
 
                         // Handle case where end time is next day
-                        if (newEndTime <= newStartTime)
+                        if (proposedEndTime <= newStartTime)
                         {
-                            newEndTime = newEndTime.Value.AddDays(1);
+                            proposedEndTime = proposedEndTime.AddDays(1);
+                        }
+                        
+                        // Validate the time makes sense
+                        if (IntelligentTimeParser.ValidateTimeInContext(endTimeSpan, newStartTime, isStartTime: false, out var endErrorMessage))
+                        {
+                            newEndTime = proposedEndTime;
+                        }
+                        else
+                        {
+                            console.MarkupLine($"[red]Error: {endErrorMessage}[/]");
+                            return;
                         }
                     }
                     else
                     {
-                        console.MarkupLine("[red]Invalid time format. Keeping original end time.[/]");
+                        console.MarkupLine("[red]Invalid time format. Please use formats like 5:30, 5:30 PM, or 17:30.[/]");
                         return;
                     }
                 }

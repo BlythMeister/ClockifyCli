@@ -8,7 +8,8 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 
 ### 🎯 Key Features
 
-- **🔄 Sync time entries** from Clockify to Tempo automatically
+- **� Intelligent Time Input** with natural formats and smart AM/PM detection (`9:30`, `2:30 PM`, `2:30p`, `14:30`, `1:15a`)
+- **�🔄 Sync time entries** from Clockify to Tempo automatically
 - **📋 Manage tasks** directly from Jira issues in Clockify
 - **⏱️ Start/Stop timers** with an intuitive command-line interface and customizable start times
 - **🗑️ Discard/Delete timers** with safety confirmations and time restrictions
@@ -267,6 +268,44 @@ The configuration is stored securely in your user profile:
 
 - **Windows**: `%USERPROFILE%\.clockify-cli\config.json`
 - **macOS/Linux**: `~/.clockify-cli/config.json`
+
+## ⏰ Intelligent Time Input
+
+ClockifyCli features an intelligent time input system that makes entering times natural and intuitive. No more struggling with seconds or manually specifying AM/PM for obvious times!
+
+### Supported Time Formats
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| **24-hour** | `14:30`, `09:15` | Military time format (leading zeros optional) |
+| **12-hour with PM/AM** | `2:30 PM`, `9:15 AM` | Traditional format with full AM/PM |
+| **12-hour with p/a** | `2:30p`, `9:15a`, `1:15p` | Shortened format with single letter |
+| **Ambiguous times** | `9:30`, `10:00` | Smart detection based on context |
+
+### Smart AM/PM Detection
+
+When you enter ambiguous times (like `9:30`), the system intelligently determines AM or PM based on:
+
+- **Current time context**: For start times relative to when you're entering
+- **Work session logic**: For end times relative to start times
+- **Business hours assumptions**: Reasonable work patterns (9 AM - 6 PM typical)
+
+### Examples in Action
+
+| Scenario | Input | Interpretation | Why |
+|----------|-------|----------------|-----|
+| Adding manual entry at 2 PM | Start: `8:00`, End: `10:00` | 8:00 AM - 10:00 AM | Short morning session |
+| Adding manual entry at 2 PM | Start: `8:00`, End: `6:00` | 8:00 AM - 6:00 PM | Full work day |
+| Starting timer at 2 PM | Earlier time: `9:30` | 9:30 AM (today) | Before current time |
+| Starting timer at 8 AM | Earlier time: `10:00` | 10:00 PM (yesterday) | After current time → previous day |
+
+### Where It Works
+
+The intelligent time input works across all time entry scenarios:
+
+- ✅ **Manual time entry** (`add` command)
+- ✅ **Timer editing** (`edit` command)
+- ✅ **Start earlier** (`start` command with "Earlier time" option)
 
 ## 📋 Command Reference
 

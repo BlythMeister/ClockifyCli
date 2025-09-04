@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New Features
 
+- **Intelligent Time Input System**: Natural time entry without requiring seconds and with smart AM/PM detection
+  - Supports multiple formats: `9:30`, `2:30 PM`, `2:30p`, `14:30`, `1:15a`, `1:15p`
+  - Context-aware AM/PM interpretation - automatically determines AM/PM based on reasonable work hours and context
+  - No seconds required - enter times as HH:mm format
+  - Smart validation with helpful error messages for invalid inputs
+  - Works across all time entry scenarios: manual time entry, timer editing, and "start earlier" functionality
+  - Examples: Start at 8:00 AM, enter "10:00" → correctly interprets as 10:00 AM; Start at 8:00 AM, enter "6:00" → correctly interprets as 6:00 PM
 - **Breaks Management System**: Complete separation of break tracking from regular work reporting
   - Added new `breaks-report` command to view break-related time entries
   - Break entries are excluded from regular reports (`week-view`) and exports (`upload-to-tempo`)

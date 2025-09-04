@@ -1,5 +1,6 @@
 using ClockifyCli.Models;
 using ClockifyCli.Services;
+using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -157,10 +158,10 @@ public class StartCommand : BaseCommand
         if (startTimeOption == "Earlier time")
         {
             var timeInput = console.Prompt(
-                new TextPrompt<string>("[blue]Start time[/] (HH:mm or HH:mm:ss):")
+                new TextPrompt<string>("[blue]Start time[/] (e.g., 9:30, 2:30 PM, 2:30p, 14:30):")
                     .Validate(input =>
                     {
-                        if (TimeSpan.TryParse(input, out var time))
+                        if (IntelligentTimeParser.TryParseStartTime(input, out var time, clock.Now))
                         {
                             var proposedStartTime = clock.Today.Add(time);
                             DateTime actualStartTime;
@@ -184,10 +185,10 @@ public class StartCommand : BaseCommand
                             
                             return ValidationResult.Success();
                         }
-                        return ValidationResult.Error("Please enter a valid time format (HH:mm or HH:mm:ss)");
+                        return ValidationResult.Error("Please enter a valid time format (e.g., 9:30, 2:30 PM, 2:30p, 14:30)");
                     }));
 
-            if (TimeSpan.TryParse(timeInput, out var parsedTime))
+            if (IntelligentTimeParser.TryParseStartTime(timeInput, out var parsedTime, clock.Now))
             {
                 startTime = clock.Today.Add(parsedTime);
                 // If the time is after current time, assume it's for yesterday

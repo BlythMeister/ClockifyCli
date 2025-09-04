@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Spectre.Console;
 
 namespace ClockifyCli.Utilities;
 
@@ -134,7 +135,44 @@ public static class IntelligentTimeParser
 
         if (isStartTime)
         {
-            // For start times: choose the time that makes most sense relative to current context
+            // For start times: choose the interpretation that makes most sense for work
+            // Context is current time
+            
+            // If context is during business hours (9 AM - 5 PM)
+            if (contextHour >= 9 && contextHour <= 17)
+            {
+                // First, check if either interpretation is very close to current time (within 2 hours)
+                var amDistance = Math.Abs(amVersion - contextHour);
+                var pmDistance = Math.Abs(pmVersion - contextHour);
+                
+                // If PM version is very close (within 2 hours), prefer it
+                if (pmDistance <= 2 && (amDistance > 2 || pmDistance <= amDistance))
+                {
+                    return pmVersion;
+                }
+                
+                // If AM version is very close (within 2 hours), prefer it  
+                if (amDistance <= 2 && amDistance < pmDistance)
+                {
+                    return amVersion;
+                }
+                
+                // For times that are not close to current time, use work logic:
+                // If this looks like a morning start time (6-11 AM) and we're past that time, prefer AM
+                if (inputHours >= 6 && inputHours <= 11 && amVersion < contextHour)
+                {
+                    return amVersion;
+                }
+                
+                // For afternoon times (1-5 PM), prefer PM if reasonable
+                if (inputHours >= 1 && inputHours <= 5)
+                {
+                    return pmVersion;
+                }
+                
+                // Default to closer time
+                return pmDistance <= amDistance ? pmVersion : amVersion;
+            }
             
             // For late context (after 6 PM), probably early start next day
             if (contextHour >= 18)
@@ -142,26 +180,8 @@ public static class IntelligentTimeParser
                 // For reasonable work start times (6-9), prefer AM (next day start)
                 if (inputHours >= 6 && inputHours <= 9)
                     return amVersion; // Early start next day
-                // For lunch times (11-1), could be next day
-                if (inputHours >= 11 && inputHours <= 1)
-                    return pmVersion; // Late night session
                 // For other times, use proximity logic
-            }
-            
-            // If context is during business hours (9 AM - 5 PM, but not late evening)
-            if (contextHour >= 9 && contextHour <= 17)
-            {
-                // If the PM version is close to the context time (within 2 hours), prefer PM
-                if (Math.Abs(pmVersion - contextHour) <= 2)
-                    return pmVersion;
-                
-                // If the AM version is reasonable for early start and context is later, prefer AM
-                if (amVersion >= 6 && amVersion <= 9 && contextHour > amVersion)
-                    return amVersion;
-                
-                // Otherwise for business hours context, prefer PM for reasonable working times
-                if (inputHours >= 9)
-                    return pmVersion;
+                return Math.Abs(pmVersion - contextHour) <= Math.Abs(amVersion - contextHour) ? pmVersion : amVersion;
             }
             
             // For early context (before 9 AM), prefer AM unless PM makes more sense
@@ -305,5 +325,63 @@ public static class IntelligentTimeParser
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Checks if a time input is ambiguous (could be AM or PM).
+    /// </summary>
+    public static bool IsAmbiguousTime(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return false;
+
+        input = input.Trim().ToLower();
+        
+        // If it contains AM/PM indicators, it's not ambiguous
+        if (input.Contains("am") || input.Contains("pm") || input.Contains("a") || input.Contains("p"))
+            return false;
+
+        // If it's in 24-hour format (13-23 hours), it's not ambiguous
+        var match = TimeRegex.Match(input);
+        if (match.Success && int.TryParse(match.Groups[1].Value, out var hours))
+        {
+            if (hours >= 13 && hours <= 23)
+                return false;
+            
+            // If hour is 00-09 and was entered with leading zero, it's 24-hour format (not ambiguous)
+            if (hours >= 0 && hours <= 9 && match.Groups[1].Value.StartsWith("0"))
+                return false;
+            
+            // If format suggests 24-hour time (like "10:00" vs "10:00 AM"), consider it unambiguous
+            // Times like "1:30", "2:45", etc. without leading zeros are ambiguous
+            // Times like "10:00", "11:00", "12:00" are commonly used in 24-hour format
+            if (hours >= 10 && hours <= 12)
+                return false;
+                
+            // Hours 1-9 without AM/PM and without leading zero are ambiguous
+            return hours >= 1 && hours <= 9;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Gets both AM and PM interpretations of an ambiguous time input.
+    /// </summary>
+    public static (TimeSpan amVersion, TimeSpan pmVersion, string display24Hour, string displayAmPm) GetAmbiguousTimeOptions(string input, TimeSpan interpretedTime)
+    {
+        var inputHour = interpretedTime.Hours > 12 ? interpretedTime.Hours - 12 : interpretedTime.Hours;
+        if (inputHour == 0) inputHour = 12; // Handle midnight/noon
+
+        var amVersion = interpretedTime.Hours <= 12 ? interpretedTime : new TimeSpan(inputHour, interpretedTime.Minutes, interpretedTime.Seconds);
+        var pmVersion = interpretedTime.Hours >= 12 ? interpretedTime : new TimeSpan(inputHour + 12, interpretedTime.Minutes, interpretedTime.Seconds);
+
+        // Format the interpretation for display
+        var display24Hour = interpretedTime.ToString(@"hh\:mm");
+        var displayAmPm = interpretedTime.Hours >= 12 ? 
+            $"{(interpretedTime.Hours > 12 ? interpretedTime.Hours - 12 : interpretedTime.Hours)}:{interpretedTime.Minutes:D2} PM" :
+            $"{(interpretedTime.Hours == 0 ? 12 : interpretedTime.Hours)}:{interpretedTime.Minutes:D2} AM";
+
+        return (amVersion, pmVersion, display24Hour, displayAmPm);
     }
 }

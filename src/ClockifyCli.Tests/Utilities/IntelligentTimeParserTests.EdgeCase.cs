@@ -37,6 +37,51 @@ namespace ClockifyCli.Tests.Utilities
         }
 
         [Test]
+        public void TryParseStartTime_At3PM_Should_Interpret1045_As_AM()
+        {
+            // Arrange
+            var currentTime = new DateTime(2024, 1, 1, 15, 0, 0); // 3:00 PM
+            var input = "10:45";
+
+            // Act
+            var success = IntelligentTimeParser.TryParseStartTime(input, out var result, currentTime);
+
+            // Assert
+            Assert.That(success, Is.True, "Should successfully parse '10:45' as start time");
+            Assert.That(result, Is.EqualTo(new TimeSpan(10, 45, 0)), "Should interpret as 10:45 AM, not 10:45 PM");
+        }
+
+        [Test]
+        public void TryParseStartTime_At3PM_Should_Interpret900_As_AM()
+        {
+            // Arrange
+            var currentTime = new DateTime(2024, 1, 1, 15, 0, 0); // 3:00 PM
+            var input = "9:00";
+
+            // Act
+            var success = IntelligentTimeParser.TryParseStartTime(input, out var result, currentTime);
+
+            // Assert
+            Assert.That(success, Is.True, "Should successfully parse '9:00' as start time");
+            Assert.That(result, Is.EqualTo(new TimeSpan(9, 0, 0)), "Should interpret as 9:00 AM, not 9:00 PM");
+        }
+
+        [Test]
+        public void TryParseStartTime_At3PM_Should_Interpret200_As_PM()
+        {
+            // Arrange  
+            var currentTime = new DateTime(2024, 1, 1, 15, 0, 0); // 3:00 PM
+            var input = "2:00";
+
+            // Act
+            var success = IntelligentTimeParser.TryParseStartTime(input, out var result, currentTime);
+
+            // Assert
+            Assert.That(success, Is.True, "Should successfully parse '2:00' as start time");
+            Assert.That(result, Is.EqualTo(new TimeSpan(14, 0, 0)), "Should interpret as 2:00 PM (close to current time)");
+        }
+
+        [Test]
         public void TryParseTime_WithSingleLetterAM_ShouldParseCorrectly()
         {
             // Act & Assert

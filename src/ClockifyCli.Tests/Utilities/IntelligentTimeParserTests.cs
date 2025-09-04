@@ -216,4 +216,24 @@ public class IntelligentTimeParserTests
         Assert.That(success, Is.True);
         Assert.That(result, Is.EqualTo(new TimeSpan(12, 30, 0))); // Should choose 12:30 PM
     }
+
+    [TestCase("9:30", ExpectedResult = true)]   // Ambiguous: could be 9:30 AM or 9:30 PM
+    [TestCase("1:45", ExpectedResult = true)]   // Ambiguous: could be 1:45 AM or 1:45 PM
+    [TestCase("2:15", ExpectedResult = true)]   // Ambiguous: could be 2:15 AM or 2:15 PM
+    [TestCase("08:00", ExpectedResult = false)] // Not ambiguous: 24-hour format with leading zero
+    [TestCase("09:30", ExpectedResult = false)] // Not ambiguous: 24-hour format with leading zero
+    [TestCase("10:00", ExpectedResult = false)] // Not ambiguous: commonly 24-hour format
+    [TestCase("11:30", ExpectedResult = false)] // Not ambiguous: commonly 24-hour format
+    [TestCase("12:15", ExpectedResult = false)] // Not ambiguous: commonly 24-hour format
+    [TestCase("00:15", ExpectedResult = false)] // Not ambiguous: clearly midnight
+    [TestCase("13:00", ExpectedResult = false)] // Not ambiguous: clearly 24-hour format
+    [TestCase("23:59", ExpectedResult = false)] // Not ambiguous: clearly 24-hour format
+    [TestCase("9:30 AM", ExpectedResult = false)] // Not ambiguous: has AM/PM
+    [TestCase("2:15 PM", ExpectedResult = false)] // Not ambiguous: has AM/PM
+    [TestCase("2:15p", ExpectedResult = false)]   // Not ambiguous: has single letter PM
+    [TestCase("9:30a", ExpectedResult = false)]   // Not ambiguous: has single letter AM
+    public bool IsAmbiguousTime_ReturnsExpectedResult(string input)
+    {
+        return IntelligentTimeParser.IsAmbiguousTime(input);
+    }
 }

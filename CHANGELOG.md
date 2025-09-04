@@ -5,6 +5,18 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7] - 2025-09-04
+
+### New Features
+
+- **Interactive Time Confirmation**: Smart ambiguity detection with user confirmation for time input
+  - Automatically detects when time input could be interpreted as either AM or PM (e.g., "9:30", "2:15")
+  - Shows clear interpretation in both 24-hour and 12-hour formats: "I interpreted this as: 21:30 (9:30 PM)"
+  - Asks for user confirmation when ambiguous times are entered
+  - Provides AM/PM selection menu if interpretation is incorrect
+  - Non-ambiguous times (08:00, 10:00, 14:30, 2:30 PM) skip confirmation for seamless workflow
+  - Enhances user experience by making time interpretation transparent and correctable
+
 ## [1.6] - 2025-09-04
 
 ### New Features

@@ -129,19 +129,22 @@ public class AddManualTimerCommand : BaseCommand
         // Prompt for start time
         var startTimeInput = console.Prompt(
             new TextPrompt<string>("[blue]Start time[/] (e.g., 9:30, 2:30 PM, 2:30p, 14:30):")
-                .Validate(input =>
+                .Validate(timeInput =>
                 {
-                    if (IntelligentTimeParser.TryParseStartTime(input, out var time, clock.Now))
+                    if (IntelligentTimeParser.TryParseStartTime(timeInput, out var time, clock.Now))
                     {
-                        var proposedStartTime = clock.Today.Add(time);
-                        if (proposedStartTime <= clock.Now)
+                        var proposedDateTime = clock.Today.Add(time);
+                        if (proposedDateTime <= clock.Now)
                         {
                             return ValidationResult.Success();
                         }
                         return ValidationResult.Error("Start time cannot be in the future");
                     }
-                    return ValidationResult.Error("Please enter a valid time format (e.g., 9:30, 2:30p, 14:30)");
+                    return ValidationResult.Error($"Please enter a valid time format (e.g., 9:30, 2:30p, 14:30)");
                 }));
+
+        // Check if start time is ambiguous and confirm with user
+        startTimeInput = CheckAndConfirmAmbiguousTime(console, startTimeInput, "start time");
 
         DateTime startTime = clock.Today;
         if (IntelligentTimeParser.TryParseStartTime(startTimeInput, out var parsedStartTime, clock.Now))
@@ -156,27 +159,23 @@ public class AddManualTimerCommand : BaseCommand
 
         // Prompt for end time
         var endTimeInput = console.Prompt(
-            new TextPrompt<string>("[blue]End time[/] (e.g., 5:30, 5:30 PM, 5:30p, 17:30):")
-                .Validate(input =>
+            new TextPrompt<string>("[blue]End time[/] (e.g., 10:30, 5:30 PM, 5:30p, 17:30):")
+                .Validate(timeInput =>
                 {
-                    if (IntelligentTimeParser.TryParseEndTime(input, out var time, startTime))
+                    if (IntelligentTimeParser.TryParseEndTime(timeInput, out var time, startTime))
                     {
-                        var proposedEndTime = clock.Today.Add(time);
-
-                        // Handle case where end time might be next day
-                        if (time < startTime.TimeOfDay)
-                        {
-                            proposedEndTime = proposedEndTime.AddDays(1);
-                        }
-
-                        if (proposedEndTime <= clock.Now)
+                        var proposedDateTime = startTime.Date.Add(time);
+                        if (proposedDateTime <= clock.Now)
                         {
                             return ValidationResult.Success();
                         }
                         return ValidationResult.Error("End time cannot be in the future");
                     }
-                    return ValidationResult.Error("Please enter a valid time format (e.g., 5:30, 5:30p, 17:30)");
+                    return ValidationResult.Error($"Please enter a valid time format (e.g., 10:30, 5:30p, 17:30)");
                 }));
+
+        // Check if end time is ambiguous and confirm with user
+        endTimeInput = CheckAndConfirmAmbiguousTime(console, endTimeInput, "end time");
 
         DateTime endTime = clock.Today;
         if (IntelligentTimeParser.TryParseEndTime(endTimeInput, out var parsedEndTime, startTime))
@@ -252,5 +251,131 @@ public class AddManualTimerCommand : BaseCommand
         {
             console.MarkupLine("[yellow]Time entry cancelled.[/]");
         }
+    }
+
+    private static string PromptForTimeWithConfirmation(IAnsiConsole console, string timeType, DateTime contextTime, bool isStartTime, IClock clock)
+    {
+        while (true)
+        {
+            var input = console.Prompt(
+                new TextPrompt<string>($"[blue]{timeType}[/] (e.g., 9:30, 2:30 PM, 2:30p, 14:30):")
+                    .Validate(timeInput =>
+                    {
+                        TimeSpan parsedTime;
+                        bool parseSuccess = isStartTime ? 
+                            IntelligentTimeParser.TryParseStartTime(timeInput, out parsedTime, contextTime) :
+                            IntelligentTimeParser.TryParseEndTime(timeInput, out parsedTime, contextTime);
+
+                        if (parseSuccess)
+                        {
+                            var proposedDateTime = clock.Today.Add(parsedTime);
+                            
+                            if (isStartTime)
+                            {
+                                if (proposedDateTime <= clock.Now)
+                                {
+                                    return ValidationResult.Success();
+                                }
+                                return ValidationResult.Error("Start time cannot be in the future");
+                            }
+                            else
+                            {
+                                // For end times, check if it's reasonable
+                                if (proposedDateTime <= clock.Now)
+                                {
+                                    return ValidationResult.Success();
+                                }
+                                return ValidationResult.Error("End time cannot be in the future");
+                            }
+                        }
+                        return ValidationResult.Error($"Please enter a valid time format (e.g., 9:30, 2:30p, 14:30)");
+                    }));
+
+            // Parse the time to check if it's ambiguous
+            TimeSpan finalParsedTime;
+            var parseSuccess = isStartTime ? 
+                IntelligentTimeParser.TryParseStartTime(input, out finalParsedTime, contextTime) :
+                IntelligentTimeParser.TryParseEndTime(input, out finalParsedTime, contextTime);
+
+            if (!parseSuccess)
+            {
+                continue; // This shouldn't happen due to validation, but just in case
+            }
+
+            // Check if the input is ambiguous
+            if (IntelligentTimeParser.IsAmbiguousTime(input))
+            {
+                var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, finalParsedTime);
+
+                console.MarkupLine($"[yellow]You entered:[/] {input}");
+                console.MarkupLine($"[cyan]I interpreted this as:[/] {display24Hour} ({displayAmPm})");
+
+                var isCorrect = console.Confirm("Is this correct?", true);
+                
+                if (isCorrect)
+                {
+                    return input; // Return original input since it was interpreted correctly
+                }
+
+                // Ask user to clarify AM or PM
+                var inputHour = finalParsedTime.Hours > 12 ? finalParsedTime.Hours - 12 : finalParsedTime.Hours;
+                if (inputHour == 0) inputHour = 12;
+
+                var amChoice = $"{inputHour}:{finalParsedTime.Minutes:D2} AM";
+                var pmChoice = $"{inputHour}:{finalParsedTime.Minutes:D2} PM";
+
+                var amPmChoice = console.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[yellow]Please clarify - did you mean:[/]")
+                        .AddChoices(amChoice, pmChoice));
+
+                // Return the clarified input with explicit AM/PM
+                return amPmChoice;
+            }
+
+            // Not ambiguous, return as-is
+            return input;
+        }
+    }
+
+    private static string CheckAndConfirmAmbiguousTime(IAnsiConsole console, string timeInput, string timeType)
+    {
+        // Check if the input is ambiguous
+        if (IntelligentTimeParser.IsAmbiguousTime(timeInput))
+        {
+            // Parse the time to get current interpretation
+            TimeSpan parsedTime;
+            if (IntelligentTimeParser.TryParseTime(timeInput, out parsedTime))
+            {
+                var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
+
+                console.MarkupLine($"[yellow]You entered:[/] {timeInput} for {timeType}");
+                console.MarkupLine($"[cyan]I interpreted this as:[/] {display24Hour} ({displayAmPm})");
+
+                var isCorrect = console.Confirm("Is this correct?", true);
+                
+                if (isCorrect)
+                {
+                    return timeInput; // Return original input since it was interpreted correctly
+                }
+
+                // Ask user to clarify AM or PM
+                var inputHour = parsedTime.Hours > 12 ? parsedTime.Hours - 12 : parsedTime.Hours;
+                if (inputHour == 0) inputHour = 12;
+
+                var amChoice = $"{inputHour}:{parsedTime.Minutes:D2} AM";
+                var pmChoice = $"{inputHour}:{parsedTime.Minutes:D2} PM";
+
+                var amPmChoice = console.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[yellow]Please clarify - did you mean:[/]")
+                        .AddChoices(amChoice, pmChoice));
+
+                return amPmChoice;
+            }
+        }
+
+        // Not ambiguous or couldn't parse, return as-is
+        return timeInput;
     }
 }

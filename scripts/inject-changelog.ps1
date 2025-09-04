@@ -54,65 +54,61 @@ Write-Host "SUCCESS: Found changelog section ($($versionChangelog.Length) chars)
 $lines = $versionChangelog -split "\n"
 $contentLines = $lines | Select-Object -Skip 2 | Where-Object { $_.Trim() -ne "" }  # Skip version header and empty lines
 
-# Process content for NuGet (convert to proper HTML on single line)
-$htmlLines = @()
-$inList = $false
+# Process content for NuGet (convert to clean text format)
+$nugetLines = @()
 
 foreach ($line in $contentLines) {
     $processedLine = $line.Trim()
     
     if ($processedLine -match '^### (.+)$') {
-        # Close any open list
-        if ($inList) { $htmlLines += '</ul>'; $inList = $false }
-        # Add header
-        $htmlLines += "<h3>$($matches[1])</h3>"
+        # Add header without HTML
+        $nugetLines += $matches[1]
+        $nugetLines += ""  # Add blank line after header
     }
     elseif ($processedLine -match '^- \*\*(.+?)\*\*: (.+)$') {
-        # Start list if not already started
-        if (-not $inList) { $htmlLines += '<ul>'; $inList = $true }
-        # Bold feature with description
-        $htmlLines += "<li><strong>$($matches[1])</strong>: $($matches[2])</li>"
+        # Bold feature with description - convert to plain text
+        $nugetLines += "• $($matches[1]): $($matches[2])"
     }
     elseif ($processedLine -match '^- (.+)$') {
-        # Start list if not already started
-        if (-not $inList) { $htmlLines += '<ul>'; $inList = $true }
         # Regular list item
-        $htmlLines += "<li>$($matches[1])</li>"
+        $nugetLines += "• $($matches[1])"
     }
     elseif ($processedLine -match '^\s+- (.+)$') {
         # Nested list item (sub-bullet)
-        $htmlLines += "<li style='margin-left:20px'>$($matches[1])</li>"
+        $nugetLines += "  • $($matches[1])"
     }
     elseif ($processedLine -ne '' -and -not $processedLine.StartsWith('##')) {
-        # Close any open list
-        if ($inList) { $htmlLines += '</ul>'; $inList = $false }
         # Regular paragraph
         if ($processedLine -notmatch '^\[.*\]') {  # Skip version links
-            $htmlLines += "<p>$processedLine</p>"
+            $nugetLines += $processedLine
         }
     }
 }
 
-# Close any remaining open list
-if ($inList) { $htmlLines += '</ul>' }
+# Join with actual newlines for CDATA section (plain text for NuGet)
+$cleanContent = ($nugetLines -join "`n").Trim()
 
-# Join as single line HTML for NuGet
-$cleanContent = ($htmlLines -join ' ').Trim()
+# Clean up any remaining markdown in text content
+$cleanContent = $cleanContent -replace '\*\*(.*?)\*\*', '$1'  # Remove bold
+$cleanContent = $cleanContent -replace '\*(.*?)\*', '$1'      # Remove italic
+$cleanContent = $cleanContent -replace '`(.*?)`', '$1'        # Remove code
 
-# Clean up any remaining markdown in HTML content
-$cleanContent = $cleanContent -replace '\*\*(.*?)\*\*', '<strong>$1</strong>'
-$cleanContent = $cleanContent -replace '\*(.*?)\*', '<em>$1</em>'
-$cleanContent = $cleanContent -replace '`(.*?)`', '<code>$1</code>'
+# Escape XML characters for .csproj
+$cleanContent = $cleanContent -replace '&', '&amp;'
+$cleanContent = $cleanContent -replace '<', '&lt;'
+$cleanContent = $cleanContent -replace '>', '&gt;'
+$cleanContent = $cleanContent -replace '"', '&quot;'
 
 # No XML escaping needed inside CDATA
 
 Write-Host "SUCCESS: Processed changelog content ($($cleanContent.Length) chars)"
 
-# Set environment variable for GitHub release (simple format like .47 that worked)
-$githubContent = ($contentLines -join "`n").Trim()
+# Set environment variable for GitHub release (use literal \n for AppVeyor compatibility)
+# AppVeyor can handle literal \n strings but not actual newlines
+$githubContent = ($contentLines -join '\n').Trim()
 $env:RELEASE_NOTES = $githubContent
 
-Write-Host "SUCCESS: Set RELEASE_NOTES environment variable for GitHub"
+Write-Host "SUCCESS: Set RELEASE_NOTES environment variable for GitHub (literal newlines)"
 Write-Host "DEBUG: GitHub content length: $($githubContent.Length) chars"
 Write-Host "DEBUG: First 100 chars: $($githubContent.Substring(0, [Math]::Min(100, $githubContent.Length)))..."
 
@@ -124,25 +120,41 @@ if (-not (Test-Path $CsprojPath)) {
 
 $csprojContent = Get-Content $CsprojPath -Raw
 
-# Insert PackageReleaseNotes before the closing PropertyGroup tag using CDATA for NuGet
-$propertyGroupPattern = '(\s*<GeneratePackageOnBuild>false</GeneratePackageOnBuild>\s*)(</PropertyGroup>)'
-$replacement = '$1' + "`n    <PackageReleaseNotes><![CDATA[$cleanContent]]></PackageReleaseNotes>" + "`n  " + '$2'
-$updatedContent = [regex]::Replace($csprojContent, $propertyGroupPattern, $replacement)
-
-if ($updatedContent -eq $csprojContent) {
-    Write-Host "ERROR: Failed to inject PackageReleaseNotes - pattern not found"
-    exit 1
+# Check if PackageReleaseNotes already exists
+$existingNotesPattern = '(?s)<PackageReleaseNotes>.*?</PackageReleaseNotes>'
+$nodeExists = $csprojContent -match $existingNotesPattern
+if ($nodeExists) {
+    # Replace existing PackageReleaseNotes
+    Write-Host "DEBUG: Found existing PackageReleaseNotes, replacing content"
+    $replacement = "<PackageReleaseNotes><![CDATA[$cleanContent]]></PackageReleaseNotes>"
+    $updatedContent = [regex]::Replace($csprojContent, $existingNotesPattern, $replacement)
+} else {
+    # Insert new PackageReleaseNotes before the closing PropertyGroup tag
+    Write-Host "DEBUG: No existing PackageReleaseNotes found, inserting new"
+    $propertyGroupPattern = '(\s*<GeneratePackageOnBuild>false</GeneratePackageOnBuild>\s*\n\s*)(</PropertyGroup>)'
+    $replacement = '$1' + "<PackageReleaseNotes><![CDATA[$cleanContent]]></PackageReleaseNotes>" + "`n  " + '$2'
+    $updatedContent = [regex]::Replace($csprojContent, $propertyGroupPattern, $replacement)
 }
 
-Set-Content $CsprojPath -Value $updatedContent -NoNewline
-Write-Host "SUCCESS: Updated .csproj with PackageReleaseNotes"
+# Check if changes were made or if content was already correct
+if ($updatedContent -eq $csprojContent) {
+    if ($nodeExists) {
+        Write-Host "SUCCESS: PackageReleaseNotes content was already up to date"
+    } else {
+        Write-Host "ERROR: Failed to inject PackageReleaseNotes - pattern not found"
+        exit 1
+    }
+} else {
+    Set-Content $CsprojPath -Value $updatedContent -NoNewline
+    Write-Host "SUCCESS: Updated .csproj with PackageReleaseNotes"
+}
 
-# Verify the injection worked
+# Always verify the content is present (regardless of whether we just wrote it)
 $verifyContent = Get-Content $CsprojPath -Raw
-$verifyPattern = '(?s)<PackageReleaseNotes>(.*?)</PackageReleaseNotes>'
+$verifyPattern = '(?s)<PackageReleaseNotes><!\[CDATA\[(.*?)\]\]></PackageReleaseNotes>'
 if ($verifyContent -match $verifyPattern) {
     $injectedLength = $matches[1].Length
-    Write-Host "SUCCESS: Verification successful - PackageReleaseNotes injected ($injectedLength chars)"
+    Write-Host "SUCCESS: Verification successful - PackageReleaseNotes present ($injectedLength chars)"
 } else {
     Write-Host "ERROR: Verification failed - PackageReleaseNotes not found in .csproj"
     exit 1

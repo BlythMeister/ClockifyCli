@@ -93,11 +93,7 @@ $cleanContent = $cleanContent -replace '\*\*(.*?)\*\*', '$1'  # Remove bold
 $cleanContent = $cleanContent -replace '\*(.*?)\*', '$1'      # Remove italic
 $cleanContent = $cleanContent -replace '`(.*?)`', '$1'        # Remove code
 
-# Escape XML characters for .csproj
-$cleanContent = $cleanContent -replace '&', '&amp;'
-$cleanContent = $cleanContent -replace '<', '&lt;'
-$cleanContent = $cleanContent -replace '>', '&gt;'
-$cleanContent = $cleanContent -replace '"', '&quot;'
+# No XML escaping needed inside CDATA - it handles special characters automatically
 
 # No XML escaping needed inside CDATA
 

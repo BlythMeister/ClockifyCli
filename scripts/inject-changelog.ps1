@@ -45,17 +45,24 @@ Write-Host "SUCCESS: Found changelog section ($($versionChangelog.Length) chars)
 # Clean up the content - remove the version header and date line
 $lines = $versionChangelog -split "\n"
 $contentLines = $lines | Select-Object -Skip 2 | Where-Object { $_.Trim() -ne "" }  # Skip version header and empty lines
-$cleanContent = ($contentLines -join "\n").Trim()
 
-# Remove markdown formatting for NuGet compatibility
-$cleanContent = $cleanContent -replace '\*\*(.*?)\*\*', '$1'  # Remove **bold**
-$cleanContent = $cleanContent -replace '\*(.*?)\*', '$1'      # Remove *italic*
-$cleanContent = $cleanContent -replace '`(.*?)`', '$1'        # Remove `code`
-$cleanContent = $cleanContent -replace '### ', ''             # Remove ### headers
-$cleanContent = $cleanContent -replace '- ', '• '             # Convert - to bullets
+# Remove markdown formatting for NuGet compatibility and join with HTML line break entities
+$processedLines = @()
+foreach ($line in $contentLines) {
+    $processedLine = $line
+    $processedLine = $processedLine -replace '\*\*(.*?)\*\*', '$1'  # Remove **bold**
+    $processedLine = $processedLine -replace '\*(.*?)\*', '$1'      # Remove *italic*
+    $processedLine = $processedLine -replace '`(.*?)`', '$1'        # Remove `code`
+    $processedLine = $processedLine -replace '### ', ''             # Remove ### headers
+    $processedLine = $processedLine -replace '- ', '• '             # Convert - to bullets
+    $processedLines += $processedLine
+}
 
-# Escape XML characters for .csproj
-$cleanContent = $cleanContent -replace '&', '&amp;'
+# Join with HTML line break entities for NuGet XML compatibility
+$cleanContent = ($processedLines -join "&#10;").Trim()
+
+# Escape XML characters for .csproj (except our line break entities)
+$cleanContent = $cleanContent -replace '&(?!#10;)', '&amp;'  # Don't escape our line break entities
 $cleanContent = $cleanContent -replace '<', '&lt;'
 $cleanContent = $cleanContent -replace '>', '&gt;'
 $cleanContent = $cleanContent -replace '"', '&quot;'
@@ -63,7 +70,7 @@ $cleanContent = $cleanContent -replace '"', '&quot;'
 Write-Host "SUCCESS: Processed changelog content ($($cleanContent.Length) chars)"
 
 # Set environment variable for GitHub release (original markdown format for GitHub)
-$githubContent = ($contentLines -join "\n").Trim()
+$githubContent = ($contentLines -join "`n").Trim()
 $env:RELEASE_NOTES = $githubContent
 Write-Host "SUCCESS: Set RELEASE_NOTES environment variable"
 

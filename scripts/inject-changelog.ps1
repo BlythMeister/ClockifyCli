@@ -54,50 +54,10 @@ Write-Host "SUCCESS: Found changelog section ($($versionChangelog.Length) chars)
 $lines = $versionChangelog -split "\n"
 $contentLines = $lines | Select-Object -Skip 2 | Where-Object { $_.Trim() -ne "" }  # Skip version header and empty lines
 
-# Process content for NuGet (convert to clean text format)
-$nugetLines = @()
+# Process content for NuGet (simple link to GitHub release)
+$nugetContent = "See full release notes: https://github.com/BlythMeister/ClockifyCli/releases/tag/v$Version"
 
-foreach ($line in $contentLines) {
-    $processedLine = $line.Trim()
-    
-    if ($processedLine -match '^### (.+)$') {
-        # Add header without HTML
-        $nugetLines += $matches[1]
-        $nugetLines += ""  # Add blank line after header
-    }
-    elseif ($processedLine -match '^- \*\*(.+?)\*\*: (.+)$') {
-        # Bold feature with description - convert to plain text
-        $nugetLines += "• $($matches[1]): $($matches[2])"
-    }
-    elseif ($processedLine -match '^- (.+)$') {
-        # Regular list item
-        $nugetLines += "• $($matches[1])"
-    }
-    elseif ($processedLine -match '^\s+- (.+)$') {
-        # Nested list item (sub-bullet)
-        $nugetLines += "  • $($matches[1])"
-    }
-    elseif ($processedLine -ne '' -and -not $processedLine.StartsWith('##')) {
-        # Regular paragraph
-        if ($processedLine -notmatch '^\[.*\]') {  # Skip version links
-            $nugetLines += $processedLine
-        }
-    }
-}
-
-# Join with actual newlines for CDATA section (plain text for NuGet)
-$cleanContent = ($nugetLines -join "`n").Trim()
-
-# Clean up any remaining markdown in text content
-$cleanContent = $cleanContent -replace '\*\*(.*?)\*\*', '$1'  # Remove bold
-$cleanContent = $cleanContent -replace '\*(.*?)\*', '$1'      # Remove italic
-$cleanContent = $cleanContent -replace '`(.*?)`', '$1'        # Remove code
-
-# No XML escaping needed inside CDATA - it handles special characters automatically
-
-# No XML escaping needed inside CDATA
-
-Write-Host "SUCCESS: Processed changelog content ($($cleanContent.Length) chars)"
+Write-Host "SUCCESS: Generated simple GitHub release link for NuGet (v$Version)"
 
 # Set environment variable for GitHub release (use literal \n for AppVeyor compatibility)
 # AppVeyor can handle literal \n strings but not actual newlines
@@ -116,19 +76,19 @@ if (-not (Test-Path $CsprojPath)) {
 
 $csprojContent = Get-Content $CsprojPath -Raw
 
-# Check if PackageReleaseNotes already exists
+# Check if PackageReleaseNotes already exists (handle both CDATA and simple formats)
 $existingNotesPattern = '(?s)<PackageReleaseNotes>.*?</PackageReleaseNotes>'
 $nodeExists = $csprojContent -match $existingNotesPattern
 if ($nodeExists) {
     # Replace existing PackageReleaseNotes
-    Write-Host "DEBUG: Found existing PackageReleaseNotes, replacing content"
-    $replacement = "<PackageReleaseNotes><![CDATA[$cleanContent]]></PackageReleaseNotes>"
+    Write-Host "DEBUG: Found existing PackageReleaseNotes, replacing with GitHub link"
+    $replacement = "<PackageReleaseNotes>$nugetContent</PackageReleaseNotes>"
     $updatedContent = [regex]::Replace($csprojContent, $existingNotesPattern, $replacement)
 } else {
     # Insert new PackageReleaseNotes before the closing PropertyGroup tag
-    Write-Host "DEBUG: No existing PackageReleaseNotes found, inserting new"
+    Write-Host "DEBUG: No existing PackageReleaseNotes found, inserting GitHub link"
     $propertyGroupPattern = '(\s*<GeneratePackageOnBuild>false</GeneratePackageOnBuild>\s*\n\s*)(</PropertyGroup>)'
-    $replacement = '$1' + "<PackageReleaseNotes><![CDATA[$cleanContent]]></PackageReleaseNotes>" + "`n  " + '$2'
+    $replacement = '$1' + "<PackageReleaseNotes>$nugetContent</PackageReleaseNotes>" + "`n  " + '$2'
     $updatedContent = [regex]::Replace($csprojContent, $propertyGroupPattern, $replacement)
 }
 
@@ -147,10 +107,11 @@ if ($updatedContent -eq $csprojContent) {
 
 # Always verify the content is present (regardless of whether we just wrote it)
 $verifyContent = Get-Content $CsprojPath -Raw
-$verifyPattern = '(?s)<PackageReleaseNotes><!\[CDATA\[(.*?)\]\]></PackageReleaseNotes>'
+$verifyPattern = '(?s)<PackageReleaseNotes>(.*?)</PackageReleaseNotes>'
 if ($verifyContent -match $verifyPattern) {
     $injectedLength = $matches[1].Length
     Write-Host "SUCCESS: Verification successful - PackageReleaseNotes present ($injectedLength chars)"
+    Write-Host "DEBUG: Content: $($matches[1])"
 } else {
     Write-Host "ERROR: Verification failed - PackageReleaseNotes not found in .csproj"
     exit 1

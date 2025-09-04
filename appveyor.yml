@@ -16,6 +16,10 @@ dotnet_csproj:
   assembly_version: '$(appveyor_build_version)'
   file_version: '$(appveyor_build_version)'
   informational_version: '$(appveyor_build_version)'
+before_build:
+- ps: |
+    Write-Host "Injecting changelog into .csproj for version $env:APPVEYOR_BUILD_VERSION"
+    & ".\scripts\inject-changelog.ps1" -Version $env:APPVEYOR_BUILD_VERSION
 build_script:
 - cmd: >-
     dotnet restore src\ClockifyCli.sln
@@ -25,7 +29,7 @@ build_script:
     dotnet test src\ClockifyCli.sln --configuration Release
     
     dotnet pack src\ClockifyCli.sln --configuration Release
-test: off
+test: false
 artifacts:
 - path: src\ClockifyCli\nupkg\ClockifyCli.$(appveyor_build_version).nupkg
   name: ClockifyCli.$(appveyor_build_version).nupkg
@@ -38,7 +42,7 @@ deploy:
 - provider: GitHub
   tag: v$(appveyor_build_version)
   release: v$(appveyor_build_version)
-  description: Release v$(appveyor_build_version)
+  description: $(RELEASE_NOTES)
   auth_token: $(blythmeister_github_key)
   repository: BlythMeister/ClockifyCli
   artifact: ClockifyCli.$(appveyor_build_version).nupkg

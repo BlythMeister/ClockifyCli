@@ -54,20 +54,55 @@ Write-Host "SUCCESS: Found changelog section ($($versionChangelog.Length) chars)
 $lines = $versionChangelog -split "\n"
 $contentLines = $lines | Select-Object -Skip 2 | Where-Object { $_.Trim() -ne "" }  # Skip version header and empty lines
 
-# Remove markdown formatting for NuGet compatibility and join with HTML line break entities
-$processedLines = @()
+# Process content for NuGet (convert to proper HTML on single line)
+$htmlLines = @()
+$inList = $false
+
 foreach ($line in $contentLines) {
-    $processedLine = $line
-    $processedLine = $processedLine -replace '\*\*(.*?)\*\*', '$1'  # Remove **bold**
-    $processedLine = $processedLine -replace '\*(.*?)\*', '$1'      # Remove *italic*
-    $processedLine = $processedLine -replace '`(.*?)`', '$1'        # Remove `code`
-    $processedLine = $processedLine -replace '### ', ''             # Remove ### headers
-    $processedLine = $processedLine -replace '- ', '• '             # Convert - to bullets
-    $processedLines += $processedLine
+    $processedLine = $line.Trim()
+    
+    if ($processedLine -match '^### (.+)$') {
+        # Close any open list
+        if ($inList) { $htmlLines += '</ul>'; $inList = $false }
+        # Add header
+        $htmlLines += "<h3>$($matches[1])</h3>"
+    }
+    elseif ($processedLine -match '^- \*\*(.+?)\*\*: (.+)$') {
+        # Start list if not already started
+        if (-not $inList) { $htmlLines += '<ul>'; $inList = $true }
+        # Bold feature with description
+        $htmlLines += "<li><strong>$($matches[1])</strong>: $($matches[2])</li>"
+    }
+    elseif ($processedLine -match '^- (.+)$') {
+        # Start list if not already started
+        if (-not $inList) { $htmlLines += '<ul>'; $inList = $true }
+        # Regular list item
+        $htmlLines += "<li>$($matches[1])</li>"
+    }
+    elseif ($processedLine -match '^\s+- (.+)$') {
+        # Nested list item (sub-bullet)
+        $htmlLines += "<li style='margin-left:20px'>$($matches[1])</li>"
+    }
+    elseif ($processedLine -ne '' -and -not $processedLine.StartsWith('##')) {
+        # Close any open list
+        if ($inList) { $htmlLines += '</ul>'; $inList = $false }
+        # Regular paragraph
+        if ($processedLine -notmatch '^\[.*\]') {  # Skip version links
+            $htmlLines += "<p>$processedLine</p>"
+        }
+    }
 }
 
-# Join with actual newlines for CDATA section (NuGet formatting)
-$cleanContent = ($processedLines -join "`n").Trim()
+# Close any remaining open list
+if ($inList) { $htmlLines += '</ul>' }
+
+# Join as single line HTML for NuGet
+$cleanContent = ($htmlLines -join ' ').Trim()
+
+# Clean up any remaining markdown in HTML content
+$cleanContent = $cleanContent -replace '\*\*(.*?)\*\*', '<strong>$1</strong>'
+$cleanContent = $cleanContent -replace '\*(.*?)\*', '<em>$1</em>'
+$cleanContent = $cleanContent -replace '`(.*?)`', '<code>$1</code>'
 
 # No XML escaping needed inside CDATA
 
@@ -77,6 +112,8 @@ Write-Host "SUCCESS: Processed changelog content ($($cleanContent.Length) chars)
 $githubContent = ($contentLines -join "`n").Trim()
 $env:RELEASE_NOTES = $githubContent
 Write-Host "SUCCESS: Set RELEASE_NOTES environment variable"
+Write-Host "DEBUG: GitHub content length: $($githubContent.Length) chars"
+Write-Host "DEBUG: First 100 chars of GitHub content: $($githubContent.Substring(0, [Math]::Min(100, $githubContent.Length)))..."
 
 # Update .csproj file with release notes
 if (-not (Test-Path $CsprojPath)) {
@@ -86,9 +123,9 @@ if (-not (Test-Path $CsprojPath)) {
 
 $csprojContent = Get-Content $CsprojPath -Raw
 
-# Insert PackageReleaseNotes before the closing PropertyGroup tag using CDATA
+# Insert PackageReleaseNotes before the closing PropertyGroup tag (single line HTML)
 $propertyGroupPattern = '(\s*<GeneratePackageOnBuild>false</GeneratePackageOnBuild>\s*)(</PropertyGroup>)'
-$replacement = '$1' + "`n    <PackageReleaseNotes><![CDATA[$cleanContent]]></PackageReleaseNotes>" + "`n  " + '$2'
+$replacement = '$1' + "`n    <PackageReleaseNotes>$cleanContent</PackageReleaseNotes>" + "`n  " + '$2'
 $updatedContent = [regex]::Replace($csprojContent, $propertyGroupPattern, $replacement)
 
 if ($updatedContent -eq $csprojContent) {

@@ -108,18 +108,13 @@ $cleanContent = $cleanContent -replace '`(.*?)`', '<code>$1</code>'
 
 Write-Host "SUCCESS: Processed changelog content ($($cleanContent.Length) chars)"
 
-# Set environment variable for GitHub release (same HTML content as NuGet - GitHub renders HTML in markdown)
-$env:RELEASE_NOTES = $cleanContent
+# Set environment variable for GitHub release (simple format like .47 that worked)
+$githubContent = ($contentLines -join "`n").Trim()
+$env:RELEASE_NOTES = $githubContent
 
-# Also set as AppVeyor build variable for deployment
-if ($env:APPVEYOR) {
-    appveyor SetVariable -Name "RELEASE_NOTES" -Value $cleanContent
-    Write-Host "SUCCESS: Set AppVeyor RELEASE_NOTES variable"
-}
-
-Write-Host "SUCCESS: Set RELEASE_NOTES environment variable (HTML format)"
-Write-Host "DEBUG: Release notes length: $($cleanContent.Length) chars"
-Write-Host "DEBUG: Release notes content: $cleanContent"
+Write-Host "SUCCESS: Set RELEASE_NOTES environment variable for GitHub"
+Write-Host "DEBUG: GitHub content length: $($githubContent.Length) chars"
+Write-Host "DEBUG: First 100 chars: $($githubContent.Substring(0, [Math]::Min(100, $githubContent.Length)))..."
 
 # Update .csproj file with release notes
 if (-not (Test-Path $CsprojPath)) {
@@ -129,9 +124,9 @@ if (-not (Test-Path $CsprojPath)) {
 
 $csprojContent = Get-Content $CsprojPath -Raw
 
-# Insert PackageReleaseNotes before the closing PropertyGroup tag (single line HTML)
+# Insert PackageReleaseNotes before the closing PropertyGroup tag using CDATA for NuGet
 $propertyGroupPattern = '(\s*<GeneratePackageOnBuild>false</GeneratePackageOnBuild>\s*)(</PropertyGroup>)'
-$replacement = '$1' + "`n    <PackageReleaseNotes>$cleanContent</PackageReleaseNotes>" + "`n  " + '$2'
+$replacement = '$1' + "`n    <PackageReleaseNotes><![CDATA[$cleanContent]]></PackageReleaseNotes>" + "`n  " + '$2'
 $updatedContent = [regex]::Replace($csprojContent, $propertyGroupPattern, $replacement)
 
 if ($updatedContent -eq $csprojContent) {

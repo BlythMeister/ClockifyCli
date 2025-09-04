@@ -58,11 +58,11 @@ foreach ($line in $contentLines) {
     $processedLines += $processedLine
 }
 
-# Join with HTML line break entities for NuGet XML compatibility
-$cleanContent = ($processedLines -join "&#10;").Trim()
+# Join with MSBuild NewLine property for proper project file formatting
+$cleanContent = ($processedLines -join '$(NewLine)').Trim()
 
-# Escape XML characters for .csproj (except our line break entities)
-$cleanContent = $cleanContent -replace '&(?!#10;)', '&amp;'  # Don't escape our line break entities
+# Escape XML characters for .csproj
+$cleanContent = $cleanContent -replace '&', '&amp;'
 $cleanContent = $cleanContent -replace '<', '&lt;'
 $cleanContent = $cleanContent -replace '>', '&gt;'
 $cleanContent = $cleanContent -replace '"', '&quot;'
@@ -82,9 +82,9 @@ if (-not (Test-Path $CsprojPath)) {
 
 $csprojContent = Get-Content $CsprojPath -Raw
 
-# Insert PackageReleaseNotes before the closing PropertyGroup tag
+# Insert PackageReleaseNotes before the closing PropertyGroup tag (single line with MSBuild NewLine tokens)
 $propertyGroupPattern = '(\s*<GeneratePackageOnBuild>false</GeneratePackageOnBuild>\s*)(</PropertyGroup>)'
-$replacement = "`$1    <PackageReleaseNotes>$cleanContent</PackageReleaseNotes>`n  `$2"
+$replacement = '$1' + "`n    <PackageReleaseNotes>$cleanContent</PackageReleaseNotes>" + "`n  " + '$2'
 $updatedContent = [regex]::Replace($csprojContent, $propertyGroupPattern, $replacement)
 
 if ($updatedContent -eq $csprojContent) {

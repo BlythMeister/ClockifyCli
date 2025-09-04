@@ -753,7 +753,6 @@ public class EditTimerCommandTests
         testConsole.Input.PushTextWithEnter("n"); // Don't change times
         testConsole.Input.PushTextWithEnter("n"); // Don't change description
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select new project (first in alphabetical order)
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to new task
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select new task
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
 

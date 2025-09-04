@@ -241,35 +241,55 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         // Step 2: Edit each selected field
         if (changeProject)
         {
-            var selectedProject = console.Prompt(
-                new SelectionPrompt<ProjectInfo>()
-                    .Title("Select new [green]project[/]:")
-                    .PageSize(15)
-                    .AddChoices(projects.OrderBy(p => p.Name))
-                    .UseConverter(p => Markup.Escape(p.Name)));
-            
-            newProjectId = selectedProject.Id;
-
-            // If project changed, also ask for task within that project
-            var projectTasks = allTasks.Where(t => t.ProjectId == selectedProject.Id)
-                                      .OrderBy(t => t.TaskName)
-                                      .ToList();
-
-            if (projectTasks.Any())
+            // Loop to allow going back from task selection to project selection
+            while (true)
             {
-                var selectedTaskOption = console.Prompt(
-                    new SelectionPrompt<TaskWithProject>()
-                        .Title($"Select new [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
+                var selectedProject = console.Prompt(
+                    new SelectionPrompt<ProjectInfo>()
+                        .Title("Select new [green]project[/]:")
                         .PageSize(15)
-                        .AddChoices(projectTasks)
-                        .UseConverter(t => Markup.Escape(t.TaskName)));
+                        .AddChoices(projects.OrderBy(p => p.Name))
+                        .UseConverter(p => Markup.Escape(p.Name)));
                 
-                newTaskId = selectedTaskOption.TaskId;
-            }
-            else
-            {
-                console.MarkupLine($"[yellow]No tasks found for project '{Markup.Escape(selectedProject.Name)}'. Task will be cleared.[/]");
-                newTaskId = null;
+                newProjectId = selectedProject.Id;
+
+                // If project changed, also ask for task within that project
+                var projectTasks = allTasks.Where(t => t.ProjectId == selectedProject.Id)
+                                          .OrderBy(t => t.TaskName)
+                                          .ToList();
+
+                if (projectTasks.Any())
+                {
+                    // Only add "Back" option if there are multiple projects
+                    var taskChoices = new List<TaskWithProject>(projectTasks);
+                    if (projects.Count > 1)
+                    {
+                        var backOption = new TaskWithProject("__BACK__", "← Back to project selection", selectedProject.Id, selectedProject.Name);
+                        taskChoices.Add(backOption);
+                    }
+
+                    var selectedTaskOrBack = console.Prompt(
+                        new SelectionPrompt<TaskWithProject>()
+                            .Title($"Select new [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
+                            .PageSize(15)
+                            .AddChoices(taskChoices)
+                            .UseConverter(t => t.TaskId == "__BACK__" ? $"[dim]{Markup.Escape(t.TaskName)}[/]" : Markup.Escape(t.TaskName)));
+
+                    // Check if user selected "Back"
+                    if (selectedTaskOrBack.TaskId == "__BACK__")
+                    {
+                        continue; // Go back to project selection
+                    }
+
+                    newTaskId = selectedTaskOrBack.TaskId;
+                    break; // Exit the loop when a task is selected
+                }
+                else
+                {
+                    console.MarkupLine($"[yellow]No tasks found for project '{Markup.Escape(selectedProject.Name)}'. Task will be cleared.[/]");
+                    newTaskId = null;
+                    break; // Exit the loop since there are no tasks to select
+                }
             }
         }
 

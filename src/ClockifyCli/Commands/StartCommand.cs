@@ -76,41 +76,65 @@ public class StartCommand : BaseCommand
             return;
         }
 
-        // Let user select a project
-        var selectedProject = console.Prompt(
-                                            new SelectionPrompt<ProjectInfo>()
-                                                .Title("Select a [green]project[/]:")
-                                                .PageSize(15)
-                                                .AddChoices(projects.OrderBy(p => p.Name))
-                                                .UseConverter(project => Markup.Escape(project.Name)));
-
-        // Now load tasks for the selected project
-        List<TaskInfo> availableTasks = new();
-        await console.Status()
-                     .StartAsync($"Loading tasks for {selectedProject.Name}...", async ctx =>
-                                                                                  {
-                                                                                      ctx.Status($"Getting tasks from {selectedProject.Name}...");
-                                                                                      var projectTasks = await clockifyClient.GetTasks(workspace, selectedProject);
-                                                                                      availableTasks = projectTasks
-                                                                                                      .Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase))
-                                                                                                      .OrderBy(t => t.Name)
-                                                                                                      .ToList();
-                                                                                  });
-
-        if (!availableTasks.Any())
+        ProjectInfo selectedProject;
+        TaskInfo selectedTask;
+        
+        // Loop to allow going back from task selection to project selection
+        while (true)
         {
-            console.MarkupLine($"[yellow]No active tasks found for project '{selectedProject.Name}'![/]");
-            console.MarkupLine("[dim]Add some tasks to this project first using 'clockify-cli add-task-from-jira'.[/]");
-            return;
-        }
+            // Let user select a project
+            selectedProject = console.Prompt(
+                                                new SelectionPrompt<ProjectInfo>()
+                                                    .Title("Select a [green]project[/]:")
+                                                    .PageSize(15)
+                                                    .AddChoices(projects.OrderBy(p => p.Name))
+                                                    .UseConverter(project => Markup.Escape(project.Name)));
 
-        // Let user select a task
-        var selectedTask = console.Prompt(
-                                         new SelectionPrompt<TaskInfo>()
-                                             .Title($"Select a [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
-                                             .PageSize(15)
-                                             .AddChoices(availableTasks)
-                                             .UseConverter(task => Markup.Escape(task.Name)));
+            // Now load tasks for the selected project
+            List<TaskInfo> availableTasks = new();
+            await console.Status()
+                         .StartAsync($"Loading tasks for {selectedProject.Name}...", async ctx =>
+                                                                                      {
+                                                                                          ctx.Status($"Getting tasks from {selectedProject.Name}...");
+                                                                                          var projectTasks = await clockifyClient.GetTasks(workspace, selectedProject);
+                                                                                          availableTasks = projectTasks
+                                                                                                          .Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase))
+                                                                                                          .OrderBy(t => t.Name)
+                                                                                                          .ToList();
+                                                                                      });
+
+            if (!availableTasks.Any())
+            {
+                console.MarkupLine($"[yellow]No active tasks found for project '{selectedProject.Name}'![/]");
+                console.MarkupLine("[dim]Add some tasks to this project first using 'clockify-cli add-task-from-jira'.[/]");
+                return;
+            }
+
+            // Only add "Back" option if there are multiple projects
+            var taskChoices = new List<TaskInfo>(availableTasks);
+            if (projects.Count > 1)
+            {
+                var backOption = new TaskInfo("__BACK__", "← Back to project selection", "Back");
+                taskChoices.Add(backOption);
+            }
+
+            // Let user select a task or go back
+            var selectedTaskOrBack = console.Prompt(
+                                             new SelectionPrompt<TaskInfo>()
+                                                 .Title($"Select a [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
+                                                 .PageSize(15)
+                                                 .AddChoices(taskChoices)
+                                                 .UseConverter(task => task.Id == "__BACK__" ? $"[dim]{Markup.Escape(task.Name)}[/]" : Markup.Escape(task.Name)));
+
+            // Check if user selected "Back"
+            if (selectedTaskOrBack.Id == "__BACK__")
+            {
+                continue; // Go back to project selection
+            }
+
+            selectedTask = selectedTaskOrBack;
+            break; // Exit the loop when a task is selected
+        }
 
         // Create TaskWithProject for compatibility with existing code
         var selectedOption = new TaskWithProject(

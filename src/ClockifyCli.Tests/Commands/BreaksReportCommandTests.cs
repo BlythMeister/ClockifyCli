@@ -119,7 +119,7 @@ public class BreaksReportCommandTests
         Assert.That(result, Is.EqualTo(0));
         
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("Break Time Report"));
+        Assert.That(output, Does.Contain("☕ Breaks Report"));
         Assert.That(output, Does.Contain("Coffee break"));
         // In detailed mode, should show more information like project names, task details etc.
     }
@@ -145,7 +145,7 @@ public class BreaksReportCommandTests
             workspace, 
             user, 
             new DateTime(2025, 8, 21), // 14 days back from 2025-09-04
-            new DateTime(2025, 9, 4)
+            new DateTime(2025, 9, 5)   // clock.Today.AddDays(1)
         ), Times.Once);
     }
 

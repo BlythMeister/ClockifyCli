@@ -153,16 +153,9 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first (only) date option
         // Second prompt: Select time entry (the running entry should be the only option)  
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select the first (only) time entry option
-        // New field selection prompts
-        testConsole.Input.PushTextWithEnter("n"); // Don't edit project
-        testConsole.Input.PushTextWithEnter("n"); // Don't edit task
-        testConsole.Input.PushTextWithEnter("n"); // Don't edit description
-        testConsole.Input.PushTextWithEnter("y"); // Edit start time
-        // Third prompt: Enter new start time (leave blank to keep current)
-        testConsole.Input.PushTextWithEnter(""); // Keep current start time
-        // Fourth prompt: Confirm changes
-        testConsole.Input.PushTextWithEnter("n"); // Don't apply changes (just testing the flow)
-
+        // New menu-based editing system - select "Done" to exit without changes
+        testConsole.Input.PushTextWithEnter("3"); // Select "Done (apply changes and exit)" from menu
+        
         // Act
         var result = await command.ExecuteAsync(context, settings);
 

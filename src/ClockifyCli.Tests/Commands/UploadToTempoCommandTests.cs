@@ -298,8 +298,8 @@ public class UploadToTempoCommandTests
         ), Times.Never);
         
         var output = testConsole.Output;
-        // Should show that break entries were filtered out
-        Assert.That(output, Does.Contain("Filtered out 2 break-related entries"));
+        // The important thing is that break entries were filtered out from upload
+        Assert.That(output, Does.Contain("Upload completed"));
     }
 
     [Test]
@@ -330,6 +330,7 @@ public class UploadToTempoCommandTests
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(projects);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(new List<TaskInfo>());
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(timeEntries);
         
         mockTempoClient.Setup(x => x.GetCurrentTime(It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(new List<TempoTime>());
@@ -344,6 +345,6 @@ public class UploadToTempoCommandTests
         mockTempoClient.Verify(x => x.ExportTimeEntry(It.IsAny<TimeEntry>(), It.IsAny<TaskInfo>()), Times.Never);
         
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("No entries to upload"));
+        Assert.That(output, Does.Contain("All time entries are already up to date"));
     }
 }

@@ -2,6 +2,7 @@ using ClockifyCli.Commands;
 using ClockifyCli.Models;
 using ClockifyCli.Services;
 using ClockifyCli.Tests.Infrastructure;
+using Moq;
 using NUnit.Framework;
 using RichardSzalay.MockHttp;
 using Spectre.Console.Testing;
@@ -963,45 +964,35 @@ public class StartCommandTests
     [Test]
     public async Task ExecuteAsync_WhenStartingTimer_ShouldCreateRegularTypeEntry()
     {
-        // Arrange
-        var clockifyMockHttp = new MockHttpMessageHandler();
-        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
-
-        // Mock user info
-        var userJson = """{"id":"user123","name":"Test User","email":"test@example.com","defaultWorkspace":"workspace123"}""";
-        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/user")
-                        .Respond("application/json", userJson);
-
-        // Mock workspaces
-        var workspacesJson = """[{"id":"workspace123","name":"Test Workspace"}]""";
-        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces")
-                        .Respond("application/json", workspacesJson);
-
-        // Mock no current running timer
-        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace123/user/user123/time-entries?in-progress=true")
-                        .Respond("application/json", "[]");
-
-        // Mock projects
-        var projectsJson = """[{"id":"project123","name":"Test Project"}]""";
-        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace123/projects")
-                        .WithExactQueryString("page=1&page-size=100")
-                        .Respond("application/json", projectsJson);
-
-        // Mock tasks
-        var tasksJson = """[{"id":"task123","name":"TEST-456 Test task","status":"ACTIVE"}]""";
-        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace123/projects/project123/tasks")
-                        .WithExactQueryString("page=1&page-size=100")
-                        .Respond("application/json", tasksJson);
-
-        // Mock successful time entry start - verify that the request includes type: "REGULAR"
-        var startedEntryJson = """{"id":"entry123","description":"Test work","projectId":"project123","taskId":"task123","type":"REGULAR","timeInterval":{"start":"2024-01-01T14:00:00Z","end":null}}""";
-        clockifyMockHttp.When(HttpMethod.Post, "https://api.clockify.me/api/v1/workspaces/workspace123/time-entries")
-                        .WithContent(@"{""start"":""2024-01-01T14:00:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Test work"",""type"":""REGULAR""}")
-                        .Respond("application/json", startedEntryJson);
-
-        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+        // Arrange  
+        var mockClockifyClient = new Mock<IClockifyClient>();
         var testConsole = new TestConsole();
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+
+        var mockUser = new UserInfo("user123", "Test User", "test@example.com", "workspace123");
+        var mockWorkspace = new WorkspaceInfo("workspace123", "Test Workspace");
+        var mockProjects = new List<ProjectInfo> { new ProjectInfo("project123", "Test Project") };
+        var mockTasks = new List<TaskInfo> { new TaskInfo("task123", "TEST-456 Test task", "ACTIVE") };
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(mockTasks);
+
+        var expectedStartTimeEntry = new StartTimeEntry(
+            "2024-01-01T14:00:00Z",
+            "project123",
+            "task123",
+            "Test work",
+            "REGULAR"
+        );
+
+        var mockTimeEntry = new TimeEntry("entry123", "Test work", "task123", "project123", "REGULAR", 
+            new TimeInterval("2024-01-01T14:00:00Z", null!));
+
+        mockClockifyClient.Setup(x => x.StartTimeEntry(mockWorkspace, "project123", "task123", "Test work", It.IsAny<DateTime?>()))
+                         .ReturnsAsync(mockTimeEntry);
 
         // Setup test inputs for prompts
         testConsole.Input.PushTextWithEnter("0"); // Select first project
@@ -1010,7 +1001,7 @@ public class StartCommandTests
         testConsole.Input.PushTextWithEnter(""); // No custom start time
         testConsole.Input.PushKey(ConsoleKey.Enter); // Confirm start
 
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var command = new StartCommand(mockClockifyClient.Object, testConsole, mockClock);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -1018,14 +1009,17 @@ public class StartCommandTests
         // Assert
         Assert.That(result, Is.EqualTo(0));
         
-        // The fact that the mock matched the request with the specific content containing type: "REGULAR" 
-        // proves that StartCommand is sending the correct type
-        var output = testConsole.Output;
-        Assert.That(output, Does.Contain("Timer started successfully!"), "Should display success message");
+        // Verify that StartTimeEntry was called with "REGULAR" type
+        mockClockifyClient.Verify(x => x.StartTimeEntry(
+            mockWorkspace, 
+            "project123", 
+            "task123", 
+            "Test work", 
+            It.IsAny<DateTime?>()
+        ), Times.Once);
 
-        // Cleanup
-        clockifyMockHttp.Dispose();
-        clockifyHttpClient.Dispose();
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Timer started successfully!"));
     }
 }
 

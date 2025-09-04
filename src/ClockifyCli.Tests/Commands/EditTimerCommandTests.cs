@@ -1,6 +1,7 @@
 using ClockifyCli.Commands;
 using ClockifyCli.Models;
 using ClockifyCli.Services;
+using ClockifyCli.Utilities;
 using Moq;
 using NUnit.Framework;
 using Spectre.Console;
@@ -821,4 +822,93 @@ public class EditTimerCommandTests
         mockClockifyClient.Verify(x => x.UpdateTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         mockClockifyClient.Verify(x => x.UpdateRunningTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
+
+    #region Ambiguous Time Tests
+
+    [Test]
+    public void CheckAndConfirmAmbiguousTime_WithAmbiguousTime_ShouldDetectAndConfirm()
+    {
+        // Test that the EditTimerCommand now has the CheckAndConfirmAmbiguousTime method
+        // and that it properly detects ambiguous times like "4:37"
+        
+        var isAmbiguous = IntelligentTimeParser.IsAmbiguousTime("4:37");
+        Assert.That(isAmbiguous, Is.True, "4:37 should be considered ambiguous");
+        
+        // Test the specific scenario: start at 14:58, end at 4:37
+        var startTime = new DateTime(2024, 1, 15, 14, 58, 0);
+        var success = IntelligentTimeParser.TryParseEndTime("4:37", out var result, startTime);
+        
+        Assert.That(success, Is.True, "Should successfully parse 4:37");
+        Assert.That(result.Hours, Is.EqualTo(16), "Should interpret 4:37 as 4:37 PM (16:37) given the context of 14:58 start time");
+        Assert.That(result.Minutes, Is.EqualTo(37), "Minutes should be preserved");
+        
+        // Verify that the interpretation options are available
+        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions("4:37", result);
+        Assert.That(amVersion.Hours, Is.EqualTo(4), "AM version should be 4:37 AM");
+        Assert.That(pmVersion.Hours, Is.EqualTo(16), "PM version should be 4:37 PM (16:37)");
+        Assert.That(display24Hour, Is.EqualTo("16:37"), "Should display 24-hour format correctly");
+        Assert.That(displayAmPm, Is.EqualTo("4:37 PM"), "Should display 12-hour format correctly");
+    }
+
+    [Test]
+    public void EditTimerCommand_HasCheckAndConfirmAmbiguousTimeMethod()
+    {
+        // Verify that EditTimerCommand has the CheckAndConfirmAmbiguousTime static method
+        var methodInfo = typeof(EditTimerCommand).GetMethod("CheckAndConfirmAmbiguousTime", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        
+        Assert.That(methodInfo, Is.Not.Null, "EditTimerCommand should have CheckAndConfirmAmbiguousTime static method");
+        Assert.That(methodInfo.ReturnType, Is.EqualTo(typeof(string)), "Method should return string");
+        
+        var parameters = methodInfo.GetParameters();
+        Assert.That(parameters.Length, Is.EqualTo(3), "Method should have 3 parameters");
+        Assert.That(parameters[0].ParameterType.Name, Does.Contain("IAnsiConsole"), "First parameter should be IAnsiConsole");
+        Assert.That(parameters[1].ParameterType, Is.EqualTo(typeof(string)), "Second parameter should be string");
+        Assert.That(parameters[2].ParameterType, Is.EqualTo(typeof(string)), "Third parameter should be string");
+    }
+
+    [TestCase("4:37")]
+    [TestCase("9:15")]
+    [TestCase("1:30")]
+    [TestCase("8:45")]
+    public void EditTimerCommand_AmbiguousTimeDetection_ShouldIdentifyAmbiguousTimes(string timeInput)
+    {
+        // Test that various ambiguous time inputs are correctly identified
+        var isAmbiguous = IntelligentTimeParser.IsAmbiguousTime(timeInput);
+        Assert.That(isAmbiguous, Is.True, $"{timeInput} should be considered ambiguous");
+    }
+
+    [TestCase("10:30")]
+    [TestCase("14:45")]
+    [TestCase("23:59")]
+    [TestCase("00:15")]
+    [TestCase("12:00")]
+    public void EditTimerCommand_NonAmbiguousTimeDetection_ShouldNotIdentifyAsAmbiguous(string timeInput)
+    {
+        // Test that non-ambiguous time inputs are correctly identified
+        var isAmbiguous = IntelligentTimeParser.IsAmbiguousTime(timeInput);
+        Assert.That(isAmbiguous, Is.False, $"{timeInput} should not be considered ambiguous");
+    }
+
+    [Test]
+    public void EditTimerCommand_AmbiguousTimeOptions_ShouldProvideCorrectDisplayFormats()
+    {
+        // Test that ambiguous time options are formatted correctly for user display
+        var timeInput = "3:45";
+        var success = IntelligentTimeParser.TryParseStartTime(timeInput, out var parsedTime, DateTime.Today.AddHours(14));
+        Assert.That(success, Is.True, "Should parse successfully");
+        
+        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
+        
+        Assert.That(amVersion.Hours, Is.EqualTo(3), "AM version should be 3:45 AM");
+        Assert.That(amVersion.Minutes, Is.EqualTo(45), "AM version minutes should be preserved");
+        
+        Assert.That(pmVersion.Hours, Is.EqualTo(15), "PM version should be 3:45 PM (15:45)");
+        Assert.That(pmVersion.Minutes, Is.EqualTo(45), "PM version minutes should be preserved");
+        
+        Assert.That(display24Hour, Is.EqualTo("15:45"), "24-hour display should be correct");
+        Assert.That(displayAmPm, Is.EqualTo("3:45 PM"), "12-hour display should be correct");
+    }
+
+    #endregion
 }

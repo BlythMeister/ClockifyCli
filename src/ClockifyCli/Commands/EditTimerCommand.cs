@@ -386,6 +386,9 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
             if (!string.IsNullOrWhiteSpace(newStartTimeStr))
             {
+                // Check if start time is ambiguous and confirm with user
+                newStartTimeStr = CheckAndConfirmAmbiguousTime(console, newStartTimeStr, "start time");
+                
                 if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, newStartTime))
                 {
                     var proposedStartTime = newStartTime.Date.Add(startTimeSpan);
@@ -416,6 +419,9 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
                 if (!string.IsNullOrWhiteSpace(newEndTimeStr))
                 {
+                    // Check if end time is ambiguous and confirm with user
+                    newEndTimeStr = CheckAndConfirmAmbiguousTime(console, newEndTimeStr, "end time");
+                    
                     if (IntelligentTimeParser.TryParseEndTime(newEndTimeStr, out var endTimeSpan, newStartTime))
                     {
                         var proposedEndTime = newStartTime.Date.Add(endTimeSpan);
@@ -594,5 +600,46 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         {
             console.MarkupLine("[yellow]Changes cancelled.[/]");
         }
+    }
+
+    private static string CheckAndConfirmAmbiguousTime(IAnsiConsole console, string timeInput, string timeType)
+    {
+        // Check if the input is ambiguous
+        if (IntelligentTimeParser.IsAmbiguousTime(timeInput))
+        {
+            // Parse the time to get current interpretation
+            TimeSpan parsedTime;
+            if (IntelligentTimeParser.TryParseTime(timeInput, out parsedTime))
+            {
+                var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
+
+                console.MarkupLine($"[yellow]You entered:[/] {timeInput} for {timeType}");
+                console.MarkupLine($"[cyan]I interpreted this as:[/] {display24Hour} ({displayAmPm})");
+
+                var isCorrect = console.Confirm("Is this correct?", true);
+                
+                if (isCorrect)
+                {
+                    return timeInput; // Return original input since it was interpreted correctly
+                }
+
+                // Ask user to clarify AM or PM
+                var inputHour = parsedTime.Hours > 12 ? parsedTime.Hours - 12 : parsedTime.Hours;
+                if (inputHour == 0) inputHour = 12;
+
+                var amChoice = $"{inputHour}:{parsedTime.Minutes:D2} AM";
+                var pmChoice = $"{inputHour}:{parsedTime.Minutes:D2} PM";
+
+                var amPmChoice = console.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[yellow]Please clarify - did you mean:[/]")
+                        .AddChoices(amChoice, pmChoice));
+
+                return amPmChoice;
+            }
+        }
+
+        // Not ambiguous or couldn't parse, return as-is
+        return timeInput;
     }
 }

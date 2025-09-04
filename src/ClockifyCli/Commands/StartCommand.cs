@@ -188,6 +188,9 @@ public class StartCommand : BaseCommand
                         return ValidationResult.Error("Please enter a valid time format (e.g., 9:30, 2:30 PM, 2:30p, 14:30)");
                     }));
 
+            // Check if time is ambiguous and confirm with user
+            timeInput = CheckAndConfirmAmbiguousTime(console, timeInput, "start time");
+
             if (IntelligentTimeParser.TryParseStartTime(timeInput, out var parsedTime, clock.Now))
             {
                 startTime = clock.Today.Add(parsedTime);
@@ -267,5 +270,46 @@ public class StartCommand : BaseCommand
                 console.MarkupLine("[dim]Your original timer is still running.[/]");
             }
         }
+    }
+
+    private static string CheckAndConfirmAmbiguousTime(IAnsiConsole console, string timeInput, string timeType)
+    {
+        // Check if the input is ambiguous
+        if (IntelligentTimeParser.IsAmbiguousTime(timeInput))
+        {
+            // Parse the time to get current interpretation
+            TimeSpan parsedTime;
+            if (IntelligentTimeParser.TryParseTime(timeInput, out parsedTime))
+            {
+                var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
+
+                console.MarkupLine($"[yellow]You entered:[/] {timeInput} for {timeType}");
+                console.MarkupLine($"[cyan]I interpreted this as:[/] {display24Hour} ({displayAmPm})");
+
+                var isCorrect = console.Confirm("Is this correct?", true);
+                
+                if (isCorrect)
+                {
+                    return timeInput; // Return original input since it was interpreted correctly
+                }
+
+                // Ask user to clarify AM or PM
+                var inputHour = parsedTime.Hours > 12 ? parsedTime.Hours - 12 : parsedTime.Hours;
+                if (inputHour == 0) inputHour = 12;
+
+                var amChoice = $"{inputHour}:{parsedTime.Minutes:D2} AM";
+                var pmChoice = $"{inputHour}:{parsedTime.Minutes:D2} PM";
+
+                var amPmChoice = console.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[yellow]Please clarify - did you mean:[/]")
+                        .AddChoices(amChoice, pmChoice));
+
+                return amPmChoice;
+            }
+        }
+
+        // Not ambiguous or couldn't parse, return as-is
+        return timeInput;
     }
 }

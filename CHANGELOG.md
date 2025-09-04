@@ -5,6 +5,27 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8] - 2025-09-04
+
+### Improvements
+
+- **Comprehensive Ambiguous Time Testing**: Enhanced test coverage for intelligent time parsing and user prompting
+  - Added comprehensive test coverage for all three time input commands: AddManualTimerCommand, EditTimerCommand, and StartCommand
+  - All commands now consistently include ambiguous time detection and user confirmation prompting
+  - Verified CheckAndConfirmAmbiguousTime method implementation across all time input scenarios
+  - Added edge case testing for time interpretation in various contexts (morning, afternoon, work hours)
+  - Consolidated and cleaned up duplicate test files for better maintainability
+  - Ensured all 403 tests pass with robust coverage of intelligent time parsing functionality
+  - Enhanced test scenarios covering both ambiguous ("4:37", "9:15") and non-ambiguous ("14:30", "23:59") time inputs
+
+### Technical
+
+- **Test Architecture Improvements**: Merged duplicate test files and organized ambiguous time tests into logical sections
+  - Removed redundant EditTimerCommandAmbiguityTests.cs file and integrated tests into main test files
+  - Added consistent reflection tests to verify CheckAndConfirmAmbiguousTime method existence across all commands
+  - Enhanced test assertions to match actual IntelligentTimeParser behavior and context-aware time interpretation
+  - All time input commands now have identical testing patterns for consistent quality assurance
+
 ## [1.7] - 2025-09-04
 
 ### New Features

@@ -216,31 +216,86 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         console.Write(table);
         console.WriteLine();
 
-        // Ask user what they want to edit with simple Y/N questions
-        var changeProject = console.Confirm("Do you want to [green]change the project[/]?", false);
-        var changeTimes = console.Confirm("Do you want to [green]change the times[/]?", false);
-        var changeDescription = console.Confirm("Do you want to [green]change the description[/]?", false);
-
-        if (!changeProject && !changeTimes && !changeDescription)
-        {
-            console.MarkupLine("[yellow]No changes selected. Operation cancelled.[/]");
-            return;
-        }
-
-        console.WriteLine();
-        console.MarkupLine("[bold]Editing Selected Fields[/]");
-        console.WriteLine();
-
         // Initialize variables with current values
         var newStartTime = currentStartTime;
         DateTime? newEndTime = isRunning ? null : selectedEntry.TimeInterval.EndDate.ToLocalTime();
         var newDescription = selectedEntry.Description;
         var newProjectId = selectedEntry.ProjectId;
         var newTaskId = selectedEntry.TaskId;
+        var hasChanges = false;
 
-        // Step 2: Edit each selected field
-        if (changeProject)
+        // Menu-based editing loop
+        while (true)
         {
+            console.WriteLine();
+            var editOption = console.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("What would you like to edit?")
+                    .PageSize(10)
+                    .AddChoices(new[]
+                    {
+                        "Change project/task",
+                        "Change times",
+                        "Change description",
+                        "Done (apply changes and exit)"
+                    })
+                    .UseConverter(choice => choice switch
+                    {
+                        "Done (apply changes and exit)" => hasChanges ? "[green]Done (apply changes and exit)[/]" : "[dim]Done (no changes to apply)[/]",
+                        _ => choice
+                    }));
+
+            switch (editOption)
+            {
+                case "Change project/task":
+                    await EditProjectAndTask();
+                    break;
+
+                case "Change times":
+                    EditTimes();
+                    break;
+
+                case "Change description":
+                    EditDescription();
+                    break;
+
+                case "Done (apply changes and exit)":
+                    goto ExitEditLoop;
+
+                default:
+                    console.MarkupLine("[red]Invalid option selected.[/]");
+                    break;
+            }
+        }
+
+        ExitEditLoop:
+
+        if (!hasChanges)
+        {
+            console.MarkupLine("[yellow]No changes made. Operation cancelled.[/]");
+            return;
+        }
+
+        // Local method to edit project and task
+        async Task EditProjectAndTask()
+        {
+            console.WriteLine();
+            console.MarkupLine("[bold]Selecting New Project and Task[/]");
+            console.WriteLine();
+
+            // Get all projects for the workspace
+            await console.Status()
+                         .StartAsync("Loading projects...", async ctx =>
+                         {
+                             projects = await clockifyClient.GetProjects(workspace);
+                         });
+
+            if (projects.Count == 0)
+            {
+                console.MarkupLine("[red]No projects found in this workspace.[/]");
+                return;
+            }
+
             // Loop to allow going back from task selection to project selection
             while (true)
             {
@@ -251,7 +306,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                         .AddChoices(projects.OrderBy(p => p.Name))
                         .UseConverter(p => Markup.Escape(p.Name)));
                 
-                newProjectId = selectedProject.Id;
+                var tempNewProjectId = selectedProject.Id;
 
                 // If project changed, also ask for task within that project
                 var projectTasks = allTasks.Where(t => t.ProjectId == selectedProject.Id)
@@ -281,83 +336,157 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                         continue; // Go back to project selection
                     }
 
-                    newTaskId = selectedTaskOrBack.TaskId;
+                    // Check if this is actually a change
+                    if (newProjectId != tempNewProjectId || newTaskId != selectedTaskOrBack.TaskId)
+                    {
+                        newProjectId = tempNewProjectId;
+                        newTaskId = selectedTaskOrBack.TaskId;
+                        hasChanges = true;
+                        console.MarkupLine($"[green]✓[/] Project/Task will be changed to: [cyan]{selectedProject.Name}[/] - [yellow]{selectedTaskOrBack.TaskName}[/]");
+                    }
+                    else
+                    {
+                        console.MarkupLine("[dim]Project/Task unchanged (same as current).[/]");
+                    }
                     break; // Exit the loop when a task is selected
                 }
                 else
                 {
                     console.MarkupLine($"[yellow]No tasks found for project '{Markup.Escape(selectedProject.Name)}'. Task will be cleared.[/]");
-                    newTaskId = null;
+                    // Check if this is actually a change
+                    if (newProjectId != tempNewProjectId || newTaskId != null)
+                    {
+                        newProjectId = tempNewProjectId;
+                        newTaskId = null;
+                        hasChanges = true;
+                        console.MarkupLine($"[green]✓[/] Project will be changed to: [cyan]{selectedProject.Name}[/] (no task)");
+                    }
+                    else
+                    {
+                        console.MarkupLine("[dim]Project unchanged (same as current).[/]");
+                    }
                     break; // Exit the loop since there are no tasks to select
                 }
             }
         }
 
-        if (changeTimes)
+        // Local method to edit times
+        void EditTimes()
         {
+            console.WriteLine();
+            console.MarkupLine("[bold]Editing Times[/]");
+            console.WriteLine();
+
+            var originalStartTime = newStartTime;
+            var originalEndTime = newEndTime;
+
             var newStartTimeStr = console.Prompt(
-                new TextPrompt<string>($"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentStartTime.ToString("HH:mm"))}):")
+                new TextPrompt<string>($"Enter new [green]start time[/] (HH:mm format, or leave blank to keep {Markup.Escape(newStartTime.ToString("HH:mm"))}):")
                     .AllowEmpty());
 
             if (!string.IsNullOrWhiteSpace(newStartTimeStr))
             {
                 if (TimeSpan.TryParseExact(newStartTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var startTimeSpan))
                 {
-                    newStartTime = currentStartTime.Date.Add(startTimeSpan);
+                    newStartTime = newStartTime.Date.Add(startTimeSpan);
                 }
                 else
                 {
                     console.MarkupLine("[red]Invalid time format. Keeping original start time.[/]");
+                    return;
                 }
             }
-        }
 
-        if (changeTimes && !isRunning)
-        {
-            var currentEndTime = selectedEntry.TimeInterval.EndDate.ToLocalTime();
-            var newEndTimeStr = console.Prompt(
-                new TextPrompt<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(currentEndTime.ToString("HH:mm"))}):")
-                    .AllowEmpty());
-
-            if (!string.IsNullOrWhiteSpace(newEndTimeStr))
+            if (!isRunning)
             {
-                if (TimeSpan.TryParseExact(newEndTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var endTimeSpan))
-                {
-                    newEndTime = newStartTime.Date.Add(endTimeSpan);
+                var newEndTimeStr = console.Prompt(
+                    new TextPrompt<string>($"Enter new [green]end time[/] (HH:mm format, or leave blank to keep {Markup.Escape(newEndTime!.Value.ToString("HH:mm"))}):")
+                        .AllowEmpty());
 
-                    // Handle case where end time is next day
-                    if (newEndTime <= newStartTime)
+                if (!string.IsNullOrWhiteSpace(newEndTimeStr))
+                {
+                    if (TimeSpan.TryParseExact(newEndTimeStr, @"hh\:mm", CultureInfo.InvariantCulture, out var endTimeSpan))
                     {
-                        newEndTime = newEndTime.Value.AddDays(1);
+                        newEndTime = newStartTime.Date.Add(endTimeSpan);
+
+                        // Handle case where end time is next day
+                        if (newEndTime <= newStartTime)
+                        {
+                            newEndTime = newEndTime.Value.AddDays(1);
+                        }
                     }
+                    else
+                    {
+                        console.MarkupLine("[red]Invalid time format. Keeping original end time.[/]");
+                        return;
+                    }
+                }
+
+                // Validate times for completed entries
+                if (newEndTime <= newStartTime)
+                {
+                    console.MarkupLine("[red]End time must be after start time. No changes applied.[/]");
+                    return;
+                }
+            }
+
+            // Check if times actually changed
+            if (originalStartTime != newStartTime || originalEndTime != newEndTime)
+            {
+                hasChanges = true;
+                if (isRunning)
+                {
+                    console.MarkupLine($"[green]✓[/] Start time will be changed to: [cyan]{newStartTime:HH:mm}[/]");
                 }
                 else
                 {
-                    console.MarkupLine("[red]Invalid time format. Keeping original end time.[/]");
+                    console.MarkupLine($"[green]✓[/] Times will be changed to: [cyan]{newStartTime:HH:mm}[/] - [cyan]{newEndTime!.Value:HH:mm}[/]");
                 }
             }
-
-            // Validate times for completed entries
-            if (newEndTime <= newStartTime)
+            else
             {
-                console.MarkupLine("[red]End time must be after start time. Operation cancelled.[/]");
-                return;
+                console.MarkupLine("[dim]Times unchanged (same as current).[/]");
             }
         }
 
-        if (changeDescription)
+        // Local method to edit description
+        void EditDescription()
         {
+            console.WriteLine();
+            console.MarkupLine("[bold]Editing Description[/]");
+            console.WriteLine();
+
+            var originalDescription = newDescription;
+
             newDescription = console.Prompt(
                 new TextPrompt<string>("Enter new [green]description[/] (leave blank to keep current, or enter [red]-[/] to clear):")
                     .AllowEmpty());
 
             if (string.IsNullOrWhiteSpace(newDescription))
             {
-                newDescription = selectedEntry.Description;
+                newDescription = originalDescription;
             }
             else if (newDescription.Trim() == "-")
             {
                 newDescription = "";
+            }
+
+            // Check if description actually changed
+            if (originalDescription != newDescription)
+            {
+                hasChanges = true;
+                if (string.IsNullOrWhiteSpace(newDescription))
+                {
+                    console.MarkupLine("[green]✓[/] Description will be cleared");
+                }
+                else
+                {
+                    console.MarkupLine($"[green]✓[/] Description will be changed to: [cyan]{Markup.Escape(newDescription)}[/]");
+                }
+            }
+            else
+            {
+                console.MarkupLine("[dim]Description unchanged (same as current).[/]");
             }
         }
 

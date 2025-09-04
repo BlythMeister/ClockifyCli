@@ -608,11 +608,13 @@ public class EditTimerCommandTests
         // Simulate user input
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select entry
-        testConsole.Input.PushTextWithEnter("y"); // Change project
-        testConsole.Input.PushTextWithEnter("n"); // Don't change times
-        testConsole.Input.PushTextWithEnter("n"); // Don't change description
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Change project/task" (first menu option)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select new project (first in alphabetical order)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select task in new project
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
 
         // Act
@@ -802,12 +804,13 @@ public class EditTimerCommandTests
                          .ReturnsAsync(new List<TimeEntry> { timeEntry });
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
 
-        // Simulate user input - select no changes
+        // Simulate user input - select no changes (go directly to Done)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select entry
-        testConsole.Input.PushTextWithEnter("n"); // Don't change project
-        testConsole.Input.PushTextWithEnter("n"); // Don't change times
-        testConsole.Input.PushTextWithEnter("n"); // Don't change description
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
 
         // Act
         var result = await command.ExecuteAsync(context, settings);
@@ -816,7 +819,7 @@ public class EditTimerCommandTests
         Assert.That(result, Is.EqualTo(0));
         
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("No changes selected. Operation cancelled."));
+        Assert.That(output, Does.Contain("No changes made. Operation cancelled."));
         
         // Verify no update calls were made
         mockClockifyClient.Verify(x => x.UpdateTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);

@@ -843,11 +843,11 @@ public class EditTimerCommandTests
         Assert.That(result.Minutes, Is.EqualTo(37), "Minutes should be preserved");
         
         // Verify that the interpretation options are available
-        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions("4:37", result);
+        var (amVersion, pmVersion, displayAm, displayPm) = IntelligentTimeParser.GetAmbiguousTimeOptions("4:37", result);
         Assert.That(amVersion.Hours, Is.EqualTo(4), "AM version should be 4:37 AM");
         Assert.That(pmVersion.Hours, Is.EqualTo(16), "PM version should be 4:37 PM (16:37)");
-        Assert.That(display24Hour, Is.EqualTo("16:37"), "Should display 24-hour format correctly");
-        Assert.That(displayAmPm, Is.EqualTo("4:37 PM"), "Should display 12-hour format correctly");
+        Assert.That(displayAm, Is.EqualTo("4:37 AM"), "Should display AM option correctly");
+        Assert.That(displayPm, Is.EqualTo("4:37 PM"), "Should display PM option correctly");
     }
 
     [Test]
@@ -898,7 +898,7 @@ public class EditTimerCommandTests
         var success = IntelligentTimeParser.TryParseStartTime(timeInput, out var parsedTime, DateTime.Today.AddHours(14));
         Assert.That(success, Is.True, "Should parse successfully");
         
-        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
+        var (amVersion, pmVersion, displayAm, displayPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
         
         Assert.That(amVersion.Hours, Is.EqualTo(3), "AM version should be 3:45 AM");
         Assert.That(amVersion.Minutes, Is.EqualTo(45), "AM version minutes should be preserved");
@@ -906,8 +906,8 @@ public class EditTimerCommandTests
         Assert.That(pmVersion.Hours, Is.EqualTo(15), "PM version should be 3:45 PM (15:45)");
         Assert.That(pmVersion.Minutes, Is.EqualTo(45), "PM version minutes should be preserved");
         
-        Assert.That(display24Hour, Is.EqualTo("03:45"), "24-hour display should be correct");
-        Assert.That(displayAmPm, Is.EqualTo("3:45 AM"), "12-hour display should be correct");
+        Assert.That(displayAm, Is.EqualTo("3:45 AM"), "AM display should be correct");
+        Assert.That(displayPm, Is.EqualTo("3:45 PM"), "PM display should be correct");
     }
 
     #endregion

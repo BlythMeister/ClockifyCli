@@ -1122,7 +1122,7 @@ public class StartCommandTests
         var success = IntelligentTimeParser.TryParseStartTime(timeInput, out var parsedTime, DateTime.Today.AddHours(16)); // 4 PM context
         Assert.That(success, Is.True, "Should parse successfully");
         
-        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
+        var (amVersion, pmVersion, displayAm, displayPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
         
         Assert.That(amVersion.Hours, Is.EqualTo(7), "AM version should be 7:45 AM");
         Assert.That(amVersion.Minutes, Is.EqualTo(45), "AM version minutes should be preserved");
@@ -1130,18 +1130,9 @@ public class StartCommandTests
         Assert.That(pmVersion.Hours, Is.EqualTo(19), "PM version should be 7:45 PM (19:45)");
         Assert.That(pmVersion.Minutes, Is.EqualTo(45), "PM version minutes should be preserved");
         
-        // The display formats are based on the interpretedTime (parsedTime)
-        // In 4 PM context, 7:45 could be interpreted as AM (next day) - check what parser actually returns
-        if (parsedTime.Hours == 7)
-        {
-            Assert.That(display24Hour, Is.EqualTo("07:45"), "24-hour display should show AM interpretation");
-            Assert.That(displayAmPm, Is.EqualTo("7:45 AM"), "12-hour display should show AM interpretation");
-        }
-        else
-        {
-            Assert.That(display24Hour, Is.EqualTo("19:45"), "24-hour display should show PM interpretation");
-            Assert.That(displayAmPm, Is.EqualTo("7:45 PM"), "12-hour display should show PM interpretation");
-        }
+        // The display formats should show both AM and PM options for user choice
+        Assert.That(displayAm, Is.EqualTo("7:45 AM"), "AM display should show 7:45 AM");
+        Assert.That(displayPm, Is.EqualTo("7:45 PM"), "PM display should show 7:45 PM");
     }
 
     [Test]

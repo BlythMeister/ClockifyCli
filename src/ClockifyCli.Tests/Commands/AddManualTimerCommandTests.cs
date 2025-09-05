@@ -316,7 +316,7 @@ public class AddManualTimerCommandTests
         var success = IntelligentTimeParser.TryParseStartTime(timeInput, out var parsedTime, DateTime.Today.AddHours(10));
         Assert.That(success, Is.True, "Should parse successfully");
         
-        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
+        var (amVersion, pmVersion, displayAm, displayPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
         
         Assert.That(amVersion.Hours, Is.EqualTo(5), "AM version should be 5:20 AM");
         Assert.That(amVersion.Minutes, Is.EqualTo(20), "AM version minutes should be preserved");
@@ -324,10 +324,9 @@ public class AddManualTimerCommandTests
         Assert.That(pmVersion.Hours, Is.EqualTo(17), "PM version should be 5:20 PM (17:20)");
         Assert.That(pmVersion.Minutes, Is.EqualTo(20), "PM version minutes should be preserved");
         
-        // The display formats are based on the interpretedTime (parsedTime)
-        // In morning context (10 AM), 5:20 should be interpreted as 05:20 (5:20 AM - more recent past)
-        Assert.That(display24Hour, Is.EqualTo("05:20"), "24-hour display should show the interpreted time");
-        Assert.That(displayAmPm, Is.EqualTo("5:20 AM"), "12-hour display should show the interpreted time");
+        // The display formats should show both AM and PM options for user choice
+        Assert.That(displayAm, Is.EqualTo("5:20 AM"), "AM display should show 5:20 AM");
+        Assert.That(displayPm, Is.EqualTo("5:20 PM"), "PM display should show 5:20 PM");
     }
 
     #endregion

@@ -325,11 +325,11 @@ public class AddManualTimerCommand : BaseCommand
             return input; // If we can't parse it, just return the original
         }
 
-        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, interpretedTime);
+        var (amVersion, pmVersion, displayAm, displayPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, interpretedTime);
 
         console.MarkupLine($"[yellow]The time '{input}' is ambiguous. Please clarify:[/]");
         
-        var choices = new[] { display24Hour, displayAmPm };
+        var choices = new[] { displayAm, displayPm };
         var choice = console.Prompt(
             new SelectionPrompt<string>()
                 .Title($"Which {contextInfo} did you mean?")
@@ -337,22 +337,13 @@ public class AddManualTimerCommand : BaseCommand
                 .AddChoices(choices));
 
         // Return the original time format that corresponds to the user's choice
-        if (choice == displayAmPm)
+        if (choice == displayAm)
         {
-            // User chose AM/PM format - determine which version they want
-            if (displayAmPm.Contains("AM"))
-            {
-                return $"{amVersion.Hours:D2}:{amVersion.Minutes:D2}";
-            }
-            else
-            {
-                return $"{pmVersion.Hours:D2}:{pmVersion.Minutes:D2}";
-            }
+            return $"{amVersion.Hours:D2}:{amVersion.Minutes:D2}";
         }
         else
         {
-            // User chose 24-hour format - use the originally interpreted time
-            return $"{interpretedTime.Hours:D2}:{interpretedTime.Minutes:D2}";
+            return $"{pmVersion.Hours:D2}:{pmVersion.Minutes:D2}";
         }
     }
 }

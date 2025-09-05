@@ -236,7 +236,7 @@ public static class IntelligentTimeParser
     /// <summary>
     /// Gets both AM and PM versions of an ambiguous time for user selection.
     /// </summary>
-    public static (TimeSpan amVersion, TimeSpan pmVersion, string display24Hour, string displayAmPm) GetAmbiguousTimeOptions(string input, TimeSpan interpretedTime)
+    public static (TimeSpan amVersion, TimeSpan pmVersion, string displayAm, string displayPm) GetAmbiguousTimeOptions(string input, TimeSpan interpretedTime)
     {
         var simpleMatch = SimpleTimeRegex.Match(input.Trim());
         if (!simpleMatch.Success)
@@ -258,13 +258,11 @@ public static class IntelligentTimeParser
         var pmHours = hours == 12 ? 12 : hours + 12;
         var pmVersion = new TimeSpan(pmHours, minutes, seconds);
 
-        // Format displays
-        var display24Hour = $"{interpretedTime.Hours:D2}:{interpretedTime.Minutes:D2}";
-        var displayAmPm = interpretedTime.Hours >= 12 
-            ? $"{(interpretedTime.Hours > 12 ? interpretedTime.Hours - 12 : interpretedTime.Hours)}:{interpretedTime.Minutes:D2} PM"
-            : $"{(interpretedTime.Hours == 0 ? 12 : interpretedTime.Hours)}:{interpretedTime.Minutes:D2} AM";
+        // Format displays for AM and PM options
+        var displayAm = $"{(amVersion.Hours == 0 ? 12 : amVersion.Hours)}:{amVersion.Minutes:D2} AM";
+        var displayPm = $"{(pmVersion.Hours > 12 ? pmVersion.Hours - 12 : pmVersion.Hours)}:{pmVersion.Minutes:D2} PM";
 
-        return (amVersion, pmVersion, display24Hour, displayAmPm);
+        return (amVersion, pmVersion, displayAm, displayPm);
     }
 
     #region Private helper methods

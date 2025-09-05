@@ -259,13 +259,13 @@ public class IntelligentTimeParserTests
     {
         var interpretedTime = new TimeSpan(16, 30, 0); // 4:30 PM
         
-        var (amVersion, pmVersion, display24Hour, displayAmPm) = 
+        var (amVersion, pmVersion, displayAm, displayPm) = 
             IntelligentTimeParser.GetAmbiguousTimeOptions("4:30", interpretedTime);
         
         Assert.That(amVersion.Hours, Is.EqualTo(4));  // 4:30 AM
         Assert.That(pmVersion.Hours, Is.EqualTo(16)); // 4:30 PM
-        Assert.That(display24Hour, Is.EqualTo("16:30"));
-        Assert.That(displayAmPm, Is.EqualTo("4:30 PM"));
+        Assert.That(displayAm, Is.EqualTo("4:30 AM"));
+        Assert.That(displayPm, Is.EqualTo("4:30 PM"));
     }
 
     #endregion

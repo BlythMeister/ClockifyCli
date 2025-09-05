@@ -627,11 +627,11 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             return input; // If we can't parse it, just return the original
         }
 
-        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, interpretedTime);
+        var (amVersion, pmVersion, displayAm, displayPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, interpretedTime);
 
         console.MarkupLine($"[yellow]The time '{input}' is ambiguous. Please clarify:[/]");
         
-        var choices = new[] { display24Hour, displayAmPm };
+        var choices = new[] { displayAm, displayPm };
         var choice = console.Prompt(
             new SelectionPrompt<string>()
                 .Title($"Which {contextInfo} did you mean?")
@@ -639,7 +639,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                 .AddChoices(choices));
 
         // Return the original time format that corresponds to the user's choice
-        if (choice == display24Hour)
+        if (choice == displayAm)
         {
             return $"{amVersion.Hours:D2}:{amVersion.Minutes:D2}";
         }

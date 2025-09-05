@@ -232,44 +232,6 @@ public class IntelligentTimeParserTests
 
     #endregion
 
-    #region Rule 8: Ambiguous time detection
-    
-    [TestCase("9:30")]     // Ambiguous - could be AM or PM
-    [TestCase("1:15")]     // Ambiguous - could be AM or PM
-    [TestCase("8:45")]     // Ambiguous - could be AM or PM
-    public void IsAmbiguousTime_AmbiguousTimes_ReturnsTrue(string input)
-    {
-        Assert.That(IntelligentTimeParser.IsAmbiguousTime(input), Is.True);
-    }
-
-    [TestCase("14:30")]    // Not ambiguous - clearly 24-hour format
-    [TestCase("2:30 PM")]  // Not ambiguous - has AM/PM marker
-    [TestCase("9:15 AM")]  // Not ambiguous - has AM/PM marker
-    [TestCase("23:59")]    // Not ambiguous - clearly 24-hour format
-    [TestCase("12:00")]    // Not ambiguous - practical usage treats as clear
-    [TestCase("10:30")]    // Not ambiguous - typically clear context
-    [TestCase("00:15")]    // Not ambiguous - clearly 24-hour format
-    public void IsAmbiguousTime_UnambiguousTimes_ReturnsFalse(string input)
-    {
-        Assert.That(IntelligentTimeParser.IsAmbiguousTime(input), Is.False);
-    }
-
-    [Test]
-    public void GetAmbiguousTimeOptions_ReturnsCorrectOptions()
-    {
-        var interpretedTime = new TimeSpan(16, 30, 0); // 4:30 PM
-        
-        var (amVersion, pmVersion, displayAm, displayPm) = 
-            IntelligentTimeParser.GetAmbiguousTimeOptions("4:30", interpretedTime);
-        
-        Assert.That(amVersion.Hours, Is.EqualTo(4));  // 4:30 AM
-        Assert.That(pmVersion.Hours, Is.EqualTo(16)); // 4:30 PM
-        Assert.That(displayAm, Is.EqualTo("4:30 AM"));
-        Assert.That(displayPm, Is.EqualTo("4:30 PM"));
-    }
-
-    #endregion
-
     #region Edge cases and invalid inputs
     
     [TestCase("25:00")]    // Invalid hour

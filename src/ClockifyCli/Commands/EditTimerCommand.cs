@@ -386,9 +386,6 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
             if (!string.IsNullOrWhiteSpace(newStartTimeStr))
             {
-                // Rule 8: Check for ambiguous times and get user confirmation
-                newStartTimeStr = CheckAndConfirmAmbiguousTime(console, newStartTimeStr, "start time");
-
                 if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, newStartTime))
                 {
                     var proposedStartTime = newStartTime.Date.Add(startTimeSpan);
@@ -419,9 +416,6 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
                 if (!string.IsNullOrWhiteSpace(newEndTimeStr))
                 {
-                    // Rule 8: Check for ambiguous times and get user confirmation
-                    newEndTimeStr = CheckAndConfirmAmbiguousTime(console, newEndTimeStr, "end time");
-
                     if (IntelligentTimeParser.TryParseEndTime(newEndTimeStr, out var endTimeSpan, newStartTime))
                     {
                         var proposedEndTime = newStartTime.Date.Add(endTimeSpan);
@@ -599,53 +593,6 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         else
         {
             console.MarkupLine("[yellow]Changes cancelled.[/]");
-        }
-    }
-
-    private static string CheckAndConfirmAmbiguousTime(IAnsiConsole console, string input, string contextInfo)
-    {
-        if (!IntelligentTimeParser.IsAmbiguousTime(input))
-        {
-            return input;
-        }
-
-        // Parse the input to get the interpreted time for context
-        var interpretedTime = TimeSpan.Zero;
-        var parseSuccess = false;
-        
-        if (contextInfo.Contains("start"))
-        {
-            parseSuccess = IntelligentTimeParser.TryParseStartTime(input, out interpretedTime, DateTime.Now);
-        }
-        else
-        {
-            parseSuccess = IntelligentTimeParser.TryParseEndTime(input, out interpretedTime, DateTime.Now);
-        }
-
-        if (!parseSuccess)
-        {
-            return input; // If we can't parse it, just return the original
-        }
-
-        var (amVersion, pmVersion, displayAm, displayPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, interpretedTime);
-
-        console.MarkupLine($"[yellow]The time '{input}' is ambiguous. Please clarify:[/]");
-        
-        var choices = new[] { displayAm, displayPm };
-        var choice = console.Prompt(
-            new SelectionPrompt<string>()
-                .Title($"Which {contextInfo} did you mean?")
-                .PageSize(3)
-                .AddChoices(choices));
-
-        // Return the original time format that corresponds to the user's choice
-        if (choice == displayAm)
-        {
-            return $"{amVersion.Hours:D2}:{amVersion.Minutes:D2}";
-        }
-        else
-        {
-            return $"{pmVersion.Hours:D2}:{pmVersion.Minutes:D2}";
         }
     }
 }

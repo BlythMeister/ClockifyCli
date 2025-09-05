@@ -177,9 +177,6 @@ public class StartCommand : BaseCommand
                         return ValidationResult.Error("Please enter a valid time format");
                     }));
 
-            // Rule 8: Check for ambiguous times and get user confirmation
-            timeInput = CheckAndConfirmAmbiguousTime(console, timeInput, "start time");
-
             if (IntelligentTimeParser.TryParseStartTime(timeInput, out var parsedTime, clock.Now))
             {
                 startTime = clock.Today.Add(parsedTime);
@@ -265,54 +262,4 @@ public class StartCommand : BaseCommand
     /// Rule 8: Check for ambiguous times and prompt user for clarification if needed.
     /// </summary>
     /// <param name="input">The original time input</param>
-    /// <param name="contextTime">The context time for disambiguation</param>
-    /// <param name="isStartTime">Whether this is a start time or end time</param>
-    /// <param name="console">The console for user interaction</param>
-    /// <returns>A confirmed time input that can be parsed unambiguously</returns>
-    private static string CheckAndConfirmAmbiguousTime(IAnsiConsole console, string input, string contextInfo)
-    {
-        if (!IntelligentTimeParser.IsAmbiguousTime(input))
-        {
-            return input;
-        }
-
-        // Parse the input to get the interpreted time for context
-        var interpretedTime = TimeSpan.Zero;
-        var parseSuccess = false;
-        
-        if (contextInfo.Contains("start"))
-        {
-            parseSuccess = IntelligentTimeParser.TryParseStartTime(input, out interpretedTime, DateTime.Now);
-        }
-        else
-        {
-            parseSuccess = IntelligentTimeParser.TryParseEndTime(input, out interpretedTime, DateTime.Now);
-        }
-
-        if (!parseSuccess)
-        {
-            return input; // If we can't parse it, just return the original
-        }
-
-        var (amVersion, pmVersion, displayAm, displayPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, interpretedTime);
-
-        console.MarkupLine($"[yellow]The time '{input}' is ambiguous. Please clarify:[/]");
-        
-        var choices = new[] { displayAm, displayPm };
-        var choice = console.Prompt(
-            new SelectionPrompt<string>()
-                .Title($"Which {contextInfo} did you mean?")
-                .PageSize(3)
-                .AddChoices(choices));
-
-        // Return the original time format that corresponds to the user's choice
-        if (choice == displayAm)
-        {
-            return $"{amVersion.Hours:D2}:{amVersion.Minutes:D2}";
-        }
-        else
-        {
-            return $"{pmVersion.Hours:D2}:{pmVersion.Minutes:D2}";
-        }
-    }
 }

@@ -381,13 +381,13 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             var originalEndTime = newEndTime;
 
             var newStartTimeStr = console.Prompt(
-                new TextPrompt<string>($"Enter new [green]start time[/] (24-hour format, e.g., 09:30, 14:30, 23:45, or leave blank to keep {Markup.Escape(newStartTime.ToString("HH:mm"))}):")
+                new TextPrompt<string>($"Enter new [green]start time[/] (e.g., 9:30, 2:30 PM, 2:30p, 14:30, or leave blank to keep {Markup.Escape(newStartTime.ToString("HH:mm"))}):")
                     .AllowEmpty());
 
             if (!string.IsNullOrWhiteSpace(newStartTimeStr))
             {
-                // Check if start time is ambiguous and confirm with user
-                // Since we only support 24-hour format, no ambiguous time checking needed
+                // Rule 8: Check for ambiguous times and get user confirmation
+                newStartTimeStr = CheckAndConfirmAmbiguousTime(console, newStartTimeStr, "start time");
 
                 if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, newStartTime))
                 {
@@ -414,13 +414,13 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             if (!isRunning)
             {
                 var newEndTimeStr = console.Prompt(
-                    new TextPrompt<string>($"Enter new [green]end time[/] (24-hour format, e.g., 10:30, 17:30, 23:45, or leave blank to keep {Markup.Escape(newEndTime!.Value.ToString("HH:mm"))}):")
+                    new TextPrompt<string>($"Enter new [green]end time[/] (e.g., 5:30, 2:30 PM, 2:30p, 17:30, or leave blank to keep {Markup.Escape(newEndTime!.Value.ToString("HH:mm"))}):")
                         .AllowEmpty());
 
                 if (!string.IsNullOrWhiteSpace(newEndTimeStr))
                 {
-                    // Check if end time is ambiguous and confirm with user
-                    // Since we only support 24-hour format, no ambiguous time checking needed
+                    // Rule 8: Check for ambiguous times and get user confirmation
+                    newEndTimeStr = CheckAndConfirmAmbiguousTime(console, newEndTimeStr, "end time");
 
                     if (IntelligentTimeParser.TryParseEndTime(newEndTimeStr, out var endTimeSpan, newStartTime))
                     {
@@ -599,6 +599,53 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         else
         {
             console.MarkupLine("[yellow]Changes cancelled.[/]");
+        }
+    }
+
+    private static string CheckAndConfirmAmbiguousTime(IAnsiConsole console, string input, string contextInfo)
+    {
+        if (!IntelligentTimeParser.IsAmbiguousTime(input))
+        {
+            return input;
+        }
+
+        // Parse the input to get the interpreted time for context
+        var interpretedTime = TimeSpan.Zero;
+        var parseSuccess = false;
+        
+        if (contextInfo.Contains("start"))
+        {
+            parseSuccess = IntelligentTimeParser.TryParseStartTime(input, out interpretedTime, DateTime.Now);
+        }
+        else
+        {
+            parseSuccess = IntelligentTimeParser.TryParseEndTime(input, out interpretedTime, DateTime.Now);
+        }
+
+        if (!parseSuccess)
+        {
+            return input; // If we can't parse it, just return the original
+        }
+
+        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, interpretedTime);
+
+        console.MarkupLine($"[yellow]The time '{input}' is ambiguous. Please clarify:[/]");
+        
+        var choices = new[] { display24Hour, displayAmPm };
+        var choice = console.Prompt(
+            new SelectionPrompt<string>()
+                .Title($"Which {contextInfo} did you mean?")
+                .PageSize(3)
+                .AddChoices(choices));
+
+        // Return the original time format that corresponds to the user's choice
+        if (choice == display24Hour)
+        {
+            return $"{amVersion.Hours:D2}:{amVersion.Minutes:D2}";
+        }
+        else
+        {
+            return $"{pmVersion.Hours:D2}:{pmVersion.Minutes:D2}";
         }
     }
 }

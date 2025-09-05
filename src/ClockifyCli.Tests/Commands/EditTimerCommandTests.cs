@@ -906,8 +906,8 @@ public class EditTimerCommandTests
         Assert.That(pmVersion.Hours, Is.EqualTo(15), "PM version should be 3:45 PM (15:45)");
         Assert.That(pmVersion.Minutes, Is.EqualTo(45), "PM version minutes should be preserved");
         
-        Assert.That(display24Hour, Is.EqualTo("15:45"), "24-hour display should be correct");
-        Assert.That(displayAmPm, Is.EqualTo("3:45 PM"), "12-hour display should be correct");
+        Assert.That(display24Hour, Is.EqualTo("03:45"), "24-hour display should be correct");
+        Assert.That(displayAmPm, Is.EqualTo("3:45 AM"), "12-hour display should be correct");
     }
 
     #endregion

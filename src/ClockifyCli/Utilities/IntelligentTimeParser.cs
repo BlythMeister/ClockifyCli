@@ -6,6 +6,15 @@ namespace ClockifyCli.Utilities;
 
 /// <summary>
 /// Intelligent time parser that handles AM/PM, 24-hour format, and context-aware interpretation.
+/// 
+/// Parsing Rules:
+/// 1. If time has AM/PM/A/P indicators, use that to calculate the correct time
+/// 2. If time is 24-hour format (13-23 hours), treat as PM automatically  
+/// 3. Use context time (start/end time) for disambiguation when possible
+/// 4. When using starting time as context to establish an end time, timer duration should not exceed 8 hours
+/// 5. When using current time as a context to establish a start time, the calculated time should always be in the past
+/// 6. End time must be after start time
+/// 7. If time is ambiguous (we could not use rules 1 or 2) prompt user for clarification
 /// </summary>
 public static class IntelligentTimeParser
 {
@@ -97,6 +106,31 @@ public static class IntelligentTimeParser
     }
 
     /// <summary>
+    /// Gets the actual DateTime that would be used for a start time input,
+    /// including the intelligent parser's day selection logic.
+    /// </summary>
+    public static DateTime GetActualStartDateTime(string input, DateTime currentTime)
+    {
+        if (!TryParseStartTime(input, out var time, currentTime))
+        {
+            throw new ArgumentException($"Invalid time format: {input}");
+        }
+
+        var proposedStartTime = currentTime.Date.Add(time);
+        
+        // Use the same logic as the intelligent parser for day selection
+        // Rule 3: If the time appears to be in the future, assume it was meant for yesterday
+        if (proposedStartTime > currentTime)
+        {
+            return proposedStartTime.AddDays(-1);
+        }
+        else
+        {
+            return proposedStartTime;
+        }
+    }
+
+    /// <summary>
     /// Validates parsed time in context and checks for logical issues.
     /// </summary>
     public static bool ValidateTimeInContext(TimeSpan parsedTime, DateTime? contextTime, bool isStartTime, out string errorMessage)
@@ -125,7 +159,7 @@ public static class IntelligentTimeParser
                     return false;
                 }
                 
-                // Rule 6: Duration should not exceed 8 hours
+                // Rule 6: When using starting time as context, timer duration should not exceed 8 hours
                 if (nextDayDuration.TotalHours > 8)
                 {
                     errorMessage = $"Timer duration exceeds 8 hours ({nextDayDuration.TotalHours:F1} hours). " +
@@ -148,7 +182,7 @@ public static class IntelligentTimeParser
                     return false;
                 }
                 
-                // Rule 6: Duration should not exceed 8 hours
+                // Rule 6: When using starting time as context, timer duration should not exceed 8 hours
                 if (duration.TotalHours > 8)
                 {
                     errorMessage = $"Timer duration exceeds 8 hours ({duration.TotalHours:F1} hours). " +
@@ -187,8 +221,16 @@ public static class IntelligentTimeParser
         if (hours >= 13 && hours <= 23)
             return false;
 
-        // Hours 0-12 are potentially ambiguous
-        return true;
+        // Not ambiguous for 00:XX (clearly 24-hour format midnight)
+        if (hours == 0)
+            return false;
+
+        // Not ambiguous for 10:XX, 11:XX, 12:XX (typically clear context)
+        if (hours >= 10 && hours <= 12)
+            return false;
+
+        // Hours 1-9 are ambiguous (could be AM or PM)
+        return hours >= 1 && hours <= 9;
     }
 
     /// <summary>
@@ -265,120 +307,51 @@ public static class IntelligentTimeParser
         var amTime = new TimeSpan(amHours, minutes, seconds);
         var pmTime = new TimeSpan(pmHours, minutes, seconds);
 
-        // If no context, use working hours bias
+        // If no context, prefer the more likely interpretation based on the hour
         if (contextTime == null)
         {
-            return ApplyWorkingHoursBias(hours, minutes, seconds, isStartTime);
+            // For hours 1-6, prefer PM during day, AM during night
+            // For hours 7-11, prefer AM (morning) over PM (evening)
+            if (hours >= 1 && hours <= 6)
+                return pmTime; // 1PM-6PM more common than 1AM-6AM for manual entry
+            else if (hours >= 7 && hours <= 11)
+                return amTime; // 7AM-11AM more common than 7PM-11PM
+            else // hour 12
+                return pmTime; // Default 12:XX to noon rather than midnight
         }
 
         // Rule 3: Use context time for disambiguation
         if (isStartTime)
         {
-            // For start times, consider both context proximity and working hours
-            var contextHour = contextTime.Value.Hour;
-            
-            // Morning context (6-11 AM) - prefer AM for early hours
-            if (contextHour >= 6 && contextHour <= 11)
-            {
-                if (hours <= 6) return amTime;  // 6:00 in morning context = 6:00 AM
-                if (hours >= 7 && hours <= 11) return amTime;  // Morning work hours
-                return pmTime;  // Afternoon hours
-            }
-            // Afternoon context (12-5 PM) - be smart about interpretation
-            else if (contextHour >= 12 && contextHour <= 17)
-            {
-                if (hours <= 6) return amTime;  // Very early hours still AM
-                if (hours >= 7 && hours <= 11) return amTime;  // Morning hours still AM
-                return pmTime;  // Default PM for ambiguous afternoon times
-            }
-            // Evening context (6-11 PM) - prefer PM
-            else if (contextHour >= 18 && contextHour <= 23)
-            {
-                return pmTime;  // Evening context prefers PM
-            }
-            else
-            {
-                return ApplyWorkingHoursBias(hours, minutes, seconds, true);
-            }
+            // Rule 5: For start times, the calculated time should always be in the past
+            return ChooseStartTimeInPast(amTime, pmTime, contextTime.Value);
         }
         else
         {
-            // For end times, focus on creating reasonable duration
-            return ChooseEndTimeBasedOnContext(amTime, pmTime, contextTime.Value);
+            // For end times, choose based on reasonable duration
+            return ChooseEndTimeBasedOnDuration(amTime, pmTime, contextTime.Value);
         }
     }
 
-    private static TimeSpan ApplyWorkingHoursBias(int hours, int minutes, int seconds, bool isStartTime)
+    private static TimeSpan ChooseStartTimeInPast(TimeSpan amTime, TimeSpan pmTime, DateTime contextTime)
     {
-        var amHours = hours == 12 ? 0 : hours;
-        var pmHours = hours == 12 ? 12 : hours + 12;
+        var contextTimeOfDay = contextTime.TimeOfDay;
         
-        var amTime = new TimeSpan(amHours, minutes, seconds);
-        var pmTime = new TimeSpan(pmHours, minutes, seconds);
-
-        if (isStartTime)
-        {
-            // Rule 4: Start times - bias towards working day (7am-7pm)
-            if (hours <= 6)
-                return amTime; // Early morning
-            else if (hours >= 7 && hours <= 11)
-                return amTime; // Morning work hours
-            else if (hours >= 1 && hours <= 7)
-                return pmTime; // Afternoon work hours
-            else
-                return hours == 12 ? pmTime : amTime; // Noon is PM, others prefer AM
-        }
-        else
-        {
-            // Rule 5: End times - most work ends in PM
-            // For end times, strongly prefer PM for any reasonable hour
-            if (hours >= 1 && hours <= 11)
-                return pmTime; // Strongly prefer PM for end times
-            else
-                return hours == 12 ? pmTime : amTime; // Noon is PM, midnight is AM
-        }
+        // Calculate how long ago each time was
+        var amMinutesAgo = CalculateMinutesAgo(contextTimeOfDay, amTime);
+        var pmMinutesAgo = CalculateMinutesAgo(contextTimeOfDay, pmTime);
+        
+        // Rule 4: If the "start time" is too far in the past (more than 24 hours), prefer the other option
+        if (amMinutesAgo > 24 * 60 && pmMinutesAgo <= 24 * 60)
+            return pmTime;
+        if (pmMinutesAgo > 24 * 60 && amMinutesAgo <= 24 * 60)
+            return amTime;
+        
+        // If both are reasonable, prefer the more recent one (less time ago)
+        return amMinutesAgo < pmMinutesAgo ? amTime : pmTime;
     }
 
-    private static TimeSpan ChooseStartTimeBasedOnContext(TimeSpan amTime, TimeSpan pmTime, DateTime contextTime)
-    {
-        var contextHour = contextTime.Hour;
-        
-        // Simple logic based on context time and working hour preferences
-        if (contextHour >= 6 && contextHour <= 11)
-        {
-            // Morning context (6 AM - 11 AM)
-            // Strongly prefer AM for early hours like 6:00
-            if (amTime.Hours <= 7)
-                return amTime; // Early morning hours - strong AM preference
-            else if (amTime.Hours >= 8 && amTime.Hours <= 11)
-                return amTime; // Morning work hours - prefer AM  
-            else
-                return pmTime; // Afternoon hours - prefer PM
-        }
-        else if (contextHour >= 12 && contextHour <= 17)
-        {
-            // Afternoon context (noon to 5 PM)
-            // Even in afternoon context, 6:00 should still be AM due to working hours bias
-            if (amTime.Hours <= 6)
-                return amTime; // Very early hours - prefer AM even in afternoon context
-            else if (pmTime.Hours >= 13 && pmTime.Hours <= 19)
-                return pmTime; // Afternoon work hours - prefer PM
-            else
-                return pmTime; // Default to PM in afternoon context
-        }
-        else if (contextHour >= 18 && contextHour <= 23)
-        {
-            // Evening context (6 PM to 11 PM)
-            return pmTime; // In evening context, prefer PM
-        }
-        else
-        {
-            // Very early morning context (midnight to 5 AM)
-            return ApplyWorkingHoursBias(amTime.Hours, amTime.Minutes, amTime.Seconds, isStartTime: true);
-        }
-    }
-
-    private static TimeSpan ChooseEndTimeBasedOnContext(TimeSpan amTime, TimeSpan pmTime, DateTime startTime)
+    private static TimeSpan ChooseEndTimeBasedOnDuration(TimeSpan amTime, TimeSpan pmTime, DateTime startTime)
     {
         var startTimeOfDay = startTime.TimeOfDay;
         
@@ -386,25 +359,50 @@ public static class IntelligentTimeParser
         var amDuration = CalculateDuration(startTimeOfDay, amTime);
         var pmDuration = CalculateDuration(startTimeOfDay, pmTime);
         
-        // Rule 6: Heavily prefer the option that doesn't exceed 8 hours
-        if (amDuration.TotalHours > 8 && pmDuration.TotalHours <= 8)
+        // Rule 5: If duration is unreasonable (more than 12 hours), prefer the other option
+        if (amDuration.TotalHours > 12 && pmDuration.TotalHours <= 12)
             return pmTime;
-        if (pmDuration.TotalHours > 8 && amDuration.TotalHours <= 8)
+        if (pmDuration.TotalHours > 12 && amDuration.TotalHours <= 12)
             return amTime;
         
-        // If both are reasonable, prefer the most logical option
-        // For normal day work (start time 6 AM - 6 PM), prefer PM end times
-        if (startTime.Hour >= 6 && startTime.Hour <= 18)
+        // If both are reasonable, prefer the shorter duration (same day if possible)
+        return amDuration.TotalHours < pmDuration.TotalHours ? amTime : pmTime;
+    }
+
+    private static double CalculateMinutesAgo(TimeSpan currentTime, TimeSpan pastTime)
+    {
+        if (currentTime >= pastTime)
+            return (currentTime - pastTime).TotalMinutes;
+        else
+            return (currentTime + TimeSpan.FromDays(1) - pastTime).TotalMinutes; // Past time was yesterday
+    }
+
+    private static TimeSpan ChooseStartTimeBasedOnContext(TimeSpan amTime, TimeSpan pmTime, DateTime contextTime)
+    {
+        // Simple context-based choice - prefer the time that's closest to current context
+        var contextHour = contextTime.Hour;
+        
+        // If in morning (6 AM - 11 AM), prefer AM for early hours
+        if (contextHour >= 6 && contextHour <= 11)
         {
-            // Normal work day - strongly prefer PM end times
-            // Example: 9:00 AM start with "9:30" should be 9:30 PM
+            return amTime.Hours <= 11 ? amTime : pmTime;
+        }
+        // If in afternoon/evening (noon onwards), prefer PM
+        else if (contextHour >= 12)
+        {
             return pmTime;
         }
+        // Very early morning (midnight to 5 AM), use past time logic
         else
         {
-            // Night shift or very early/late start - could end in AM
-            return amTime;
+            return ChooseStartTimeInPast(amTime, pmTime, contextTime);
         }
+    }
+
+    private static TimeSpan ChooseEndTimeBasedOnContext(TimeSpan amTime, TimeSpan pmTime, DateTime startTime)
+    {
+        // Simplified: just use duration-based logic
+        return ChooseEndTimeBasedOnDuration(amTime, pmTime, startTime);
     }
 
     private static TimeSpan CalculateDuration(TimeSpan start, TimeSpan end)

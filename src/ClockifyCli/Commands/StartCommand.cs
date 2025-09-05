@@ -158,37 +158,27 @@ public class StartCommand : BaseCommand
         if (startTimeOption == "Earlier time")
         {
             var timeInput = console.Prompt(
-                new TextPrompt<string>("[blue]Start time[/] (24-hour format, e.g., 09:30, 14:30, 23:45):")
+                new TextPrompt<string>("[blue]Start time[/] (e.g., 9:30, 2:30 PM, 2:30p, 14:30):")
                     .Validate(input =>
                     {
                         if (IntelligentTimeParser.TryParseStartTime(input, out var time, clock.Now))
                         {
-                            var proposedStartTime = clock.Today.Add(time);
-                            DateTime actualStartTime;
+                            // Use the intelligent parser to get the actual interpreted date/time
+                            var actualStartTime = IntelligentTimeParser.GetActualStartDateTime(input, clock.Now);
                             
-                            // If the time is in the future (later today), we'll assume they mean yesterday
-                            if (proposedStartTime > clock.Now)
+                            // Validate that the actual start time is within 24 hours of now
+                            if (actualStartTime < clock.Now.AddHours(-24))
                             {
-                                actualStartTime = proposedStartTime.AddDays(-1);
-                            }
-                            else
-                            {
-                                // Time is earlier today
-                                actualStartTime = proposedStartTime;
-                            }
-                            
-                            // Validate that the actual start time is within 10 hours of now
-                            if (actualStartTime < clock.Now.AddHours(-10))
-                            {
-                                return ValidationResult.Error("Start time cannot be more than 10 hours ago");
+                                return ValidationResult.Error("Start time cannot be more than 24 hours ago");
                             }
                             
                             return ValidationResult.Success();
                         }
-                        return ValidationResult.Error("Please enter a valid time in 24-hour format (e.g., 09:30, 14:30, 23:45)");
+                        return ValidationResult.Error("Please enter a valid time format");
                     }));
 
-            // Since we only support 24-hour format, no ambiguous time checking needed
+            // Rule 8: Check for ambiguous times and get user confirmation
+            timeInput = CheckAndConfirmAmbiguousTime(console, timeInput, "start time");
 
             if (IntelligentTimeParser.TryParseStartTime(timeInput, out var parsedTime, clock.Now))
             {
@@ -268,6 +258,70 @@ public class StartCommand : BaseCommand
             {
                 console.MarkupLine("[dim]Your original timer is still running.[/]");
             }
+        }
+    }
+
+    /// <summary>
+    /// Rule 8: Check for ambiguous times and prompt user for clarification if needed.
+    /// </summary>
+    /// <param name="input">The original time input</param>
+    /// <param name="contextTime">The context time for disambiguation</param>
+    /// <param name="isStartTime">Whether this is a start time or end time</param>
+    /// <param name="console">The console for user interaction</param>
+    /// <returns>A confirmed time input that can be parsed unambiguously</returns>
+    private static string CheckAndConfirmAmbiguousTime(IAnsiConsole console, string input, string contextInfo)
+    {
+        if (!IntelligentTimeParser.IsAmbiguousTime(input))
+        {
+            return input;
+        }
+
+        // Parse the input to get the interpreted time for context
+        var interpretedTime = TimeSpan.Zero;
+        var parseSuccess = false;
+        
+        if (contextInfo.Contains("start"))
+        {
+            parseSuccess = IntelligentTimeParser.TryParseStartTime(input, out interpretedTime, DateTime.Now);
+        }
+        else
+        {
+            parseSuccess = IntelligentTimeParser.TryParseEndTime(input, out interpretedTime, DateTime.Now);
+        }
+
+        if (!parseSuccess)
+        {
+            return input; // If we can't parse it, just return the original
+        }
+
+        var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(input, interpretedTime);
+
+        console.MarkupLine($"[yellow]The time '{input}' is ambiguous. Please clarify:[/]");
+        
+        var choices = new[] { display24Hour, displayAmPm };
+        var choice = console.Prompt(
+            new SelectionPrompt<string>()
+                .Title($"Which {contextInfo} did you mean?")
+                .PageSize(3)
+                .AddChoices(choices));
+
+        // Return the original time format that corresponds to the user's choice
+        if (choice == displayAmPm)
+        {
+            // User chose AM/PM format - determine which version they want
+            if (displayAmPm.Contains("AM"))
+            {
+                return $"{amVersion.Hours:D2}:{amVersion.Minutes:D2}";
+            }
+            else
+            {
+                return $"{pmVersion.Hours:D2}:{pmVersion.Minutes:D2}";
+            }
+        }
+        else
+        {
+            // User chose 24-hour format - use the originally interpreted time
+            return $"{interpretedTime.Hours:D2}:{interpretedTime.Minutes:D2}";
         }
     }
 }

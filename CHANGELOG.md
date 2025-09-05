@@ -5,6 +5,31 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9] - 2025-01-16
+
+### Major Improvements
+
+- **Simplified Intelligent Time Parser**: Streamlined time parsing from 8 rules to 7 rules for better usability
+  - Removed working hours restrictions (former Rule 6) that caused confusion and false positives
+  - Enhanced Rule 7: User confirmation for ambiguous times now focuses on genuine ambiguity cases
+  - Improved time interpretation logic to be more intuitive and context-aware
+  - Fixed critical AM/PM choice logic bug in ambiguous time confirmation dialogs
+
+### Bug Fixes
+
+- **Time Parsing Logic**: Fixed incorrect AM/PM selection logic in `CheckAndConfirmAmbiguousTime` method
+  - Corrected user choice interpretation where AM/PM selection was inverted
+  - Fixed issue in both AddManualTimerCommand and StartCommand for consistent behavior
+  - Enhanced validation logic to use intelligent parser's `GetActualStartDateTime` method
+
+### Technical
+
+- **Test Suite Optimization**: Improved test reliability and coverage
+  - Fixed console input mocking for Rule 7 ambiguous time confirmation scenarios
+  - Enhanced test scenarios to properly simulate user interactions with Spectre.Console prompts
+  - Streamlined edge case handling for better maintainability
+  - All 401 tests now pass with robust coverage of simplified intelligent time parsing
+
 ## [1.8] - 2025-09-04
 
 ### Improvements

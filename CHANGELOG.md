@@ -5,6 +5,31 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10] - 2025-01-16
+
+### Major Improvements
+
+- **Eliminated Ambiguous Time Prompts**: Completely removed unnecessary user interruptions for time disambiguation
+  - Removed `IsAmbiguousTime()` and `GetAmbiguousTimeOptions()` methods from IntelligentTimeParser
+  - Removed `CheckAndConfirmAmbiguousTime()` methods from all command classes
+  - Times like "1:00" after "11:30 AM" start are now automatically interpreted as "1:00 PM" without user confirmation
+  - Times like "9:51" when editing with "10:00 AM" end are automatically interpreted as "9:51 AM" without user confirmation
+
+### User Experience
+
+- **Streamlined Time Entry**: No more ambiguous time confirmation dialogs interrupt the workflow
+  - Context-aware parsing uses start/end relationships and 8-hour constraint to make intelligent choices
+  - Eliminated confusing format selection (24-hour vs AM/PM) in favor of automatic disambiguation
+  - Improved overall usability by removing unnecessary user decisions
+
+### Technical
+
+- **Code Simplification**: Removed approximately 500 lines of complex ambiguity logic
+  - Simplified command classes by removing ambiguous time handling
+  - Reduced test complexity by removing 50+ ambiguous time test cases
+  - Maintained all core intelligent parsing functionality while eliminating edge case complexity
+  - All remaining tests pass with improved reliability
+
 ## [1.9] - 2025-01-16
 
 ### Major Improvements

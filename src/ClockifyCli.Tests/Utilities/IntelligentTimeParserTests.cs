@@ -6,39 +6,228 @@ namespace ClockifyCli.Tests.Utilities;
 [TestFixture]
 public class IntelligentTimeParserTests
 {
-    [TestCase("14:30", ExpectedResult = true)]
-    [TestCase("09:15", ExpectedResult = true)]
-    [TestCase("23:45", ExpectedResult = true)]
-    [TestCase("00:00", ExpectedResult = true)]
-    [TestCase("12:00", ExpectedResult = true)]
-    public bool TryParseTime_ValidTimes_ReturnsTrue(string input)
+    #region Rule 1: AM/PM parsing tests
+    
+    [TestCase("2:30 PM", 14, 30)]
+    [TestCase("2:30 pm", 14, 30)]
+    [TestCase("2:30PM", 14, 30)]
+    [TestCase("2:30pm", 14, 30)]
+    [TestCase("2:30 P", 14, 30)]
+    [TestCase("2:30 p", 14, 30)]
+    [TestCase("2:30P", 14, 30)]
+    [TestCase("2:30p", 14, 30)]
+    [TestCase("9:15 AM", 9, 15)]
+    [TestCase("9:15 am", 9, 15)]
+    [TestCase("9:15AM", 9, 15)]
+    [TestCase("9:15am", 9, 15)]
+    [TestCase("9:15 A", 9, 15)]
+    [TestCase("9:15 a", 9, 15)]
+    [TestCase("9:15A", 9, 15)]
+    [TestCase("9:15a", 9, 15)]
+    [TestCase("12:00 PM", 12, 0)]  // Noon
+    [TestCase("12:00 AM", 0, 0)]   // Midnight
+    public void TryParseTime_WithAmPm_ParsesCorrectly(string input, int expectedHours, int expectedMinutes)
     {
-        return IntelligentTimeParser.TryParseTime(input, out var result);
-    }
-
-    [TestCase("25:00", ExpectedResult = false)]
-    [TestCase("14:60", ExpectedResult = false)]
-    [TestCase("14:30:60", ExpectedResult = false)]
-    [TestCase("abc", ExpectedResult = false)]
-    [TestCase("", ExpectedResult = false)]
-    [TestCase("14", ExpectedResult = false)]
-    [TestCase("2:30 PM", ExpectedResult = false)] // No AM/PM allowed in simplified version
-    public bool TryParseTime_InvalidTimes_ReturnsFalse(string input)
-    {
-        return IntelligentTimeParser.TryParseTime(input, out var result);
-    }
-
-    [Test]
-    public void TryParseTime_ValidTime_ReturnsCorrectTimeSpan()
-    {
-        var success = IntelligentTimeParser.TryParseTime("14:30", out var result);
+        var success = IntelligentTimeParser.TryParseTime(input, out var result);
         
         Assert.That(success, Is.True);
-        Assert.That(result, Is.EqualTo(new TimeSpan(14, 30, 0)));
+        Assert.That(result.Hours, Is.EqualTo(expectedHours));
+        Assert.That(result.Minutes, Is.EqualTo(expectedMinutes));
+    }
+
+    #endregion
+
+    #region Rule 2: 24-hour format (13-23 hours) tests
+    
+    [TestCase("13:00", 13, 0)]
+    [TestCase("14:30", 14, 30)]
+    [TestCase("15:45", 15, 45)]
+    [TestCase("18:20", 18, 20)]
+    [TestCase("23:59", 23, 59)]
+    public void TryParseTime_With24HourFormat_ParsesCorrectly(string input, int expectedHours, int expectedMinutes)
+    {
+        var success = IntelligentTimeParser.TryParseTime(input, out var result);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(expectedHours));
+        Assert.That(result.Minutes, Is.EqualTo(expectedMinutes));
+    }
+
+    #endregion
+
+    #region Rule 3: Context-based parsing for ambiguous times
+    
+    [Test]
+    public void TryParseStartTime_WithMorningContext_InfersAM()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 8, 0, 0); // 8:00 AM context
+        
+        var success = IntelligentTimeParser.TryParseStartTime("9:30", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(9)); // Should infer 9:30 AM
     }
 
     [Test]
-    public void TryParseTime_WithSeconds_ReturnsCorrectTimeSpan()
+    public void TryParseStartTime_WithAfternoonContext_InfersPM()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 15, 0, 0); // 3:00 PM context
+        
+        var success = IntelligentTimeParser.TryParseStartTime("4:30", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(16)); // Should infer 4:30 PM
+    }
+
+    [Test]
+    public void TryParseEndTime_WithStartTimeContext_InfersCorrectTime()
+    {
+        var startTime = new DateTime(2024, 1, 15, 9, 0, 0); // 9:00 AM start
+        
+        var success = IntelligentTimeParser.TryParseEndTime("5:30", out var result, startTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(17)); // Should infer 5:30 PM
+    }
+
+    #endregion
+
+    #region Rule 4: Working day bounds for start times (7am-7pm)
+    
+    [Test]
+    public void TryParseStartTime_EarlyMorning_InfersAM()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 12, 0, 0); // Noon context
+        
+        var success = IntelligentTimeParser.TryParseStartTime("6:00", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(6)); // Should prefer 6:00 AM over 6:00 PM
+    }
+
+    [Test]
+    public void TryParseStartTime_LateEvening_InfersPM()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 12, 0, 0); // Noon context
+        
+        var success = IntelligentTimeParser.TryParseStartTime("8:00", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(20)); // Should prefer 8:00 PM (within 7am-7pm preference but closer to context)
+    }
+
+    #endregion
+
+    #region Rule 5: End time bounds (7am-10pm)
+    
+    [Test]
+    public void TryParseEndTime_VeryEarly_InfersAM()
+    {
+        var startTime = new DateTime(2024, 1, 15, 23, 0, 0); // 11:00 PM start (night shift)
+        
+        var success = IntelligentTimeParser.TryParseEndTime("6:00", out var result, startTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(6)); // Should infer 6:00 AM next day
+    }
+
+    [Test]
+    public void TryParseEndTime_LateEvening_InfersPM()
+    {
+        var startTime = new DateTime(2024, 1, 15, 9, 0, 0); // 9:00 AM start
+        
+        var success = IntelligentTimeParser.TryParseEndTime("9:30", out var result, startTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(21)); // Should infer 9:30 PM
+    }
+
+    #endregion
+
+    #region Rule 6: Duration limit (8 hours max)
+    
+    [Test]
+    public void ValidateTimeInContext_DurationExceeds8Hours_AdjustsInterpretation()
+    {
+        var startTime = new DateTime(2024, 1, 15, 9, 0, 0); // 9:00 AM start
+        var endTime = new TimeSpan(8, 0, 0); // Would be 8:00 AM next day = 23 hour duration
+        
+        var isValid = IntelligentTimeParser.ValidateTimeInContext(endTime, startTime, isStartTime: false, out var errorMessage);
+        
+        // Should suggest alternative interpretation
+        Assert.That(isValid, Is.False);
+        Assert.That(errorMessage, Does.Contain("duration exceeds 8 hours"));
+    }
+
+    #endregion
+
+    #region Rule 7: End time after start time
+    
+    [Test]
+    public void ValidateTimeInContext_EndTimeBeforeStart_ReturnsFalse()
+    {
+        var startTime = new DateTime(2024, 1, 15, 9, 0, 0); // 9:00 AM start
+        var endTime = new TimeSpan(8, 0, 0); // 8:00 AM same day
+        
+        var isValid = IntelligentTimeParser.ValidateTimeInContext(endTime, startTime, isStartTime: false, out var errorMessage);
+        
+        Assert.That(isValid, Is.False);
+        Assert.That(errorMessage, Does.Contain("End time must be after start time"));
+    }
+
+    #endregion
+
+    #region Rule 8: Ambiguous time detection
+    
+    [TestCase("9:30")]     // Ambiguous - could be AM or PM
+    [TestCase("1:15")]     // Ambiguous - could be AM or PM
+    [TestCase("8:45")]     // Ambiguous - could be AM or PM
+    [TestCase("12:00")]    // Ambiguous - could be noon or midnight
+    public void IsAmbiguousTime_AmbiguousTimes_ReturnsTrue(string input)
+    {
+        Assert.That(IntelligentTimeParser.IsAmbiguousTime(input), Is.True);
+    }
+
+    [TestCase("14:30")]    // Not ambiguous - clearly 24-hour format
+    [TestCase("2:30 PM")]  // Not ambiguous - has AM/PM marker
+    [TestCase("9:15 AM")]  // Not ambiguous - has AM/PM marker
+    [TestCase("23:59")]    // Not ambiguous - clearly 24-hour format
+    public void IsAmbiguousTime_UnambiguousTimes_ReturnsFalse(string input)
+    {
+        Assert.That(IntelligentTimeParser.IsAmbiguousTime(input), Is.False);
+    }
+
+    [Test]
+    public void GetAmbiguousTimeOptions_ReturnsCorrectOptions()
+    {
+        var interpretedTime = new TimeSpan(16, 30, 0); // 4:30 PM
+        
+        var (amVersion, pmVersion, display24Hour, displayAmPm) = 
+            IntelligentTimeParser.GetAmbiguousTimeOptions("4:30", interpretedTime);
+        
+        Assert.That(amVersion.Hours, Is.EqualTo(4));  // 4:30 AM
+        Assert.That(pmVersion.Hours, Is.EqualTo(16)); // 4:30 PM
+        Assert.That(display24Hour, Is.EqualTo("16:30"));
+        Assert.That(displayAmPm, Is.EqualTo("4:30 PM"));
+    }
+
+    #endregion
+
+    #region Edge cases and invalid inputs
+    
+    [TestCase("25:00")]    // Invalid hour
+    [TestCase("14:60")]    // Invalid minute
+    [TestCase("abc")]      // Invalid format
+    [TestCase("")]         // Empty string
+    [TestCase("14")]       // Incomplete time
+    public void TryParseTime_InvalidInputs_ReturnsFalse(string input)
+    {
+        var success = IntelligentTimeParser.TryParseTime(input, out var result);
+        Assert.That(success, Is.False);
+    }
+
+    [Test]
+    public void TryParseTime_WithSeconds_ParsesCorrectly()
     {
         var success = IntelligentTimeParser.TryParseTime("14:30:45", out var result);
         
@@ -47,34 +236,51 @@ public class IntelligentTimeParserTests
     }
 
     [Test]
-    public void ValidateTimeInContext_EndTimeAfterStart_ReturnsTrue()
+    public void TryParseTime_WithSecondsAndAmPm_ParsesCorrectly()
     {
-        var startTime = new DateTime(2024, 1, 15, 9, 0, 0);
-        var endTime = new TimeSpan(17, 0, 0);
+        var success = IntelligentTimeParser.TryParseTime("2:30:15 PM", out var result);
         
-        var isValid = IntelligentTimeParser.ValidateTimeInContext(endTime, startTime, isStartTime: false, out var errorMessage);
+        Assert.That(success, Is.True);
+        Assert.That(result, Is.EqualTo(new TimeSpan(14, 30, 15)));
+    }
+
+    #endregion
+
+    #region Complex scenarios
+    
+    [Test]
+    public void TryParseStartTime_NightShiftContext_HandlesCorrectly()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 22, 0, 0); // 10:00 PM context
         
-        Assert.That(isValid, Is.True);
-        Assert.That(errorMessage, Is.Empty);
+        var success = IntelligentTimeParser.TryParseStartTime("11:00", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(23)); // Should infer 11:00 PM
     }
 
     [Test]
-    public void ValidateTimeInContext_EndTimeBeforeStart_ReturnsFalse()
+    public void TryParseEndTime_CrossesMidnight_HandlesCorrectly()
     {
-        var startTime = new DateTime(2024, 1, 15, 9, 0, 0);
-        var endTime = new TimeSpan(8, 0, 0);
+        var startTime = new DateTime(2024, 1, 15, 23, 0, 0); // 11:00 PM start
         
-        var isValid = IntelligentTimeParser.ValidateTimeInContext(endTime, startTime, isStartTime: false, out var errorMessage);
+        var success = IntelligentTimeParser.TryParseEndTime("2:00", out var result, startTime);
         
-        Assert.That(isValid, Is.False);
-        Assert.That(errorMessage, Does.Contain("End time must be after start time"));
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(2)); // Should infer 2:00 AM next day
     }
 
     [Test]
-    public void IsAmbiguousTime_AlwaysReturnsFalse()
+    public void TryParseTime_WorkingHoursBias_PrefersReasonableTimes()
     {
-        Assert.That(IntelligentTimeParser.IsAmbiguousTime("14:30"), Is.False);
-        Assert.That(IntelligentTimeParser.IsAmbiguousTime("9:15"), Is.False);
-        Assert.That(IntelligentTimeParser.IsAmbiguousTime("2:30 PM"), Is.False);
+        var contextTime = new DateTime(2024, 1, 15, 12, 0, 0); // Noon context
+        
+        // Test that 3:00 is interpreted as 3:00 PM when in afternoon context
+        var success = IntelligentTimeParser.TryParseStartTime("3:00", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(15)); // Should prefer 3:00 PM in afternoon context
     }
+
+    #endregion
 }

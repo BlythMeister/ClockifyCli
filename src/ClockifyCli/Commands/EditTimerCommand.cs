@@ -381,14 +381,14 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             var originalEndTime = newEndTime;
 
             var newStartTimeStr = console.Prompt(
-                new TextPrompt<string>($"Enter new [green]start time[/] (e.g., 9:30, 2:30 PM, 2:30p, 14:30, or leave blank to keep {Markup.Escape(newStartTime.ToString("HH:mm"))}):")
+                new TextPrompt<string>($"Enter new [green]start time[/] (24-hour format, e.g., 09:30, 14:30, 23:45, or leave blank to keep {Markup.Escape(newStartTime.ToString("HH:mm"))}):")
                     .AllowEmpty());
 
             if (!string.IsNullOrWhiteSpace(newStartTimeStr))
             {
                 // Check if start time is ambiguous and confirm with user
-                newStartTimeStr = CheckAndConfirmAmbiguousTime(console, newStartTimeStr, "start time");
-                
+                // Since we only support 24-hour format, no ambiguous time checking needed
+
                 if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, newStartTime))
                 {
                     var proposedStartTime = newStartTime.Date.Add(startTimeSpan);
@@ -414,14 +414,14 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             if (!isRunning)
             {
                 var newEndTimeStr = console.Prompt(
-                    new TextPrompt<string>($"Enter new [green]end time[/] (e.g., 5:30, 5:30 PM, 5:30p, 17:30, or leave blank to keep {Markup.Escape(newEndTime!.Value.ToString("HH:mm"))}):")
+                    new TextPrompt<string>($"Enter new [green]end time[/] (24-hour format, e.g., 10:30, 17:30, 23:45, or leave blank to keep {Markup.Escape(newEndTime!.Value.ToString("HH:mm"))}):")
                         .AllowEmpty());
 
                 if (!string.IsNullOrWhiteSpace(newEndTimeStr))
                 {
                     // Check if end time is ambiguous and confirm with user
-                    newEndTimeStr = CheckAndConfirmAmbiguousTime(console, newEndTimeStr, "end time");
-                    
+                    // Since we only support 24-hour format, no ambiguous time checking needed
+
                     if (IntelligentTimeParser.TryParseEndTime(newEndTimeStr, out var endTimeSpan, newStartTime))
                     {
                         var proposedEndTime = newStartTime.Date.Add(endTimeSpan);
@@ -600,46 +600,5 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         {
             console.MarkupLine("[yellow]Changes cancelled.[/]");
         }
-    }
-
-    private static string CheckAndConfirmAmbiguousTime(IAnsiConsole console, string timeInput, string timeType)
-    {
-        // Check if the input is ambiguous
-        if (IntelligentTimeParser.IsAmbiguousTime(timeInput))
-        {
-            // Parse the time to get current interpretation
-            TimeSpan parsedTime;
-            if (IntelligentTimeParser.TryParseTime(timeInput, out parsedTime))
-            {
-                var (amVersion, pmVersion, display24Hour, displayAmPm) = IntelligentTimeParser.GetAmbiguousTimeOptions(timeInput, parsedTime);
-
-                console.MarkupLine($"[yellow]You entered:[/] {timeInput} for {timeType}");
-                console.MarkupLine($"[cyan]I interpreted this as:[/] {display24Hour} ({displayAmPm})");
-
-                var isCorrect = console.Confirm("Is this correct?", true);
-                
-                if (isCorrect)
-                {
-                    return timeInput; // Return original input since it was interpreted correctly
-                }
-
-                // Ask user to clarify AM or PM
-                var inputHour = parsedTime.Hours > 12 ? parsedTime.Hours - 12 : parsedTime.Hours;
-                if (inputHour == 0) inputHour = 12;
-
-                var amChoice = $"{inputHour}:{parsedTime.Minutes:D2} AM";
-                var pmChoice = $"{inputHour}:{parsedTime.Minutes:D2} PM";
-
-                var amPmChoice = console.Prompt(
-                    new SelectionPrompt<string>()
-                        .Title("[yellow]Please clarify - did you mean:[/]")
-                        .AddChoices(amChoice, pmChoice));
-
-                return amPmChoice;
-            }
-        }
-
-        // Not ambiguous or couldn't parse, return as-is
-        return timeInput;
     }
 }

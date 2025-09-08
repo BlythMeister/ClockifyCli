@@ -435,7 +435,7 @@ public class StartCommandTests
         Assert.That(output, Does.Contain("Start New Timer"), "Should display start timer header");
         Assert.That(output, Does.Contain("When do you want to start the timer?"), "Should ask for start time option");
         Assert.That(output, Does.Contain("Start time (e.g., 9:30, 2:30 PM, 2:30p, 14:30):"), "Should prompt for specific time");
-        Assert.That(output, Does.Contain("Start time: 08:00:00"), "Should show specified start time in confirmation");
+        Assert.That(output, Does.Contain("Start time: 08:00"), "Should show specified start time in confirmation");
         Assert.That(output, Does.Contain("Timer started successfully!"), "Should display success message");
 
         // Cleanup

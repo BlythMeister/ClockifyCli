@@ -89,7 +89,7 @@ public class StatusCommand : BaseCommand
         content.AppendLine();
 
         // Timing information
-        content.AppendLine($"[bold]Started:[/] {startTime.ToLocalTime():HH:mm:ss (ddd, MMM dd)}");
+        content.AppendLine($"[bold]Started:[/] {startTime.ToLocalTime():HH:mm (ddd, MMM dd)}");
         content.AppendLine($"[bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
 
         return content.ToString().TrimEnd();

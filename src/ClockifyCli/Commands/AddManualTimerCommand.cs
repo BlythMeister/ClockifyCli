@@ -214,8 +214,8 @@ public class AddManualTimerCommand : BaseCommand
         console.MarkupLine($"  [bold]Project:[/] {projectName}");
         console.MarkupLine($"  [bold]Task:[/] {taskName}");
         console.MarkupLine($"  [bold]Description:[/] {descriptionDisplay}");
-        console.MarkupLine($"  [bold]Start time:[/] {startTime:HH:mm:ss}");
-        console.MarkupLine($"  [bold]End time:[/] {endTime:HH:mm:ss}");
+        console.MarkupLine($"  [bold]Start time:[/] {startTime:HH:mm}");
+        console.MarkupLine($"  [bold]End time:[/] {endTime:HH:mm}");
         console.MarkupLine($"  [bold]Duration:[/] {durationDisplay}");
         console.WriteLine();
 
@@ -238,7 +238,7 @@ public class AddManualTimerCommand : BaseCommand
                                                                 });
 
             console.MarkupLine("[green]:check_mark: Time entry added successfully![/]");
-            console.MarkupLine($"[dim]Duration: {durationDisplay} ({startTime:HH:mm:ss} - {endTime:HH:mm:ss})[/]");
+            console.MarkupLine($"[dim]Duration: {durationDisplay} ({startTime:HH:mm} - {endTime:HH:mm})[/]");
             console.MarkupLine("[dim]Use 'clockify-cli week-view' to see your time entries.[/]");
         }
         else

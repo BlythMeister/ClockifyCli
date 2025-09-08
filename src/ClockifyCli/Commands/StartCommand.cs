@@ -202,11 +202,11 @@ public class StartCommand : BaseCommand
         {
             if (startTime.Value.Date == clock.Today)
             {
-                startTimeDisplay = startTime.Value.ToString("HH:mm:ss");
+                startTimeDisplay = startTime.Value.ToString("HH:mm");
             }
             else
             {
-                startTimeDisplay = $"{startTime.Value.ToString("HH:mm:ss")} (yesterday)";
+                startTimeDisplay = $"{startTime.Value.ToString("HH:mm")} (yesterday)";
             }
         }
 
@@ -243,7 +243,7 @@ public class StartCommand : BaseCommand
                                                                                                                          startTime);
                                                               });
 
-            var displayTime = startTime?.ToString("HH:mm:ss") ?? clock.Now.ToString("HH:mm:ss");
+            var displayTime = startTime?.ToString("HH:mm") ?? clock.Now.ToString("HH:mm");
             console.MarkupLine("[green]:check_mark: Timer started successfully![/]");
             console.MarkupLine($"[dim]Started at: {displayTime}[/]");
             console.MarkupLine("[dim]Use 'clockify-cli status' to see the running timer or 'clockify-cli stop' to stop it.[/]");

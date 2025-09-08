@@ -5,6 +5,16 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11] - 2025-09-08
+
+### User Experience
+
+- **Improved Time Display**: Removed seconds from all user-facing time displays for cleaner, more readable output
+  - Start timer confirmation now shows time as "HH:mm" instead of "HH:mm:ss"
+  - Timer status display shows start time as "HH:mm" instead of "HH:mm:ss"  
+  - Manual timer confirmation shows times as "HH:mm" instead of "HH:mm:ss"
+  - Success messages show simplified time format without seconds
+
 ## [1.10] - 2025-01-16
 
 ### Major Improvements

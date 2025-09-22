@@ -143,6 +143,24 @@ public class ClockifyClient : IClockifyClient
         }
     }
 
+    public async Task AddProject(WorkspaceInfo workspace, string projectName)
+    {
+        try
+        {
+            var newProject = new NewProject(projectName);
+            var newProjectJson = JsonConvert.SerializeObject(newProject);
+            var content = new StringContent(newProjectJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
+
+            var response = await PostWithRateLimitAsync($"workspaces/{workspace.Id}/projects", content);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            throw;
+        }
+    }
+
     public async Task<List<TimeEntry>> GetTimeEntries(WorkspaceInfo workspace, UserInfo user, DateTime start, DateTime end)
     {
         return await GetPagedAsync<TimeEntry>($"workspaces/{workspace.Id}/user/{user.Id}/time-entries?start={start:yyyy-MM-dd}T00:00:00Z&end={end:yyyy-MM-dd}T23:59:59Z&in-progress=false");

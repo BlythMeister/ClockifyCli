@@ -342,7 +342,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                         newProjectId = tempNewProjectId;
                         newTaskId = selectedTaskOrBack.TaskId;
                         hasChanges = true;
-                        console.MarkupLine($"[green]✓[/] Project/Task will be changed to: [cyan]{selectedProject.Name}[/] - [yellow]{selectedTaskOrBack.TaskName}[/]");
+                        console.MarkupLine($"[green]✓[/] Project/Task will be changed to: [cyan]{Markup.Escape(selectedProject.Name)}[/] - [yellow]{Markup.Escape(selectedTaskOrBack.TaskName)}[/]");
                     }
                     else
                     {
@@ -359,7 +359,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                         newProjectId = tempNewProjectId;
                         newTaskId = null;
                         hasChanges = true;
-                        console.MarkupLine($"[green]✓[/] Project will be changed to: [cyan]{selectedProject.Name}[/] (no task)");
+                        console.MarkupLine($"[green]✓[/] Project will be changed to: [cyan]{Markup.Escape(selectedProject.Name)}[/] (no task)");
                     }
                     else
                     {

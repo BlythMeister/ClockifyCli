@@ -57,7 +57,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
     }
     
     # Get available commands and options
-    $commands = @('add', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $commands = @('add', 'add-project', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'show-changelog', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
     $options = @('--help', '--version')
     
     # Filter suggestions based on what user has typed
@@ -176,6 +176,17 @@ This command is useful for logging time you've already spent working on a task. 
 
 ### Task Management
 
+#### Add Project
+
+`clockify-cli add-project` - Add a new project to Clockify
+
+This command allows you to create new projects directly in Clockify without needing to use the web interface. It includes:
+
+- Interactive prompt for project name
+- Duplicate detection (prevents creating projects with the same name)
+- Workspace validation
+- Confirmation before creation
+
 #### Add Task From Jira
 
 `clockify-cli add-task-from-jira` - Interactive selection to add Jira issues as Clockify tasks
@@ -252,6 +263,10 @@ clockify-cli upload-to-tempo
 
 `clockify-cli start --help` - Show help for specific command
 
+`clockify-cli show-changelog` - Display changelog with interactive version selection
+
+`clockify-cli show-changelog --version 1.11` - Display changelog for a specific version
+
 ## 🔧 Configuration Management
 
 ### Configuration Commands
@@ -327,6 +342,7 @@ The intelligent time input works across all time entry scenarios:
 
 | Command | Description | Examples |
 |---------|-------------|----------|
+| `add-project` | Add a new project to Clockify | `clockify-cli add-project` |
 | `add-task-from-jira` | Add Task From Jira | `clockify-cli add-task-from-jira` |
 | `archive-tasks-for-completed-jiras` | Archive Tasks For Completed Jiras | `clockify-cli archive-tasks-for-completed-jiras` |
 
@@ -344,6 +360,7 @@ The intelligent time input works across all time entry scenarios:
 | `config set` | Configure API keys and credentials | `clockify-cli config set` |
 | `config view` | View current configuration | `clockify-cli config view` |
 | `full-view` | Open Clockify web app in browser | `clockify-cli full-view` |
+| `show-changelog` | Display changelog with version selection | `clockify-cli show-changelog`, `clockify-cli show-changelog --version 1.11` |
 
 ## 🤝 Contributing
 

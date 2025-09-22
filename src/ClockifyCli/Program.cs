@@ -93,7 +93,7 @@ var app = new CommandApp(registrar);
 app.Configure(config =>
               {
                   config.SetApplicationName("clockify-cli");
-                  config.SetApplicationVersion("1.12");
+                  config.SetApplicationVersion("1.13");
                   config.UseAssemblyInformationalVersion();
 
                   // Add the add manual timer command
@@ -105,6 +105,11 @@ app.Configure(config =>
                   config.AddCommand<AddTaskFromJiraCommand>("add-task-from-jira")
                         .WithDescription("Add Task From Jira")
                         .WithExample(new[] { "add-task-from-jira" });
+
+                  // Add the add-project command
+                  config.AddCommand<AddProjectCommand>("add-project")
+                        .WithDescription("Add a new project to Clockify")
+                        .WithExample(new[] { "add-project" });
 
                   // Add the archive-tasks-for-completed-jiras command
                   config.AddCommand<ArchiveTasksForCompletedJirasCommand>("archive-tasks-for-completed-jiras")
@@ -169,6 +174,12 @@ app.Configure(config =>
                   config.AddCommand<StatusCommand>("status")
                         .WithDescription("Display current in-progress time entry from Clockify")
                         .WithExample(new[] { "status" });
+
+                  // Add the show-changelog command
+                  config.AddCommand<ShowChangelogCommand>("show-changelog")
+                        .WithDescription("Display the changelog for the current version")
+                        .WithExample(new[] { "show-changelog" })
+                        .WithExample(new[] { "show-changelog", "--version", "1.11" });
 
                   // Add the stop command
                   config.AddCommand<StopCommand>("stop")

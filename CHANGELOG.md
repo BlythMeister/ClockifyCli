@@ -5,6 +5,26 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13] - 2025-09-22
+
+### New Features
+
+- **Show Changelog Command**: Added new `show-changelog` command to display changelog with interactive version selection
+  - Shows interactive menu of all available versions with release dates when no version specified
+  - Supports `--version` option to display specific version changelog directly (e.g., `--version 1.11`)
+  - Highlights current version in the selection menu for easy identification
+  - Parses CHANGELOG.md file using regex pattern matching similar to PowerShell injection script
+  - Shows version number and release date with formatted changelog content
+  - Colored output with section headers, bullet points, and proper markup escaping
+  - Graceful error handling for missing, empty, or malformed changelog files
+  - No external dependencies - reads from local filesystem only
+- **Add Project Command**: New `add-project` command to create projects directly in Clockify
+  - Interactive prompt for project name with validation
+  - Duplicate project name detection (case-insensitive)
+  - Confirmation prompt with workspace details
+  - Comprehensive error handling and user feedback
+  - Full unit test coverage
+
 ## [1.12] - 2025-09-22
 
 ### Bug Fixes

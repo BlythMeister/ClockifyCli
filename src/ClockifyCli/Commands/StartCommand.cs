@@ -106,7 +106,7 @@ public class StartCommand : BaseCommand
 
             if (!availableTasks.Any())
             {
-                console.MarkupLine($"[yellow]No active tasks found for project '{selectedProject.Name}'![/]");
+                console.MarkupLine($"[yellow]No active tasks found for project '{Markup.Escape(selectedProject.Name)}'![/]");
                 console.MarkupLine("[dim]Add some tasks to this project first using 'clockify-cli add-task-from-jira'.[/]");
                 return;
             }

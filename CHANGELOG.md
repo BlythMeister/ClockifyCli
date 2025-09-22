@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Colored output with section headers, bullet points, and proper markup escaping
   - Graceful error handling for missing, empty, or malformed changelog files
   - No external dependencies - reads from local filesystem only
+- **Add Project Command**: New `add-project` command to create projects directly in Clockify
+  - Interactive prompt for project name with validation
+  - Duplicate project name detection (case-insensitive)
+  - Confirmation prompt with workspace details
+  - Comprehensive error handling and user feedback
+  - Full unit test coverage
 
 ## [1.12] - 2025-09-22
 

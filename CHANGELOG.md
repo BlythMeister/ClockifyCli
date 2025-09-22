@@ -5,6 +5,18 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12] - 2025-09-22
+
+### Bug Fixes
+
+- **Project Filtering**: Projects marked as archived in Clockify are now filtered out from project selection lists
+  - Added `archived=false` parameter to GetProjects API call for server-side filtering
+  - Improves user experience by showing only active projects in selection prompts
+- **Markup Escaping**: Fixed crash when project or task names contain markup-like characters (brackets)
+  - Added proper escaping for project and task names in EditTimerCommand success messages
+  - Added proper escaping for project names in StartCommand and AddManualTimerCommand error messages
+  - Prevents `InvalidOperationException` when displaying projects/tasks with special characters
+
 ## [1.11] - 2025-09-08
 
 ### User Experience

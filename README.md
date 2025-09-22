@@ -364,6 +364,7 @@ The intelligent time input works across all time entry scenarios:
 | `config set` | Configure API keys and credentials | `clockify-cli config set` |
 | `config view` | View current configuration | `clockify-cli config view` |
 | `full-view` | Open Clockify web app in browser | `clockify-cli full-view` |
+| `show-changelog` | Display changelog with version selection | `clockify-cli show-changelog`, `clockify-cli show-changelog --version 1.11` |
 
 ## 🤝 Contributing
 

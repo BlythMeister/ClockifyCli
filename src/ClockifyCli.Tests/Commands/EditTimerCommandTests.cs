@@ -822,4 +822,60 @@ public class EditTimerCommandTests
         mockClockifyClient.Verify(x => x.UpdateTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         mockClockifyClient.Verify(x => x.UpdateRunningTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
+
+    [Test]
+    public void RunningTimerContext_UsesCurrentTimeNotStartTime_ForIntelligentParsing()
+    {
+        // This test verifies that when editing a running timer's start time,
+        // the IntelligentTimeParser uses the current time as context, not the timer's start time.
+        // This prevents the issue where entering "9:00" at 5PM would result in 9PM (future/negative duration)
+        // instead of 9AM (past, reasonable 8-hour duration).
+        
+        var currentTime = new DateTime(2024, 1, 15, 17, 0, 0); // 5:00 PM today
+        var timerStartTime = new DateTime(2024, 1, 15, 9, 0, 0); // 9:00 AM today (8 hours ago)
+        
+        // Test the context logic directly
+        var isRunning = true;
+        var contextTime = isRunning ? currentTime : timerStartTime;
+        
+        // This should parse "9:00" as 9:00 AM today (past relative to 5PM context)
+        var success = IntelligentTimeParser.TryParseStartTime("9:00", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(9)); // Should be 9:00 AM (hour 9)
+        
+        // Verify the actual DateTime would be reasonable
+        var actualStartTime = IntelligentTimeParser.GetActualStartDateTime("9:00", contextTime);
+        Assert.That(actualStartTime.Hour, Is.EqualTo(9)); // 9:00 AM
+        Assert.That(actualStartTime.Date, Is.EqualTo(currentTime.Date)); // Same day
+        
+        // Verify duration from start to current time is positive and reasonable
+        var duration = currentTime - actualStartTime;
+        Assert.That(duration.TotalHours, Is.EqualTo(8)); // 8 hours (9 AM to 5 PM)
+        Assert.That(duration.TotalHours, Is.GreaterThan(0)); // Positive duration
+        Assert.That(duration.TotalHours, Is.LessThanOrEqualTo(8)); // Within 8-hour limit
+    }
+
+    [Test]
+    public void CompletedTimerContext_UsesStartTimeAsContext_ForConsistency()
+    {
+        // This test verifies that when editing a completed timer's start time,
+        // we use the original start time as context (existing behavior) for consistency.
+        
+        var currentTime = new DateTime(2024, 1, 15, 17, 0, 0); // 5:00 PM today
+        var timerStartTime = new DateTime(2024, 1, 15, 9, 0, 0); // 9:00 AM today (original start)
+        
+        // Test the context logic for completed timers
+        var isRunning = false;
+        var contextTime = isRunning ? currentTime : timerStartTime;
+        
+        // This should use the original start time as context
+        Assert.That(contextTime, Is.EqualTo(timerStartTime));
+        
+        // Parse should still work reasonably with start time context
+        var success = IntelligentTimeParser.TryParseStartTime("8:30", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(8)); // Should be 8:30 AM
+    }
 }

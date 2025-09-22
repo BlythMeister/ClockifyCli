@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added proper escaping for project and task names in EditTimerCommand success messages
   - Added proper escaping for project names in StartCommand and AddManualTimerCommand error messages
   - Prevents `InvalidOperationException` when displaying projects/tasks with special characters
+- **Running Timer Context**: Fixed time parsing context when editing start times on running timers
+  - IntelligentTimeParser now uses current time as context for running timers instead of timer's start time
+  - Prevents negative duration scenarios when editing running timer start times
+  - Example: Entering "9:00" at 5PM now correctly interprets as 9:00 AM (past) instead of 9:00 PM (future)
+
+### Enhancements
+
+- **IntelligentTimeParser Rules**: Updated and clarified rule documentation for better consistency
+  - Rule 5: Clarified past time preference with 8-hour and negative duration exceptions
+  - Improved rule descriptions to match actual implementation behavior
+  - Added comprehensive test coverage for edge cases and rule constraints
 
 ## [1.11] - 2025-09-08
 

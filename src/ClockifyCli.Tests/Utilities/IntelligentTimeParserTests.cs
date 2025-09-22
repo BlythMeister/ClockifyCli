@@ -177,6 +177,79 @@ public class IntelligentTimeParserTests
 
     #endregion
 
+    #region Rule 5 Updated: Past times preferred unless duration >8h or <0 minutes
+    
+    [Test]
+    public void TryParseStartTime_EightHourExceptionAllowsFuture_LateNightContext()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 1, 30, 0); // 1:30 AM context
+        
+        var success = IntelligentTimeParser.TryParseStartTime("5:30", out var result, contextTime);
+        var actualDateTime = IntelligentTimeParser.GetActualStartDateTime("5:30", contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(17)); // Should infer 5:30 PM yesterday (not AM today which would be >8h ago)
+        Assert.That(actualDateTime.Day, Is.EqualTo(14)); // Should be yesterday (14th)
+        
+        // Verify duration from PM yesterday to AM today is reasonable
+        var duration = contextTime - actualDateTime;
+        Assert.That(duration.TotalHours, Is.LessThanOrEqualTo(8));
+    }
+
+    [Test]
+    public void TryParseStartTime_ZeroDurationExceptionAllowsFuture_SameTimeContext()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 14, 30, 0); // 2:30 PM context
+        
+        var success = IntelligentTimeParser.TryParseStartTime("2:30", out var result, contextTime);
+        var actualDateTime = IntelligentTimeParser.GetActualStartDateTime("2:30", contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(14)); // Should allow same time
+        Assert.That(actualDateTime.Day, Is.EqualTo(15)); // Should be today, not yesterday
+        
+        // Verify duration is 0 (same time)
+        var duration = contextTime - actualDateTime;
+        Assert.That(duration.TotalMinutes, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void TryParseStartTime_NormalPastTimePreference_StandardCase()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 16, 0, 0); // 4:00 PM context
+        
+        var success = IntelligentTimeParser.TryParseStartTime("10:00", out var result, contextTime);
+        var actualDateTime = IntelligentTimeParser.GetActualStartDateTime("10:00", contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(10)); // Should prefer 10:00 AM today (past)
+        Assert.That(actualDateTime.Day, Is.EqualTo(15)); // Should be today
+        
+        // Verify it's in the past but reasonable duration
+        var duration = contextTime - actualDateTime;
+        Assert.That(duration.TotalHours, Is.GreaterThan(0)); // Past time
+        Assert.That(duration.TotalHours, Is.LessThanOrEqualTo(8)); // Within 8 hours
+    }
+
+    [Test]
+    public void TryParseStartTime_NegativeDurationProtection_FutureTimeContext()
+    {
+        var contextTime = new DateTime(2024, 1, 15, 14, 30, 0); // 2:30 PM context
+        
+        var success = IntelligentTimeParser.TryParseStartTime("3:30", out var result, contextTime);
+        var actualDateTime = IntelligentTimeParser.GetActualStartDateTime("3:30", contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(3)); // Should infer 3:30 AM today (past) not 3:30 PM (future/negative)
+        Assert.That(actualDateTime.Day, Is.EqualTo(15)); // Should be today
+        
+        // Verify it's in the past (positive duration)
+        var duration = contextTime - actualDateTime;
+        Assert.That(duration.TotalHours, Is.GreaterThan(0)); // Past time, positive duration
+    }
+
+    #endregion
+
     #region Rule 6: Duration limit (8 hours max)
     
     [Test]

@@ -386,12 +386,15 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
             if (!string.IsNullOrWhiteSpace(newStartTimeStr))
             {
-                if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, newStartTime))
+                // For running timers, use current time as context. For completed timers, use the original start time.
+                var contextTime = isRunning ? DateTime.Now : newStartTime;
+                
+                if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, contextTime))
                 {
                     var proposedStartTime = newStartTime.Date.Add(startTimeSpan);
                     
                     // Validate the time makes sense
-                    if (IntelligentTimeParser.ValidateTimeInContext(startTimeSpan, newStartTime, isStartTime: true, out var startErrorMessage))
+                    if (IntelligentTimeParser.ValidateTimeInContext(startTimeSpan, contextTime, isStartTime: true, out var startErrorMessage))
                     {
                         newStartTime = proposedStartTime;
                     }

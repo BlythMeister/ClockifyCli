@@ -173,7 +173,8 @@ app.Configure(config =>
                   // Add the show-changelog command
                   config.AddCommand<ShowChangelogCommand>("show-changelog")
                         .WithDescription("Display the changelog for the current version")
-                        .WithExample(new[] { "show-changelog" });
+                        .WithExample(new[] { "show-changelog" })
+                        .WithExample(new[] { "show-changelog", "--version", "1.11" });
 
                   // Add the stop command
                   config.AddCommand<StopCommand>("stop")

@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### New Features
 
-- **Show Changelog Command**: Added new `show-changelog` command to display changelog for the current version
+- **Show Changelog Command**: Added new `show-changelog` command to display changelog with interactive version selection
+  - Shows interactive menu of all available versions with release dates when no version specified
+  - Supports `--version` option to display specific version changelog directly (e.g., `--version 1.11`)
+  - Highlights current version in the selection menu for easy identification
   - Parses CHANGELOG.md file using regex pattern matching similar to PowerShell injection script
-  - Shows current version with release date and formatted changelog content
+  - Shows version number and release date with formatted changelog content
   - Colored output with section headers, bullet points, and proper markup escaping
   - Graceful error handling for missing, empty, or malformed changelog files
-  - Lists available versions when current version section is not found
   - No external dependencies - reads from local filesystem only
 
 ## [1.12] - 2025-09-22

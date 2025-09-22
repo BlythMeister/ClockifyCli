@@ -1,11 +1,12 @@
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace ClockifyCli.Commands;
 
-public class ShowChangelogCommand : BaseCommand
+public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
 {
     private readonly IAnsiConsole console;
 
@@ -15,32 +16,26 @@ public class ShowChangelogCommand : BaseCommand
         this.console = console ?? throw new ArgumentNullException(nameof(console));
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context)
+    public class Settings : CommandSettings
     {
-        await ShowChangelog(console);
+        [Description("Specific version to show changelog for (e.g., 1.11). If not specified, shows interactive version selection.")]
+        [CommandOption("-v|--version")]
+        public string? Version { get; init; }
+    }
+
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
+    {
+        await ShowChangelog(console, settings.Version);
         return 0;
     }
 
-    private async Task ShowChangelog(IAnsiConsole console)
+    private async Task ShowChangelog(IAnsiConsole console, string? requestedVersion)
     {
         console.MarkupLine("[bold]ClockifyCli Changelog[/]");
         console.WriteLine();
 
         try
         {
-            // Get the current version from assembly
-            var assembly = Assembly.GetExecutingAssembly();
-            var version = assembly.GetName().Version;
-            if (version == null)
-            {
-                console.MarkupLine("[red]Unable to determine current version![/]");
-                return;
-            }
-            var currentVersion = $"{version.Major}.{version.Minor}";
-
-            console.MarkupLine($"[dim]Current version: {currentVersion}[/]");
-            console.WriteLine();
-
             // Find and read the CHANGELOG.md file
             var changelogPath = await FindChangelogFile();
             if (string.IsNullOrEmpty(changelogPath))
@@ -52,63 +47,139 @@ public class ShowChangelogCommand : BaseCommand
 
             var content = await File.ReadAllTextAsync(changelogPath);
 
-            // Extract the section for the current version (using same pattern as PowerShell script)
-            var pattern = $@"## \[{Regex.Escape(currentVersion)}\].*?(?=\n## |\n$|\Z)";
-            var match = Regex.Match(content, pattern, RegexOptions.Singleline);
-
-            if (!match.Success)
+            // Parse all available versions with their dates
+            var versionInfos = ParseAvailableVersions(content);
+            if (!versionInfos.Any())
             {
-                console.MarkupLine($"[yellow]No changelog section found for version {currentVersion}[/]");
-                console.WriteLine();
+                console.MarkupLine("[yellow]No version sections found in changelog![/]");
+                return;
+            }
+
+            string selectedVersion;
+
+            if (!string.IsNullOrEmpty(requestedVersion))
+            {
+                // Use the specified version
+                selectedVersion = requestedVersion;
+                if (!versionInfos.Any(v => v.Version.Equals(selectedVersion, StringComparison.OrdinalIgnoreCase)))
+                {
+                    console.MarkupLine($"[yellow]Version '{requestedVersion}' not found in changelog![/]");
+                    console.WriteLine();
+                    ShowAvailableVersions(console, versionInfos);
+                    return;
+                }
+            }
+            else
+            {
+                // Get current version and show interactive selection
+                var assembly = Assembly.GetExecutingAssembly();
+                var version = assembly.GetName().Version;
+                var currentVersion = version != null ? $"{version.Major}.{version.Minor}" : null;
+
+                if (currentVersion != null)
+                {
+                    console.MarkupLine($"[dim]Current version: {currentVersion}[/]");
+                    console.WriteLine();
+                }
+
+                // Interactive version selection
+                var versionChoices = versionInfos.Select(v => new VersionChoice(v.Version, v.Date, v.Version.Equals(currentVersion))).ToList();
                 
-                // Show available versions
-                var availableSections = Regex.Matches(content, @"## \[([^\]]+)\]");
-                if (availableSections.Count > 0)
-                {
-                    console.MarkupLine("[dim]Available versions:[/]");
-                    foreach (Match section in availableSections)
-                    {
-                        console.MarkupLine($"[dim]  - {section.Groups[1].Value}[/]");
-                    }
-                }
-                return;
+                var selectedVersionChoice = console.Prompt(
+                    new SelectionPrompt<VersionChoice>()
+                        .Title("Select a [green]version[/] to view its changelog:")
+                        .PageSize(15)
+                        .AddChoices(versionChoices)
+                        .UseConverter(choice => 
+                        {
+                            var indicator = choice.IsCurrent ? " [green](current)[/]" : "";
+                            var dateDisplay = !string.IsNullOrEmpty(choice.Date) ? $" [dim]({choice.Date})[/]" : "";
+                            return $"[bold]{choice.Version}[/]{dateDisplay}{indicator}";
+                        }));
+
+                selectedVersion = selectedVersionChoice.Version;
             }
 
-            // Extract and display the changelog content
-            var versionChangelog = match.Value;
-            var lines = versionChangelog.Split('\n');
-            
-            // Skip the version header line and get the date if present
-            var dateMatch = Regex.Match(lines.ElementAtOrDefault(0) ?? "", @"## \[[\d.]+\] - (\d{4}-\d{2}-\d{2})");
-            if (dateMatch.Success)
-            {
-                console.MarkupLine($"[bold]Release Date:[/] [green]{dateMatch.Groups[1].Value}[/]");
-                console.WriteLine();
-            }
-            
-            // Process the content lines (skip version header)
-            var contentLines = lines.Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
-
-            if (!contentLines.Any())
-            {
-                console.MarkupLine("[yellow]No changelog content found for this version.[/]");
-                return;
-            }
-
-            foreach (var line in contentLines)
-            {
-                // Format the line with appropriate styling
-                var formattedLine = FormatChangelogLine(line);
-                if (!string.IsNullOrEmpty(formattedLine))
-                {
-                    console.MarkupLine(formattedLine);
-                }
-            }
+            // Extract and display the changelog content for the selected version
+            DisplayVersionChangelog(console, content, selectedVersion);
         }
         catch (Exception ex)
         {
             console.MarkupLine("[red]Error reading changelog:[/]");
             console.MarkupLine($"[red]{Markup.Escape(ex.Message)}[/]");
+        }
+    }
+
+    private List<VersionInfo> ParseAvailableVersions(string content)
+    {
+        var versionInfos = new List<VersionInfo>();
+        var versionPattern = @"## \[([^\]]+)\](?:\s*-\s*(\d{4}-\d{2}-\d{2}|\w+))?";
+        var matches = Regex.Matches(content, versionPattern);
+
+        foreach (Match match in matches)
+        {
+            var version = match.Groups[1].Value;
+            var date = match.Groups[2].Success ? match.Groups[2].Value : "";
+            versionInfos.Add(new VersionInfo(version, date));
+        }
+
+        return versionInfos;
+    }
+
+    private void ShowAvailableVersions(IAnsiConsole console, List<VersionInfo> versionInfos)
+    {
+        console.MarkupLine("[dim]Available versions:[/]");
+        foreach (var versionInfo in versionInfos)
+        {
+            var dateDisplay = !string.IsNullOrEmpty(versionInfo.Date) ? $" ({versionInfo.Date})" : "";
+            console.MarkupLine($"[dim]  - {versionInfo.Version}{dateDisplay}[/]");
+        }
+    }
+
+    private void DisplayVersionChangelog(IAnsiConsole console, string content, string selectedVersion)
+    {
+        // Extract the section for the selected version
+        var pattern = $@"## \[{Regex.Escape(selectedVersion)}\].*?(?=\n## |\n$|\Z)";
+        var match = Regex.Match(content, pattern, RegexOptions.Singleline);
+
+        if (!match.Success)
+        {
+            console.MarkupLine($"[yellow]No changelog section found for version {selectedVersion}[/]");
+            return;
+        }
+
+        // Extract and display the changelog content
+        var versionChangelog = match.Value;
+        var lines = versionChangelog.Split('\n');
+        
+        // Show version header
+        console.MarkupLine($"[bold]Version {selectedVersion}[/]");
+        
+        // Skip the version header line and get the date if present
+        var dateMatch = Regex.Match(lines.ElementAtOrDefault(0) ?? "", @"## \[[\d.]+\] - (\d{4}-\d{2}-\d{2}|\w+)");
+        if (dateMatch.Success)
+        {
+            console.MarkupLine($"[bold]Release Date:[/] [green]{dateMatch.Groups[1].Value}[/]");
+        }
+        console.WriteLine();
+        
+        // Process the content lines (skip version header)
+        var contentLines = lines.Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
+
+        if (!contentLines.Any())
+        {
+            console.MarkupLine("[yellow]No changelog content found for this version.[/]");
+            return;
+        }
+
+        foreach (var line in contentLines)
+        {
+            // Format the line with appropriate styling
+            var formattedLine = FormatChangelogLine(line);
+            if (!string.IsNullOrEmpty(formattedLine))
+            {
+                console.MarkupLine(formattedLine);
+            }
         }
     }
 
@@ -182,3 +253,7 @@ public class ShowChangelogCommand : BaseCommand
         return Markup.Escape(trimmedLine);
     }
 }
+
+public record VersionInfo(string Version, string Date);
+
+public record VersionChoice(string Version, string Date, bool IsCurrent);

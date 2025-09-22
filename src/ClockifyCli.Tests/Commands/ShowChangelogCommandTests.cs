@@ -47,7 +47,7 @@ public class ShowChangelogCommandTests
     }
 
     [Test]
-    public async Task ExecuteAsync_WithValidChangelog_ShouldDisplayChangelogContent()
+    public async Task ExecuteAsync_WithSpecificVersion_ShouldDisplayThatVersion()
     {
         // Arrange
         var changelogContent = """
@@ -80,15 +80,16 @@ public class ShowChangelogCommandTests
         {
             Directory.SetCurrentDirectory(tempDir);
 
-            // Act
-            var result = await command.ExecuteAsync(null!);
+            // Act - Test with specific version
+            var settings = new ShowChangelogCommand.Settings { Version = "1.12" };
+            var result = await command.ExecuteAsync(null!, settings);
 
             // Assert
             Assert.That(result, Is.EqualTo(0));
             
             var output = console.Output;
             Assert.That(output, Does.Contain("ClockifyCli Changelog"));
-            Assert.That(output, Does.Contain("Current version: 1.12"));
+            Assert.That(output, Does.Contain("Version 1.12"));
             Assert.That(output, Does.Contain("Release Date: 2025-09-22"));
             Assert.That(output, Does.Contain("Bug Fixes"));
             Assert.That(output, Does.Contain("Project Filtering"));
@@ -111,7 +112,8 @@ public class ShowChangelogCommandTests
             Directory.SetCurrentDirectory(tempDir);
 
             // Act
-            var result = await command.ExecuteAsync(null!);
+            var settings = new ShowChangelogCommand.Settings();
+            var result = await command.ExecuteAsync(null!, settings);
 
             // Assert
             Assert.That(result, Is.EqualTo(0));
@@ -155,15 +157,15 @@ public class ShowChangelogCommandTests
             Directory.SetCurrentDirectory(tempDir);
 
             // Act
-            var result = await command.ExecuteAsync(null!);
+            var settings = new ShowChangelogCommand.Settings { Version = "1.12" };
+            var result = await command.ExecuteAsync(null!, settings);
 
             // Assert
             Assert.That(result, Is.EqualTo(0));
             
             var output = console.Output;
             Assert.That(output, Does.Contain("ClockifyCli Changelog"));
-            Assert.That(output, Does.Contain("No changelog section found for version 1.12"));
-            Assert.That(output, Does.Contain("Available versions:"));
+            Assert.That(output, Does.Contain("Version '1.12' not found in changelog!"));
             Assert.That(output, Does.Contain("1.11"));
             Assert.That(output, Does.Contain("1.10"));
         }
@@ -198,14 +200,15 @@ public class ShowChangelogCommandTests
             Directory.SetCurrentDirectory(tempDir);
 
             // Act
-            var result = await command.ExecuteAsync(null!);
+            var settings = new ShowChangelogCommand.Settings { Version = "1.12" };
+            var result = await command.ExecuteAsync(null!, settings);
 
             // Assert
             Assert.That(result, Is.EqualTo(0));
             
             var output = console.Output;
             Assert.That(output, Does.Contain("ClockifyCli Changelog"));
-            Assert.That(output, Does.Contain("Current version: 1.12"));
+            Assert.That(output, Does.Contain("Version 1.12"));
             Assert.That(output, Does.Contain("Release Date: 2025-09-22"));
             Assert.That(output, Does.Contain("No changelog content found for this version"));
         }
@@ -230,14 +233,65 @@ public class ShowChangelogCommandTests
             Directory.SetCurrentDirectory(tempDir);
 
             // Act
-            var result = await command.ExecuteAsync(null!);
+            var settings = new ShowChangelogCommand.Settings { Version = "1.12" };
+            var result = await command.ExecuteAsync(null!, settings);
 
             // Assert
             Assert.That(result, Is.EqualTo(0));
             
             var output = console.Output;
             Assert.That(output, Does.Contain("ClockifyCli Changelog"));
-            Assert.That(output, Does.Contain("No changelog section found for version 1.12"));
+            Assert.That(output, Does.Contain("No version sections found in changelog!"));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDir);
+        }
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WithDifferentVersionRequested_ShouldDisplayRequestedVersion()
+    {
+        // Arrange
+        var changelogContent = """
+            # Changelog
+
+            ## [1.12] - 2025-09-22
+
+            ### Bug Fixes
+
+            - **Project Filtering**: Projects marked as archived
+
+            ## [1.11] - 2025-09-08
+
+            ### User Experience
+
+            - **Improved Time Display**: Removed seconds from all displays
+            """;
+
+        var changelogPath = Path.Combine(tempDir, "CHANGELOG.md");
+        await File.WriteAllTextAsync(changelogPath, changelogContent);
+
+        var originalDir = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(tempDir);
+
+            // Act - Request specific version
+            var settings = new ShowChangelogCommand.Settings { Version = "1.11" };
+            var result = await command.ExecuteAsync(null!, settings);
+
+            // Assert
+            Assert.That(result, Is.EqualTo(0));
+            
+            var output = console.Output;
+            Assert.That(output, Does.Contain("ClockifyCli Changelog"));
+            Assert.That(output, Does.Contain("Version 1.11"));
+            Assert.That(output, Does.Contain("Release Date: 2025-09-08"));
+            Assert.That(output, Does.Contain("User Experience"));
+            Assert.That(output, Does.Contain("Improved Time Display"));
+            // Should NOT contain content from version 1.12
+            Assert.That(output, Does.Not.Contain("Project Filtering"));
         }
         finally
         {

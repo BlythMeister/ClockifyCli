@@ -61,7 +61,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
     }
     
     # Get available commands and options
-    $commands = @('add', 'add-project', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $commands = @('add', 'add-project', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'show-changelog', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
     $options = @('--help', '--version')
     
     # Filter suggestions based on what user has typed

@@ -106,6 +106,11 @@ app.Configure(config =>
                         .WithDescription("Add Task From Jira")
                         .WithExample(new[] { "add-task-from-jira" });
 
+                  // Add the add-project command
+                  config.AddCommand<AddProjectCommand>("add-project")
+                        .WithDescription("Add a new project to Clockify")
+                        .WithExample(new[] { "add-project" });
+
                   // Add the archive-tasks-for-completed-jiras command
                   config.AddCommand<ArchiveTasksForCompletedJirasCommand>("archive-tasks-for-completed-jiras")
                         .WithDescription("Archive Tasks For Completed Jiras")

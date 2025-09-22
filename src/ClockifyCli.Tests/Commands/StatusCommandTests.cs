@@ -90,7 +90,7 @@ public class StatusCommandTests
 
         // Mock projects
         var projectsJson = """[{"id":"project1","name":"Test Project"}]""";
-        mockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects?page=1&page-size=100")
+        mockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects?archived=false&page=1&page-size=100")
                 .Respond("application/json", projectsJson);
 
         // Mock tasks

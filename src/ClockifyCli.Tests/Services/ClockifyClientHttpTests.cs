@@ -91,7 +91,7 @@ public class ClockifyClientHttpTests
         var jsonResponse = """[{"id":"project1","name":"Test Project","clientName":"Test Client"}]""";
 
         mockHttp.When(HttpMethod.Get, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/projects")
-                 .WithExactQueryString("page=1&page-size=100")
+                 .WithExactQueryString("archived=false&page=1&page-size=100")
                  .Respond("application/json", jsonResponse);
 
         var clockifyClient = new ClockifyClient(httpClient, TestApiKey);

@@ -150,7 +150,7 @@ public class ClockifyClient : IClockifyClient
 
     public async Task<List<ProjectInfo>> GetProjects(WorkspaceInfo workspace)
     {
-        return await GetPagedAsync<ProjectInfo>($"workspaces/{workspace.Id}/projects");
+        return await GetPagedAsync<ProjectInfo>($"workspaces/{workspace.Id}/projects?archived=false");
     }
 
     public async Task<List<TaskInfo>> GetTasks(WorkspaceInfo workspace, ProjectInfo project)

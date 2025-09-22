@@ -252,6 +252,8 @@ clockify-cli upload-to-tempo
 
 `clockify-cli start --help` - Show help for specific command
 
+`clockify-cli show-changelog` - Display the changelog for the current version
+
 ## 🔧 Configuration Management
 
 ### Configuration Commands
@@ -344,6 +346,7 @@ The intelligent time input works across all time entry scenarios:
 | `config set` | Configure API keys and credentials | `clockify-cli config set` |
 | `config view` | View current configuration | `clockify-cli config view` |
 | `full-view` | Open Clockify web app in browser | `clockify-cli full-view` |
+| `show-changelog` | Display changelog for current version | `clockify-cli show-changelog` |
 
 ## 🤝 Contributing
 

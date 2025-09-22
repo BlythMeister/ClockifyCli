@@ -31,7 +31,12 @@ public class ShowChangelogCommand : BaseCommand
             // Get the current version from assembly
             var assembly = Assembly.GetExecutingAssembly();
             var version = assembly.GetName().Version;
-            var currentVersion = version != null ? $"{version.Major}.{version.Minor}" : "1.12";
+            if (version == null)
+            {
+                console.MarkupLine("[red]Unable to determine current version![/]");
+                return;
+            }
+            var currentVersion = $"{version.Major}.{version.Minor}";
 
             console.MarkupLine($"[dim]Current version: {currentVersion}[/]");
             console.WriteLine();

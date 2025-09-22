@@ -256,6 +256,8 @@ clockify-cli upload-to-tempo
 
 `clockify-cli start --help` - Show help for specific command
 
+`clockify-cli show-changelog` - Display the changelog for the current version
+
 ## 🔧 Configuration Management
 
 ### Configuration Commands

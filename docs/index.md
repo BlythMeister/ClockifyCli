@@ -57,7 +57,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
     }
     
     # Get available commands and options
-    $commands = @('add', 'add-project', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $commands = @('add', 'add-project', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'show-changelog', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
     $options = @('--help', '--version')
     
     # Filter suggestions based on what user has typed
@@ -263,6 +263,10 @@ clockify-cli upload-to-tempo
 
 `clockify-cli start --help` - Show help for specific command
 
+`clockify-cli show-changelog` - Display changelog with interactive version selection
+
+`clockify-cli show-changelog --version 1.11` - Display changelog for a specific version
+
 ## 🔧 Configuration Management
 
 ### Configuration Commands
@@ -356,6 +360,7 @@ The intelligent time input works across all time entry scenarios:
 | `config set` | Configure API keys and credentials | `clockify-cli config set` |
 | `config view` | View current configuration | `clockify-cli config view` |
 | `full-view` | Open Clockify web app in browser | `clockify-cli full-view` |
+| `show-changelog` | Display changelog with version selection | `clockify-cli show-changelog`, `clockify-cli show-changelog --version 1.11` |
 
 ## 🤝 Contributing
 

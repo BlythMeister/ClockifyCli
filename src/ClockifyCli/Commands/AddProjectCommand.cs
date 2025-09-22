@@ -13,8 +13,8 @@ public class AddProjectCommand : BaseCommand<AddProjectCommand.Settings>
     // Constructor for dependency injection (now required)
     public AddProjectCommand(IClockifyClient clockifyClient, IAnsiConsole console)
     {
-        this.clockifyClient = clockifyClient;
-        this.console = console;
+        this.clockifyClient = clockifyClient ?? throw new ArgumentNullException(nameof(clockifyClient));
+        this.console = console ?? throw new ArgumentNullException(nameof(console));
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)

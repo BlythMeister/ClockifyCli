@@ -31,6 +31,32 @@ public class AddProjectCommandTests
     }
 
     [Test]
+    public void Constructor_WithNullClockifyClient_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var console = new TestConsole();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new AddProjectCommand(null!, console));
+    }
+
+    [Test]
+    public void Constructor_WithNullConsole_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var mockHttp = new MockHttpMessageHandler();
+        var httpClient = new HttpClient(mockHttp);
+        var clockifyClient = new ClockifyClient(httpClient, "test-key");
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new AddProjectCommand(clockifyClient, null!));
+
+        // Cleanup
+        mockHttp.Dispose();
+        httpClient.Dispose();
+    }
+
+    [Test]
     public void AddProjectCommand_WithInjectedDependencies_ShouldInitializeCorrectly()
     {
         // Arrange

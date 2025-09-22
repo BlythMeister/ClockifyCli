@@ -170,6 +170,11 @@ app.Configure(config =>
                         .WithDescription("Display current in-progress time entry from Clockify")
                         .WithExample(new[] { "status" });
 
+                  // Add the show-changelog command
+                  config.AddCommand<ShowChangelogCommand>("show-changelog")
+                        .WithDescription("Display the changelog for the current version")
+                        .WithExample(new[] { "show-changelog" });
+
                   // Add the stop command
                   config.AddCommand<StopCommand>("stop")
                         .WithDescription("Stop the currently running time entry in Clockify")

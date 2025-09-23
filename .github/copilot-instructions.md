@@ -50,6 +50,15 @@ When bumping versions, update ALL of the following files:
 - Increment MINOR for new features and improvements
 - Increment MAJOR for breaking changes
 
+#### Change Log Management
+
+- All changes should be added to the change log detailing what has changed.
+
+#### When To Increase Version
+
+- For each change to master the version the version number should be incremented.
+- The develop branch will combine change sets, so only the 1st change on develop to push ahead of master should increment the numbers.
+
 ### Commit and Release Process
 
 #### Branch Management

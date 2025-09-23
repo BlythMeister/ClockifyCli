@@ -5,6 +5,18 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15] - 2025-09-23
+
+### Bug Fixes
+
+- **Time Interpretation During Editing**: Fixed ambiguous time interpretation when editing completed timers
+  - When editing a completed timer (e.g., 11:08-11:39), entering "11:20" as new start time now correctly interprets as 11:20 AM instead of 11:20 PM
+  - Changed context logic to use end time instead of start time for better disambiguation in editing scenarios
+  - Added null safety check - if end time is null for non-running timers, fallback to start time as context
+  - Both "11:20" and "11:20 AM" now behave identically when editing timer start times
+  - Preserves existing behavior for running timers (still uses current time as context)
+  - Added comprehensive test coverage to prevent regression
+
 ## [1.14] - 2025-09-23
 
 ### Enhancements

@@ -16,7 +16,7 @@
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <ToolCommandName>clockify-cli</ToolCommandName>
     <PackageId>ClockifyCli</PackageId>
-    <Version>1.13</Version>
+    <Version>1.14</Version>
     <Authors>Chris Blyth</Authors>
     <Description>A command-line tool for managing time entries between Clockify, Jira, and Tempo</Description>
     <PackageTags>clockify;jira;tempo;time-tracking;cli</PackageTags>
@@ -41,6 +41,7 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\..\README.md')" />
     <None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" Condition="Exists('..\..\CHANGELOG.md')" />
     <None Include="icon.png" Pack="true" PackagePath="\" Condition="Exists('icon.png')" />
+    <EmbeddedResource Include="..\..\CHANGELOG.md" Condition="Exists('..\..\CHANGELOG.md')" />
   </ItemGroup>
 
 </Project>

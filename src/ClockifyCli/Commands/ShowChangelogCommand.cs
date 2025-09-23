@@ -3,17 +3,20 @@ using Spectre.Console.Cli;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using ClockifyCli.Services;
 
 namespace ClockifyCli.Commands;
 
 public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
 {
     private readonly IAnsiConsole console;
+    private readonly IChangelogReader changelogReader;
 
     // Constructor for dependency injection (now required)
-    public ShowChangelogCommand(IAnsiConsole console)
+    public ShowChangelogCommand(IAnsiConsole console, IChangelogReader changelogReader)
     {
         this.console = console ?? throw new ArgumentNullException(nameof(console));
+        this.changelogReader = changelogReader ?? throw new ArgumentNullException(nameof(changelogReader));
     }
 
     public class Settings : CommandSettings
@@ -36,16 +39,14 @@ public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
 
         try
         {
-            // Find and read the CHANGELOG.md file
-            var changelogPath = await FindChangelogFile();
-            if (string.IsNullOrEmpty(changelogPath))
+            // Read the CHANGELOG.md from embedded resources
+            var content = await changelogReader.ReadChangelogAsync();
+            if (string.IsNullOrEmpty(content))
             {
-                console.MarkupLine("[red]CHANGELOG.md not found![/]");
-                console.MarkupLine("[dim]The changelog file should be located in the application directory.[/]");
+                console.MarkupLine("[red]CHANGELOG.md not found in embedded resources![/]");
+                console.MarkupLine("[dim]The changelog should be embedded in the application.[/]");
                 return;
             }
-
-            var content = await File.ReadAllTextAsync(changelogPath);
 
             // Parse all available versions with their dates
             var versionInfos = ParseAvailableVersions(content);
@@ -181,29 +182,6 @@ public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
                 console.MarkupLine(formattedLine);
             }
         }
-    }
-
-    private Task<string?> FindChangelogFile()
-    {
-        // Try different possible locations for CHANGELOG.md
-        var possiblePaths = new[]
-        {
-            "CHANGELOG.md",
-            Path.Combine(AppContext.BaseDirectory, "CHANGELOG.md"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "CHANGELOG.md"),
-            Path.Combine(Directory.GetCurrentDirectory(), "CHANGELOG.md"),
-            Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "CHANGELOG.md"),
-        };
-
-        foreach (var path in possiblePaths)
-        {
-            if (File.Exists(path))
-            {
-                return Task.FromResult<string?>(path);
-            }
-        }
-
-        return Task.FromResult<string?>(null);
     }
 
     private static string FormatChangelogLine(string line)

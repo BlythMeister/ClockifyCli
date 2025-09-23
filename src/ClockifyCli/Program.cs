@@ -22,6 +22,7 @@ services.AddHttpClient();
 // Register our services
 services.AddSingleton<ConfigurationService>();
 services.AddSingleton<IClock, SystemClock>();
+services.AddTransient<IChangelogReader, EmbeddedChangelogReader>();
 
 // Register client factories that will create clients on-demand
 services.AddTransient<ClockifyClient>(provider =>
@@ -93,7 +94,7 @@ var app = new CommandApp(registrar);
 app.Configure(config =>
               {
                   config.SetApplicationName("clockify-cli");
-                  config.SetApplicationVersion("1.13");
+                  config.SetApplicationVersion("1.14");
                   config.UseAssemblyInformationalVersion();
 
                   // Add the add manual timer command

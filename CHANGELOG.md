@@ -5,6 +5,17 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14] - 2025-09-23
+
+### Enhancements
+
+- **Embedded Changelog Resource**: Improved changelog access reliability for packaged applications
+  - Changelog content is now embedded as a resource in the application binary
+  - Eliminates "changelog not found" errors when using the tool as a global package
+  - Added dependency injection architecture with `IChangelogReader` interface for better testability
+  - Maintains backward compatibility while ensuring consistent access across all deployment scenarios
+  - Changelog remains included in NuGet package for documentation purposes
+
 ## [1.13] - 2025-09-22
 
 ### New Features

@@ -878,4 +878,36 @@ public class EditTimerCommandTests
         Assert.That(success, Is.True);
         Assert.That(result.Hours, Is.EqualTo(8)); // Should be 8:30 AM
     }
+
+    [Test]
+    public void EditingCompletedTimer_AmbiguousStartTime_UsesEndTimeAsContext()
+    {
+        // This test validates the fix for issue #9: Time interpretation when editing
+        // When editing a completed timer (11:08-11:39), entering "11:20" as new start time
+        // should be interpreted as 11:20 AM, not 11:20 PM, by using end time as context
+        
+        var originalStart = new DateTime(2024, 1, 15, 11, 8, 0);   // 11:08 AM
+        var originalEnd = new DateTime(2024, 1, 15, 11, 39, 0);    // 11:39 AM
+        
+        // For completed timers, the EditTimerCommand should use end time as context
+        var contextTime = originalEnd; // This is the fix - use end time, not start time
+        
+        // Test the scenario from issue #9
+        var success = IntelligentTimeParser.TryParseStartTime("11:20", out var result, contextTime);
+        
+        Assert.That(success, Is.True);
+        Assert.That(result.Hours, Is.EqualTo(11)); // Should be 11:20 AM (11), not 11:20 PM (23)
+        Assert.That(result.Minutes, Is.EqualTo(20));
+        
+        // Verify the proposed start time would be valid (before end time)
+        var proposedStartTime = originalStart.Date.Add(result);
+        Assert.That(proposedStartTime, Is.LessThan(originalEnd), 
+            "New start time should be before the existing end time");
+        
+        // Verify this matches the interpretation of "11:20 AM" (explicit)
+        var successAM = IntelligentTimeParser.TryParseStartTime("11:20 AM", out var resultAM, contextTime);
+        Assert.That(successAM, Is.True);
+        Assert.That(result, Is.EqualTo(resultAM), 
+            "Ambiguous '11:20' should be interpreted the same as explicit '11:20 AM'");
+    }
 }

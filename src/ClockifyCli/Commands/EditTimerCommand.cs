@@ -387,7 +387,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             if (!string.IsNullOrWhiteSpace(newStartTimeStr))
             {
                 // For running timers, use current time as context. For completed timers, use the end time as context for better disambiguation.
-                var contextTime = isRunning ? DateTime.Now : newEndTime!.Value;
+                // If end time is null, fallback to start time as context.
+                var contextTime = isRunning ? DateTime.Now : (newEndTime ?? newStartTime);
                 
                 if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, contextTime))
                 {

@@ -217,12 +217,45 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         console.WriteLine();
 
         // Initialize variables with current values
+        // Local method to edit project and task
         var newStartTime = currentStartTime;
         DateTime? newEndTime = isRunning ? null : selectedEntry.TimeInterval.EndDate.ToLocalTime();
         var newDescription = selectedEntry.Description;
         var newProjectId = selectedEntry.ProjectId;
         var newTaskId = selectedEntry.TaskId;
         var hasChanges = false;
+
+        // Local method to edit project and task
+        void EditProjectAndTask()
+        {
+            console.WriteLine();
+            console.MarkupLine("[bold]Selecting New Project and Task[/]");
+            console.WriteLine();
+
+            var result = ProjectListHelper.PromptForProjectAndTaskFromLists(console, projects, allTasks);
+            if (result == null)
+            {
+                console.MarkupLine("[yellow]Project/task selection cancelled or no projects available.[/]");
+                return;
+            }
+            var (selectedProject, selectedTask) = result.Value;
+            var tempNewProjectId = selectedProject.Id;
+            var tempNewTaskId = selectedTask?.TaskId;
+
+            // Check if this is actually a change
+            if (newProjectId != tempNewProjectId || newTaskId != tempNewTaskId)
+            {
+                newProjectId = tempNewProjectId;
+                newTaskId = tempNewTaskId;
+                hasChanges = true;
+                var taskName = selectedTask?.TaskName ?? "(No Task)";
+                console.MarkupLine($"[green]✓[/] Project/Task will be changed to: [cyan]{Markup.Escape(selectedProject.Name)}[/] - [yellow]{Markup.Escape(taskName)}[/]");
+            }
+            else
+            {
+                console.MarkupLine("[dim]Project/Task unchanged (same as current).[/]");
+            }
+        }
 
         // Menu-based editing loop
         while (true)
@@ -248,7 +281,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             switch (editOption)
             {
                 case "Change project/task":
-                    await EditProjectAndTask();
+                    EditProjectAndTask();
                     break;
 
                 case "Change times":
@@ -274,100 +307,6 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         {
             console.MarkupLine("[yellow]No changes made. Operation cancelled.[/]");
             return;
-        }
-
-        // Local method to edit project and task
-        async Task EditProjectAndTask()
-        {
-            console.WriteLine();
-            console.MarkupLine("[bold]Selecting New Project and Task[/]");
-            console.WriteLine();
-
-            // Get all projects for the workspace
-            await console.Status()
-                         .StartAsync("Loading projects...", async ctx =>
-                         {
-                             projects = await clockifyClient.GetProjects(workspace);
-                         });
-
-            if (projects.Count == 0)
-            {
-                console.MarkupLine("[red]No projects found in this workspace.[/]");
-                return;
-            }
-
-            // Loop to allow going back from task selection to project selection
-            while (true)
-            {
-                var selectedProject = console.Prompt(
-                    new SelectionPrompt<ProjectInfo>()
-                        .Title("Select new [green]project[/]:")
-                        .PageSize(15)
-                        .AddChoices(projects.OrderBy(p => p.Name))
-                        .UseConverter(p => Markup.Escape(p.Name)));
-
-                var tempNewProjectId = selectedProject.Id;
-
-                // If project changed, also ask for task within that project
-                var projectTasks = allTasks.Where(t => t.ProjectId == selectedProject.Id)
-                                          .OrderBy(t => t.TaskName)
-                                          .ToList();
-
-                if (projectTasks.Any())
-                {
-                    // Only add "Back" option if there are multiple projects
-                    var taskChoices = new List<TaskWithProject>(projectTasks);
-                    if (projects.Count > 1)
-                    {
-                        var backOption = new TaskWithProject("__BACK__", "← Back to project selection", selectedProject.Id, selectedProject.Name);
-                        taskChoices.Add(backOption);
-                    }
-
-                    var selectedTaskOrBack = console.Prompt(
-                        new SelectionPrompt<TaskWithProject>()
-                            .Title($"Select new [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
-                            .PageSize(15)
-                            .AddChoices(taskChoices)
-                            .UseConverter(t => t.TaskId == "__BACK__" ? $"[dim]{Markup.Escape(t.TaskName)}[/]" : Markup.Escape(t.TaskName)));
-
-                    // Check if user selected "Back"
-                    if (selectedTaskOrBack.TaskId == "__BACK__")
-                    {
-                        continue; // Go back to project selection
-                    }
-
-                    // Check if this is actually a change
-                    if (newProjectId != tempNewProjectId || newTaskId != selectedTaskOrBack.TaskId)
-                    {
-                        newProjectId = tempNewProjectId;
-                        newTaskId = selectedTaskOrBack.TaskId;
-                        hasChanges = true;
-                        console.MarkupLine($"[green]✓[/] Project/Task will be changed to: [cyan]{Markup.Escape(selectedProject.Name)}[/] - [yellow]{Markup.Escape(selectedTaskOrBack.TaskName)}[/]");
-                    }
-                    else
-                    {
-                        console.MarkupLine("[dim]Project/Task unchanged (same as current).[/]");
-                    }
-                    break; // Exit the loop when a task is selected
-                }
-                else
-                {
-                    console.MarkupLine($"[yellow]No tasks found for project '{Markup.Escape(selectedProject.Name)}'. Task will be cleared.[/]");
-                    // Check if this is actually a change
-                    if (newProjectId != tempNewProjectId || newTaskId != null)
-                    {
-                        newProjectId = tempNewProjectId;
-                        newTaskId = null;
-                        hasChanges = true;
-                        console.MarkupLine($"[green]✓[/] Project will be changed to: [cyan]{Markup.Escape(selectedProject.Name)}[/] (no task)");
-                    }
-                    else
-                    {
-                        console.MarkupLine("[dim]Project unchanged (same as current).[/]");
-                    }
-                    break; // Exit the loop since there are no tasks to select
-                }
-            }
         }
 
         // Local method to edit times

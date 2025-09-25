@@ -8,17 +8,29 @@ using NUnit.Framework;
 using RichardSzalay.MockHttp;
 using Spectre.Console.Testing;
 using System;
+using System.Collections.Generic;
 
 namespace ClockifyCli.Tests.Commands;
 
 [TestFixture]
 public class StartCommandTests
 {
+    private static void SetupRecentTimeEntriesMock(MockHttpMessageHandler mockHandler, string? workspaceId = null, string? userId = null, string responseJson = "[]")
+    {
+        var workspaceSegment = workspaceId ?? "*";
+        var userSegment = userId ?? "*";
+
+        mockHandler.When(HttpMethod.Get, $"https://api.clockify.me/api/v1/workspaces/{workspaceSegment}/user/{userSegment}/time-entries")
+                   .WithQueryString(new Dictionary<string, string> { ["in-progress"] = "false" })
+                   .Respond("application/json", responseJson);
+    }
+
     [Test]
     public void StartCommand_WithInjectedDependencies_ShouldInitializeCorrectly()
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
@@ -26,7 +38,8 @@ public class StartCommandTests
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
 
         // Act & Assert
-        Assert.DoesNotThrow(() => new StartCommand(clockifyClient, testConsole, mockClock));
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        Assert.DoesNotThrow(() => new StartCommand(clockifyClient, testConsole, mockClock, configService));
 
         // Cleanup
         clockifyMockHttp.Dispose();
@@ -38,6 +51,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info (required first call)
@@ -52,7 +66,8 @@ public class StartCommandTests
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole();
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -74,6 +89,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -97,7 +113,8 @@ public class StartCommandTests
         // Simulate user declining to stop current timer
         testConsole.Input.PushTextWithEnter("n"); // Answer "No" to the confirmation prompt
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -121,6 +138,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -149,7 +167,8 @@ public class StartCommandTests
         // Simulate user accepting to stop current timer
         testConsole.Input.PushTextWithEnter("y"); // Answer "Yes" to the confirmation prompt
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -162,7 +181,7 @@ public class StartCommandTests
         Assert.That(output, Does.Contain("A timer is already running!"), "Should display already running warning message");
         Assert.That(output, Does.Contain("Do you want to stop the current timer and start a new one?"), "Should ask for confirmation");
         Assert.That(output, Does.Contain("Collecting new timer details first..."), "Should indicate collecting new timer details first");
-            Assert.That(output, Does.Contain("No projects with active tasks found!"), "Should display no projects with active tasks message");
+        Assert.That(output, Does.Contain("No projects with active tasks found!"), "Should display no projects with active tasks message");
         Assert.That(output, Does.Not.Contain("Current timer stopped"), "Should NOT stop the timer when no projects are available");
 
         // Cleanup
@@ -175,6 +194,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -224,7 +244,8 @@ public class StartCommandTests
         testConsole.Input.PushTextWithEnter("y");              // Confirm start timer
 
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -249,6 +270,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -288,7 +310,8 @@ public class StartCommandTests
         testConsole.Input.PushTextWithEnter("n");              // Cancel at final confirmation
 
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -314,6 +337,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -355,7 +379,8 @@ public class StartCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Now" for start time
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -379,6 +404,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -423,7 +449,8 @@ public class StartCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Rule 7: Select 08:00 (24-hour format) for start time clarification
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -448,6 +475,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -492,7 +520,8 @@ public class StartCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Rule 7: Select 08:30 (24-hour format) for clarification
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -514,6 +543,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -564,7 +594,8 @@ public class StartCommandTests
         testConsole.Input.PushTextWithEnter(futureTime); // Enter future time (should be interpreted as yesterday)
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
 
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -588,6 +619,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -656,7 +688,8 @@ public class StartCommandTests
         testConsole.Input.PushTextWithEnter(validTime); // Enter valid time after validation error (06:00 today)
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
 
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -678,6 +711,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -733,7 +767,8 @@ public class StartCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Rule 7: Select 01:00 (today, 1 hour ago - valid)
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
 
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -754,6 +789,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -777,7 +813,8 @@ public class StartCommandTests
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole();
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -799,6 +836,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -831,7 +869,8 @@ public class StartCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
 
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -853,6 +892,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -895,7 +935,8 @@ public class StartCommandTests
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
 
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -921,6 +962,7 @@ public class StartCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -937,15 +979,15 @@ public class StartCommandTests
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
                         .Respond("application/json", "[]");
 
-    // Mock projects response with only Project Beta (since only projects with tasks are shown)
-    var projectsJson = """[{"id":"project2","name":"Project Beta"}]""";
-    clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
-            .Respond("application/json", projectsJson);
+        // Mock projects response with only Project Beta (since only projects with tasks are shown)
+        var projectsJson = """[{"id":"project2","name":"Project Beta"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                .Respond("application/json", projectsJson);
 
-    // Mock tasks response for Project Beta
-    var tasksJson = """[{"id":"task1","name":"Beta Task 1","status":"Active"}]""";
-    clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project2/tasks")
-            .Respond("application/json", tasksJson);
+        // Mock tasks response for Project Beta
+        var tasksJson = """[{"id":"task1","name":"Beta Task 1","status":"Active"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project2/tasks")
+                .Respond("application/json", tasksJson);
 
         // Mock start time entry response
         var startedEntryJson = """{"id":"entry456","description":"Test timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
@@ -964,7 +1006,8 @@ public class StartCommandTests
         testConsole.Input.PushTextWithEnter("y"); // Confirm start
 
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
-        var command = new StartCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -1003,6 +1046,8 @@ public class StartCommandTests
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(mockTasks);
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                  .ReturnsAsync(new List<TimeEntry>());
 
         var expectedStartTimeEntry = new StartTimeEntry(
             "2024-01-01T14:00:00Z",
@@ -1025,7 +1070,8 @@ public class StartCommandTests
         testConsole.Input.PushTextWithEnter(""); // No custom start time
         testConsole.Input.PushTextWithEnter("y"); // Confirm start (yes/no prompt)
 
-        var command = new StartCommand(mockClockifyClient.Object, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var command = new StartCommand(mockClockifyClient.Object, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);

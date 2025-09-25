@@ -12,12 +12,14 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 {
     private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
+    private readonly ConfigurationService configService;
 
     // Constructor for dependency injection (now required)
-    public EditTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console)
+    public EditTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console, ConfigurationService configService)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
+        this.configService = configService;
     }
 
     public class Settings : CommandSettings
@@ -56,28 +58,30 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
         List<TimeEntry> timeEntries = new();
         List<ProjectInfo> projects = new();
+        // Load config for recent tasks feature
+        var config = await configService.LoadConfigurationAsync();
         List<TaskWithProject> allTasks = new();
         TimeEntry? currentRunningEntry = null;
 
         await console.Status()
-                         .StartAsync("Loading time entries...", async ctx =>
-                                                                {
-                                                                    ctx.Status("Getting time entries from Clockify...");
-                                                                    timeEntries = await clockifyClient.GetTimeEntries(workspace, user, startDate, endDate);
+            .StartAsync("Loading time entries...", async ctx =>
+            {
+                ctx.Status("Getting time entries from Clockify...");
+                timeEntries = await clockifyClient.GetTimeEntries(workspace, user, startDate, endDate);
 
-                                                                    ctx.Status("Checking for running timer...");
-                                                                    currentRunningEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
+                ctx.Status("Checking for running timer...");
+                currentRunningEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
 
-                                                                    ctx.Status("Getting projects and tasks from Clockify...");
-                                                                    projects = await clockifyClient.GetProjects(workspace);
+                ctx.Status("Getting projects and tasks from Clockify...");
+                projects = await clockifyClient.GetProjects(workspace);
 
-                                                                    foreach (var project in projects)
-                                                                    {
-                                                                        var projectTasks = await clockifyClient.GetTasks(workspace, project);
-                                                                        var tasksWithProject = projectTasks.Select(task => new TaskWithProject(task.Id, task.Name, project.Id, project.Name)).ToList();
-                                                                        allTasks.AddRange(tasksWithProject);
-                                                                    }
-                                                                });
+                foreach (var project in projects)
+                {
+                    var projectTasks = await clockifyClient.GetTasks(workspace, project);
+                    var tasksWithProject = projectTasks.Select(task => new TaskWithProject(task.Id, task.Name, project.Id, project.Name)).ToList();
+                    allTasks.AddRange(tasksWithProject);
+                }
+            });
 
         if (!timeEntries.Any() && currentRunningEntry == null)
         {
@@ -165,10 +169,10 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                                  }));
 
         // Step 3: Show current details and edit
-        await EditSelectedEntry(clockifyClient, workspace, selectedEntry, projects, allTasks, currentRunningEntry);
+        await EditSelectedEntry(clockifyClient, workspace, selectedEntry, projects, allTasks, currentRunningEntry, config, user);
     }
 
-    private async Task EditSelectedEntry(IClockifyClient clockifyClient, WorkspaceInfo workspace, TimeEntry selectedEntry, List<ProjectInfo> projects, List<TaskWithProject> allTasks, TimeEntry? currentRunningEntry)
+    private async Task EditSelectedEntry(IClockifyClient clockifyClient, WorkspaceInfo workspace, TimeEntry selectedEntry, List<ProjectInfo> projects, List<TaskWithProject> allTasks, TimeEntry? currentRunningEntry, AppConfiguration config, UserInfo userInfo)
     {
         var project = projects.FirstOrDefault(p => p.Id == selectedEntry.ProjectId);
         var task = allTasks.FirstOrDefault(t => t.TaskId == selectedEntry.TaskId);
@@ -226,21 +230,22 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         var hasChanges = false;
 
         // Local method to edit project and task
-        void EditProjectAndTask()
+        async Task EditProjectAndTaskAsync()
         {
             console.WriteLine();
             console.MarkupLine("[bold]Selecting New Project and Task[/]");
             console.WriteLine();
 
-            var result = ProjectListHelper.PromptForProjectAndTaskFromLists(console, projects, allTasks);
+            // Use recent timers selection logic (with fallback)
+            var result = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, console, workspace, config, userInfo);
             if (result == null)
             {
                 console.MarkupLine("[yellow]Project/task selection cancelled or no projects available.[/]");
                 return;
             }
-            var (selectedProject, selectedTask) = result.Value;
+            (ProjectInfo selectedProject, TaskInfo selectedTask) = result.Value;
             var tempNewProjectId = selectedProject.Id;
-            var tempNewTaskId = selectedTask?.TaskId;
+            var tempNewTaskId = selectedTask.Id;
 
             // Check if this is actually a change
             if (newProjectId != tempNewProjectId || newTaskId != tempNewTaskId)
@@ -248,7 +253,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                 newProjectId = tempNewProjectId;
                 newTaskId = tempNewTaskId;
                 hasChanges = true;
-                var taskName = selectedTask?.TaskName ?? "(No Task)";
+                var taskName = selectedTask.Name ?? "(No Task)";
                 console.MarkupLine($"[green]✓[/] Project/Task will be changed to: [cyan]{Markup.Escape(selectedProject.Name)}[/] - [yellow]{Markup.Escape(taskName)}[/]");
             }
             else
@@ -281,7 +286,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             switch (editOption)
             {
                 case "Change project/task":
-                    EditProjectAndTask();
+                    await EditProjectAndTaskAsync();
                     break;
 
                 case "Change times":

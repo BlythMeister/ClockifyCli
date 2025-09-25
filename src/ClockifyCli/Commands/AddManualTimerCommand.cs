@@ -11,13 +11,15 @@ public class AddManualTimerCommand : BaseCommand
     private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
     private readonly IClock clock;
+    private readonly ConfigurationService configService;
 
     // Constructor for dependency injection (now required)
-    public AddManualTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
+    public AddManualTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock, ConfigurationService configService)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
         this.clock = clock;
+        this.configService = configService;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context)
@@ -38,9 +40,10 @@ public class AddManualTimerCommand : BaseCommand
             console.MarkupLine("[red]No workspace found![/]");
             return;
         }
+        var config = await configService.LoadConfigurationAsync();
 
         // Use ProjectListHelper to select project and task
-        var projectAndTask = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, console, workspace);
+        var projectAndTask = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, console, workspace, config, user);
         if (projectAndTask == null)
         {
             return;

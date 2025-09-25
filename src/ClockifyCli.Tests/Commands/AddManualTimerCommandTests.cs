@@ -6,17 +6,29 @@ using ClockifyCli.Utilities;
 using NUnit.Framework;
 using RichardSzalay.MockHttp;
 using Spectre.Console.Testing;
+using System.Collections.Generic;
 
 namespace ClockifyCli.Tests.Commands;
 
 [TestFixture]
 public class AddManualTimerCommandTests
 {
+    private static void SetupRecentTimeEntriesMock(MockHttpMessageHandler mockHandler, string? workspaceId = null, string? userId = null, string responseJson = "[]")
+    {
+        var workspaceSegment = workspaceId ?? "*";
+        var userSegment = userId ?? "*";
+
+        mockHandler.When(HttpMethod.Get, $"https://api.clockify.me/api/v1/workspaces/{workspaceSegment}/user/{userSegment}/time-entries")
+                   .WithQueryString(new Dictionary<string, string> { ["in-progress"] = "false" })
+                   .Respond("application/json", responseJson);
+    }
+
     [Test]
     public void AddManualTimerCommand_WithInjectedDependencies_ShouldInitializeCorrectly()
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
@@ -24,7 +36,8 @@ public class AddManualTimerCommandTests
         var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
 
         // Act & Assert
-        Assert.DoesNotThrow(() => new AddManualTimerCommand(clockifyClient, testConsole, mockClock));
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        Assert.DoesNotThrow(() => new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService));
 
         // Cleanup
         clockifyMockHttp.Dispose();
@@ -36,6 +49,7 @@ public class AddManualTimerCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info (required first call)
@@ -50,7 +64,8 @@ public class AddManualTimerCommandTests
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole();
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -72,6 +87,7 @@ public class AddManualTimerCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -91,7 +107,8 @@ public class AddManualTimerCommandTests
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole();
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -100,7 +117,7 @@ public class AddManualTimerCommandTests
         Assert.That(result, Is.EqualTo(0));
 
         var output = testConsole.Output;
-            Assert.That(output, Does.Contain("No projects with active tasks found!"), "Should display no projects with active tasks message");
+        Assert.That(output, Does.Contain("No projects with active tasks found!"), "Should display no projects with active tasks message");
 
         // Cleanup
         clockifyMockHttp.Dispose();
@@ -112,6 +129,7 @@ public class AddManualTimerCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -151,7 +169,8 @@ public class AddManualTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Rule 7: Select 10:00 (24-hour format) for end time clarification
         testConsole.Input.PushTextWithEnter("y"); // Confirm add
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -174,6 +193,7 @@ public class AddManualTimerCommandTests
     {
         // Arrange
         var clockifyMockHttp = new MockHttpMessageHandler();
+        SetupRecentTimeEntriesMock(clockifyMockHttp);
         var clockifyHttpClient = new HttpClient(clockifyMockHttp);
 
         // Mock user info
@@ -208,7 +228,8 @@ public class AddManualTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Rule 7: Select 10:00 (24-hour format) for end time clarification
         testConsole.Input.PushTextWithEnter("n"); // Decline to add
 
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock);
+        var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);

@@ -11,13 +11,15 @@ public class StartCommand : BaseCommand
     private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
     private readonly IClock clock;
+    private readonly ConfigurationService configService;
 
     // Constructor for dependency injection (now required)
-    public StartCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
+    public StartCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock, ConfigurationService configService)
     {
         this.clockifyClient = clockifyClient;
         this.console = console;
         this.clock = clock;
+        this.configService = configService;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context)
@@ -38,6 +40,7 @@ public class StartCommand : BaseCommand
             console.MarkupLine("[red]No workspace found![/]");
             return;
         }
+        var config = await configService.LoadConfigurationAsync();
 
         // Check if there's already a running timer - but don't stop it yet
         var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
@@ -62,7 +65,7 @@ public class StartCommand : BaseCommand
         }
 
         // Use ProjectListHelper to select project and task
-        var projectAndTask = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, console, workspace);
+        var projectAndTask = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, console, workspace, config, user);
         if (projectAndTask == null)
         {
             return;

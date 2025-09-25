@@ -49,7 +49,9 @@ public class ConfigurationServiceTests
             "test-clockify-key",
             "test@example.com",
             "test-jira-token",
-            "test-tempo-key"
+            "test-tempo-key",
+            11,
+            22
         );
 
         // Act
@@ -58,6 +60,8 @@ public class ConfigurationServiceTests
 
         // Assert
         Assert.That(loadedConfig, Is.EqualTo(originalConfig));
+        Assert.That(loadedConfig.RecentTasksCount, Is.EqualTo(11));
+        Assert.That(loadedConfig.RecentTasksDays, Is.EqualTo(22));
     }
 
     [Test]
@@ -68,7 +72,9 @@ public class ConfigurationServiceTests
             "initial-clockify-key",
             "initial@example.com",
             "initial-jira-token",
-            "initial-tempo-key"
+            "initial-tempo-key",
+            8,
+            9
         );
         await configService.SaveConfigurationAsync(initialConfig);
 
@@ -83,6 +89,8 @@ public class ConfigurationServiceTests
         Assert.That(updatedConfig.JiraUsername, Is.EqualTo("updated@example.com"));
         Assert.That(updatedConfig.JiraApiToken, Is.EqualTo("initial-jira-token"));
         Assert.That(updatedConfig.TempoApiKey, Is.EqualTo("initial-tempo-key"));
+        Assert.That(updatedConfig.RecentTasksCount, Is.EqualTo(8));
+        Assert.That(updatedConfig.RecentTasksDays, Is.EqualTo(9));
     }
 
     [Test]
@@ -99,6 +107,8 @@ public class ConfigurationServiceTests
         Assert.That(updatedConfig.JiraUsername, Is.EqualTo(string.Empty));
         Assert.That(updatedConfig.JiraApiToken, Is.EqualTo(string.Empty));
         Assert.That(updatedConfig.TempoApiKey, Is.EqualTo(string.Empty));
+        Assert.That(updatedConfig.RecentTasksCount, Is.EqualTo(5));
+        Assert.That(updatedConfig.RecentTasksDays, Is.EqualTo(7));
 
         // Verify the config was actually saved by loading it again
         var reloadedConfig = await configService.LoadConfigurationAsync();

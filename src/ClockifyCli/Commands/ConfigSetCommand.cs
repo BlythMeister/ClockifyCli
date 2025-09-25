@@ -1,3 +1,15 @@
+/// <summary>
+/// Command to set configuration values for ClockifyCli.
+/// Prompts for:
+/// - Clockify API Key
+/// - Jira Username
+/// - Jira API Token
+/// - Tempo API Key
+/// - Recent Tasks Count (number of recent tasks to show in project/task selection lists)
+/// - Recent Tasks Days (how many days back to consider for recent tasks)
+/// 
+/// Leave fields blank to keep current values.
+/// </summary>
 using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -47,15 +59,31 @@ public class ConfigSetCommand : ConfigCommand
                                           currentConfig.TempoApiKey,
                                           "Get this from Tempo → Settings → API Integration");
 
+        // Recent Tasks Count
+        var recentTasksCount = PromptForInt(
+            "Recent Tasks Count",
+            currentConfig.RecentTasksCount,
+            "Number of recent tasks to show in project/task selection lists (default: 5)",
+            min: 1, max: 50);
+
+        // Recent Tasks Days
+        var recentTasksDays = PromptForInt(
+            "Recent Tasks Days",
+            currentConfig.RecentTasksDays,
+            "How many days back to consider for recent tasks (default: 7)",
+            min: 1, max: 90);
+
         // Update configuration
         try
         {
             var updatedConfig = await configService.UpdateConfigurationAsync(
-                                                                             string.IsNullOrWhiteSpace(clockifyApiKey) ? null : clockifyApiKey,
-                                                                             string.IsNullOrWhiteSpace(jiraUsername) ? null : jiraUsername,
-                                                                             string.IsNullOrWhiteSpace(jiraApiToken) ? null : jiraApiToken,
-                                                                             string.IsNullOrWhiteSpace(tempoApiKey) ? null : tempoApiKey
-                                                                            );
+                string.IsNullOrWhiteSpace(clockifyApiKey) ? null : clockifyApiKey,
+                string.IsNullOrWhiteSpace(jiraUsername) ? null : jiraUsername,
+                string.IsNullOrWhiteSpace(jiraApiToken) ? null : jiraApiToken,
+                string.IsNullOrWhiteSpace(tempoApiKey) ? null : tempoApiKey,
+                recentTasksCount,
+                recentTasksDays
+            );
 
             console.MarkupLine("\n[green]:check_mark: Configuration saved successfully![/]");
 
@@ -76,6 +104,17 @@ public class ConfigSetCommand : ConfigCommand
             console.MarkupLine($"[red]:cross_mark: Failed to save configuration: {ex.Message}[/]");
             return 1;
         }
+    }
+
+    private int PromptForInt(string fieldName, int currentValue, string helpText, int min, int max)
+    {
+        console.MarkupLine($"[dim]{helpText}[/]");
+        var prompt = new TextPrompt<int>($"{fieldName}:")
+            .DefaultValue(currentValue)
+            .AllowEmpty()
+            .ValidationErrorMessage("[red]Please enter a valid number.[/]")
+            .Validate(val => val >= min && val <= max);
+        return console.Prompt(prompt);
     }
 
     private string PromptForSecret(string fieldName, string? currentValue, string helpText)

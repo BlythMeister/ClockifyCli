@@ -4,7 +4,9 @@ public record AppConfiguration(
     string ClockifyApiKey,
     string JiraUsername,
     string JiraApiToken,
-    string TempoApiKey
+    string TempoApiKey,
+    int RecentTasksCount = 5,
+    int RecentTasksDays = 7
 )
 {
     public bool IsComplete()
@@ -15,5 +17,5 @@ public record AppConfiguration(
                !string.IsNullOrWhiteSpace(TempoApiKey);
     }
 
-    public static AppConfiguration Empty => new(string.Empty, string.Empty, string.Empty, string.Empty);
+    public static AppConfiguration Empty => new(string.Empty, string.Empty, string.Empty, string.Empty, 5, 7);
 }

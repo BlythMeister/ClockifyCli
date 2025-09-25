@@ -52,6 +52,8 @@ public class ConfigSetCommandTests
         testConsole.Input.PushTextWithEnter("test@example.com");
         testConsole.Input.PushTextWithEnter("test-jira-token");
         testConsole.Input.PushTextWithEnter("test-tempo-key");
+        testConsole.Input.PushTextWithEnter("15"); // RecentTasksCount
+        testConsole.Input.PushTextWithEnter("21"); // RecentTasksDays
 
         var command = new ConfigSetCommand(configService, testConsole);
 
@@ -64,5 +66,10 @@ public class ConfigSetCommandTests
         // Verify success message was displayed
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("Configuration saved successfully!"));
+
+        // Verify config values
+        var config = await configService.LoadConfigurationAsync();
+        Assert.That(config.RecentTasksCount, Is.EqualTo(15));
+        Assert.That(config.RecentTasksDays, Is.EqualTo(21));
     }
 }

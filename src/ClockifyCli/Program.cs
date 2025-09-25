@@ -130,7 +130,7 @@ app.Configure(config =>
                                                  config.SetDescription("Configuration management commands");
 
                                                  config.AddCommand<ConfigSetCommand>("set")
-                                                       .WithDescription("Set API keys and credentials (required first step)")
+                                                       .WithDescription("Set API keys, credentials, and recent tasks options (required first step). Includes: Clockify API Key, Jira Username, Jira API Token, Tempo API Key, Recent Tasks Count, Recent Tasks Days.")
                                                        .WithExample(new[] { "config", "set" });
 
                                                  config.AddCommand<ConfigViewCommand>("view")

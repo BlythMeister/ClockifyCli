@@ -1,3 +1,13 @@
+/// <summary>
+/// Command to view current configuration for ClockifyCli.
+/// Displays:
+/// - Clockify API Key
+/// - Jira Username
+/// - Jira API Token
+/// - Tempo API Key
+/// - Recent Tasks Count (number of recent tasks to show in project/task selection lists)
+/// - Recent Tasks Days (how many days back to consider for recent tasks)
+/// </summary>
 using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -30,6 +40,8 @@ public class ConfigViewCommand : ConfigCommand
         table.AddRow("Jira Username", config.JiraUsername ?? "[dim]Not set[/]", GetStatus(config.JiraUsername));
         table.AddRow("Jira API Token", MaskSecret(config.JiraApiToken), GetStatus(config.JiraApiToken));
         table.AddRow("Tempo API Key", MaskSecret(config.TempoApiKey), GetStatus(config.TempoApiKey));
+        table.AddRow("Recent Tasks Count", config.RecentTasksCount.ToString(), "[green]Set[/]");
+        table.AddRow("Recent Tasks Days", config.RecentTasksDays.ToString(), "[green]Set[/]");
 
         console.MarkupLine("[bold]Current Configuration[/]");
         console.Write(table);

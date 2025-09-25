@@ -1,5 +1,6 @@
 using ClockifyCli.Commands;
 using ClockifyCli.Services;
+using ClockifyCli.Models;
 using NUnit.Framework;
 using Spectre.Console.Testing;
 
@@ -47,6 +48,10 @@ public class ConfigViewCommandTests
     public async Task ExecuteAsync_ShouldDisplayConfiguration()
     {
         // Arrange
+        // Save a config with custom recent values
+        var config = new AppConfiguration("a", "b", "c", "d", 13, 17);
+        await configService.SaveConfigurationAsync(config);
+
         var command = new ConfigViewCommand(configService, testConsole);
 
         // Act
@@ -59,5 +64,9 @@ public class ConfigViewCommandTests
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("Current Configuration"));
         Assert.That(output, Does.Contain("Configuration file:"));
+        Assert.That(output, Does.Contain("Recent Tasks Count"));
+        Assert.That(output, Does.Contain("13"));
+        Assert.That(output, Does.Contain("Recent Tasks Days"));
+        Assert.That(output, Does.Contain("17"));
     }
 }

@@ -40,7 +40,15 @@ public class ConfigurationService
             var decryptedData = DecryptData(encryptedData);
 
             var json = Encoding.UTF8.GetString(decryptedData);
-            return JsonConvert.DeserializeObject<AppConfiguration>(json) ?? AppConfiguration.Empty;
+            var config = JsonConvert.DeserializeObject<AppConfiguration>(json) ?? AppConfiguration.Empty;
+
+            // Patch for backward compatibility: if values are 0, set to defaults
+            if (config.RecentTasksCount == 0)
+                config = config with { RecentTasksCount = 5 };
+            if (config.RecentTasksDays == 0)
+                config = config with { RecentTasksDays = 7 };
+
+            return config;
         }
         catch (Exception)
         {
@@ -76,16 +84,20 @@ public class ConfigurationService
         string? clockifyApiKey = null,
         string? jiraUsername = null,
         string? jiraApiToken = null,
-        string? tempoApiKey = null)
+        string? tempoApiKey = null,
+        int? recentTasksCount = null,
+        int? recentTasksDays = null)
     {
         var currentConfig = await LoadConfigurationAsync();
 
         var updatedConfig = new AppConfiguration(
-                                                 clockifyApiKey ?? currentConfig.ClockifyApiKey,
-                                                 jiraUsername ?? currentConfig.JiraUsername,
-                                                 jiraApiToken ?? currentConfig.JiraApiToken,
-                                                 tempoApiKey ?? currentConfig.TempoApiKey
-                                                );
+            clockifyApiKey ?? currentConfig.ClockifyApiKey,
+            jiraUsername ?? currentConfig.JiraUsername,
+            jiraApiToken ?? currentConfig.JiraApiToken,
+            tempoApiKey ?? currentConfig.TempoApiKey,
+            recentTasksCount ?? currentConfig.RecentTasksCount,
+            recentTasksDays ?? currentConfig.RecentTasksDays
+        );
 
         await SaveConfigurationAsync(updatedConfig);
         return updatedConfig;

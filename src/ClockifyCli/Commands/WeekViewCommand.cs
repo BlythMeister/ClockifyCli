@@ -104,7 +104,7 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                     }
 
                                                                     // Find "Breaks" project to exclude it from regular reports
-                                                                    var breaksProject = projects.FirstOrDefault(p => 
+                                                                    var breaksProject = projects.FirstOrDefault(p =>
                                                                         string.Equals(p.Name, "Breaks", StringComparison.OrdinalIgnoreCase));
 
                                                                     // Filter out break-related time entries from regular reports
@@ -125,7 +125,7 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                     if (currentEntry != null)
                                                                     {
                                                                         var isCurrentBreak = false;
-                                                                        
+
                                                                         // Check if current entry is from "Breaks" project
                                                                         if (breaksProject != null && currentEntry.ProjectId == breaksProject.Id)
                                                                             isCurrentBreak = true;

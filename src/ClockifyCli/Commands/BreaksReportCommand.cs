@@ -81,7 +81,7 @@ public class BreaksReportCommand : BaseCommand<BreaksReportCommand.Settings>
 
                          ctx.Status("Getting projects and tasks from Clockify...");
                          projects = await clockifyClient.GetProjects(workspace);
-                         
+
                          foreach (var project in projects)
                          {
                              var projectTasks = await clockifyClient.GetTasks(workspace, project);
@@ -98,7 +98,7 @@ public class BreaksReportCommand : BaseCommand<BreaksReportCommand.Settings>
                          ctx.Status("Filtering break entries...");
 
                          // Find "Breaks" project
-                         var breaksProject = projects.FirstOrDefault(p => 
+                         var breaksProject = projects.FirstOrDefault(p =>
                              string.Equals(p.Name, "Breaks", StringComparison.OrdinalIgnoreCase));
 
                          // Filter entries to include only:
@@ -121,7 +121,7 @@ public class BreaksReportCommand : BaseCommand<BreaksReportCommand.Settings>
                          if (currentBreakEntry != null)
                          {
                              var isCurrentBreak = false;
-                             
+
                              // Check if current entry is from "Breaks" project
                              if (breaksProject != null && currentBreakEntry.ProjectId == breaksProject.Id)
                                  isCurrentBreak = true;
@@ -194,7 +194,7 @@ public class BreaksReportCommand : BaseCommand<BreaksReportCommand.Settings>
 
                 // Check if this is the running break entry
                 var isRunning = currentBreakEntry != null && entry.Id == currentBreakEntry.Id;
-                
+
                 TimeSpan duration;
                 var status = "";
                 var endTime = "";
@@ -282,7 +282,7 @@ public class BreaksReportCommand : BaseCommand<BreaksReportCommand.Settings>
             if (dateGroup != entriesByDate.Last())
             {
                 // Add empty row for visual separation
-                var emptyRow = detailed ? 
+                var emptyRow = detailed ?
                     new string[] { "", "", "", "", "", "", "", "" } :
                     new string[] { "", "", "", "", "", "" };
                 table.AddRow(emptyRow);
@@ -297,7 +297,7 @@ public class BreaksReportCommand : BaseCommand<BreaksReportCommand.Settings>
         console.MarkupLine($"[green]Total break time:[/] {TimeFormatter.FormatDurationCompact(totalBreakTime)}");
         console.MarkupLine($"[dim]Period:[/] {startDate:MMM dd} - {clock.Today:MMM dd, yyyy}");
         console.MarkupLine($"[dim]Total entries:[/] {allBreakEntries.Count}");
-        
+
         if (currentBreakEntry != null)
         {
             console.MarkupLine("[yellow]⚠ A break is currently running[/]");

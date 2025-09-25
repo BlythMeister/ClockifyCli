@@ -365,7 +365,7 @@ public class WeekViewCommandTests
 
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
-        
+
         var projects = new List<ProjectInfo>
         {
             new ProjectInfo("work-project", "Work Project"),
@@ -375,15 +375,15 @@ public class WeekViewCommandTests
         var timeEntries = new List<TimeEntry>
         {
             // Regular work entry - should be included
-            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR", 
+            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR",
                 new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
             
             // Break type entry - should be excluded
-            new TimeEntry("entry2", "Coffee break", "task2", "work-project", "BREAK", 
+            new TimeEntry("entry2", "Coffee break", "task2", "work-project", "BREAK",
                 new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
             
             // Breaks project entry - should be excluded
-            new TimeEntry("entry3", "Lunch break", "task3", "breaks-project", "REGULAR", 
+            new TimeEntry("entry3", "Lunch break", "task3", "breaks-project", "REGULAR",
                 new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
         };
 
@@ -399,15 +399,15 @@ public class WeekViewCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         var output = testConsole.Output;
         // Should contain regular work entry
         Assert.That(output, Does.Contain("Regular work"));
-        
+
         // Should NOT contain break entries
         Assert.That(output, Does.Not.Contain("Coffee break"));
         Assert.That(output, Does.Not.Contain("Lunch break"));
-        
+
         // Should show total time excluding breaks (1 hour)
         Assert.That(output, Does.Contain("1h"));
     }
@@ -421,7 +421,7 @@ public class WeekViewCommandTests
 
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
-        
+
         var projects = new List<ProjectInfo>
         {
             new ProjectInfo("work-project", "Work Project"),
@@ -430,10 +430,10 @@ public class WeekViewCommandTests
 
         var timeEntries = new List<TimeEntry>
         {
-            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR", 
+            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR",
                 new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
-            
-            new TimeEntry("entry2", "Break from uppercase project", "task2", "breaks-project", "REGULAR", 
+
+            new TimeEntry("entry2", "Break from uppercase project", "task2", "breaks-project", "REGULAR",
                 new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z"))
         };
 
@@ -449,11 +449,11 @@ public class WeekViewCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         var output = testConsole.Output;
         // Should contain regular work entry
         Assert.That(output, Does.Contain("Regular work"));
-        
+
         // Should NOT contain break entry from uppercase BREAKS project
         Assert.That(output, Does.Not.Contain("Break from uppercase project"));
     }

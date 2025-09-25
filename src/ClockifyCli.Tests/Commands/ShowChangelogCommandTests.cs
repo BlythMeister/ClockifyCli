@@ -54,7 +54,7 @@ public class ShowChangelogCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         var output = console.Output;
         Assert.That(output, Does.Contain("ClockifyCli Changelog"));
         Assert.That(output, Does.Contain("Version 1.14"));

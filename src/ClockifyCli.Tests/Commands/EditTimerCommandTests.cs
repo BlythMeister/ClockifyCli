@@ -159,7 +159,7 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
-        
+
         // Act
         var result = await command.ExecuteAsync(context, settings);
 
@@ -564,7 +564,7 @@ public class EditTimerCommandTests
 
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
-        
+
         var originalProject = new ProjectInfo("project1", "Original Project");
         var newProject = new ProjectInfo("project2", "New Project");
         var mockProjects = new List<ProjectInfo> { originalProject, newProject };
@@ -585,15 +585,15 @@ public class EditTimerCommandTests
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
-        
+
         // Setup specific tasks for each project
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, originalProject)).ReturnsAsync(new List<TaskInfo> { originalTask });
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, newProject)).ReturnsAsync(new List<TaskInfo> { newTask });
-        
+
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                          .ReturnsAsync(new List<TimeEntry> { timeEntry });
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
-        
+
         mockClockifyClient.Setup(x => x.UpdateTimeEntry(mockWorkspace, timeEntry, It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), "project2", It.IsAny<string>()))
                          .ReturnsAsync(timeEntry);
 
@@ -615,12 +615,12 @@ public class EditTimerCommandTests
         // Assert
         Assert.That(result, Is.EqualTo(0));
         mockClockifyClient.Verify(x => x.UpdateTimeEntry(
-            mockWorkspace, 
-            timeEntry, 
-            It.IsAny<DateTime>(), 
-            It.IsAny<DateTime>(), 
-            It.IsAny<string>(), 
-            "project2", 
+            mockWorkspace,
+            timeEntry,
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<string>(),
+            "project2",
             It.IsAny<string>()), Times.Once);
 
         var output = testConsole.Output;
@@ -637,7 +637,7 @@ public class EditTimerCommandTests
 
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
-        
+
         var project = new ProjectInfo("project1", "Test Project");
         var mockProjects = new List<ProjectInfo> { project };
 
@@ -657,15 +657,15 @@ public class EditTimerCommandTests
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
-        
+
         // For task-only editing, both tasks should be in the same project (the current one)
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.Is<ProjectInfo>(p => p.Id == "project1"))).ReturnsAsync(mockTasks);
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.Is<ProjectInfo>(p => p.Id != "project1"))).ReturnsAsync(new List<TaskInfo>());
-        
+
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                          .ReturnsAsync(new List<TimeEntry> { timeEntry });
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync((TimeEntry?)null);
-        
+
         mockClockifyClient.Setup(x => x.UpdateTimeEntry(mockWorkspace, timeEntry, It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), "task2"))
                          .ReturnsAsync(timeEntry);
 
@@ -688,12 +688,12 @@ public class EditTimerCommandTests
         // Assert
         Assert.That(result, Is.EqualTo(0));
         mockClockifyClient.Verify(x => x.UpdateTimeEntry(
-            mockWorkspace, 
-            timeEntry, 
-            It.IsAny<DateTime>(), 
-            It.IsAny<DateTime>(), 
-            It.IsAny<string>(), 
-            It.IsAny<string>(), 
+            mockWorkspace,
+            timeEntry,
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
             "task2"), Times.Once);
 
         var output = testConsole.Output;
@@ -710,7 +710,7 @@ public class EditTimerCommandTests
 
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
-        
+
         var originalProject = new ProjectInfo("project1", "Original Project");
         var newProject = new ProjectInfo("project2", "New Project");
         var mockProjects = new List<ProjectInfo> { originalProject, newProject };
@@ -731,15 +731,15 @@ public class EditTimerCommandTests
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
-        
+
         // Setup specific tasks for each project - this test changes from project1 to project2
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, originalProject)).ReturnsAsync(new List<TaskInfo> { originalTask });
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, newProject)).ReturnsAsync(new List<TaskInfo> { newTask });
-        
+
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                          .ReturnsAsync(new List<TimeEntry>());
         mockClockifyClient.Setup(x => x.GetCurrentTimeEntry(mockWorkspace, mockUser)).ReturnsAsync(runningEntry);
-        
+
         mockClockifyClient.Setup(x => x.UpdateRunningTimeEntry(mockWorkspace, runningEntry, It.IsAny<DateTime>(), It.IsAny<string>(), "project2", "task2"))
                          .ReturnsAsync(runningEntry);
 
@@ -761,11 +761,11 @@ public class EditTimerCommandTests
         // Assert
         Assert.That(result, Is.EqualTo(0));
         mockClockifyClient.Verify(x => x.UpdateRunningTimeEntry(
-            mockWorkspace, 
-            runningEntry, 
-            It.IsAny<DateTime>(), 
-            It.IsAny<string>(), 
-            "project2", 
+            mockWorkspace,
+            runningEntry,
+            It.IsAny<DateTime>(),
+            It.IsAny<string>(),
+            "project2",
             "task2"), Times.Once);
 
         var output = testConsole.Output;
@@ -814,10 +814,10 @@ public class EditTimerCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("No changes made. Operation cancelled."));
-        
+
         // Verify no update calls were made
         mockClockifyClient.Verify(x => x.UpdateTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         mockClockifyClient.Verify(x => x.UpdateRunningTimeEntry(It.IsAny<WorkspaceInfo>(), It.IsAny<TimeEntry>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -830,25 +830,25 @@ public class EditTimerCommandTests
         // the IntelligentTimeParser uses the current time as context, not the timer's start time.
         // This prevents the issue where entering "9:00" at 5PM would result in 9PM (future/negative duration)
         // instead of 9AM (past, reasonable 8-hour duration).
-        
+
         var currentTime = new DateTime(2024, 1, 15, 17, 0, 0); // 5:00 PM today
         var timerStartTime = new DateTime(2024, 1, 15, 9, 0, 0); // 9:00 AM today (8 hours ago)
-        
+
         // Test the context logic directly
         var isRunning = true;
         var contextTime = isRunning ? currentTime : timerStartTime;
-        
+
         // This should parse "9:00" as 9:00 AM today (past relative to 5PM context)
         var success = IntelligentTimeParser.TryParseStartTime("9:00", out var result, contextTime);
-        
+
         Assert.That(success, Is.True);
         Assert.That(result.Hours, Is.EqualTo(9)); // Should be 9:00 AM (hour 9)
-        
+
         // Verify the actual DateTime would be reasonable
         var actualStartTime = IntelligentTimeParser.GetActualStartDateTime("9:00", contextTime);
         Assert.That(actualStartTime.Hour, Is.EqualTo(9)); // 9:00 AM
         Assert.That(actualStartTime.Date, Is.EqualTo(currentTime.Date)); // Same day
-        
+
         // Verify duration from start to current time is positive and reasonable
         var duration = currentTime - actualStartTime;
         Assert.That(duration.TotalHours, Is.EqualTo(8)); // 8 hours (9 AM to 5 PM)
@@ -861,20 +861,20 @@ public class EditTimerCommandTests
     {
         // This test verifies that when editing a completed timer's start time,
         // we use the original start time as context (existing behavior) for consistency.
-        
+
         var currentTime = new DateTime(2024, 1, 15, 17, 0, 0); // 5:00 PM today
         var timerStartTime = new DateTime(2024, 1, 15, 9, 0, 0); // 9:00 AM today (original start)
-        
+
         // Test the context logic for completed timers
         var isRunning = false;
         var contextTime = isRunning ? currentTime : timerStartTime;
-        
+
         // This should use the original start time as context
         Assert.That(contextTime, Is.EqualTo(timerStartTime));
-        
+
         // Parse should still work reasonably with start time context
         var success = IntelligentTimeParser.TryParseStartTime("8:30", out var result, contextTime);
-        
+
         Assert.That(success, Is.True);
         Assert.That(result.Hours, Is.EqualTo(8)); // Should be 8:30 AM
     }
@@ -885,29 +885,29 @@ public class EditTimerCommandTests
         // This test validates the fix for issue #9: Time interpretation when editing
         // When editing a completed timer (11:08-11:39), entering "11:20" as new start time
         // should be interpreted as 11:20 AM, not 11:20 PM, by using end time as context
-        
+
         var originalStart = new DateTime(2024, 1, 15, 11, 8, 0);   // 11:08 AM
         var originalEnd = new DateTime(2024, 1, 15, 11, 39, 0);    // 11:39 AM
-        
+
         // For completed timers, the EditTimerCommand should use end time as context
         var contextTime = originalEnd; // This is the fix - use end time, not start time
-        
+
         // Test the scenario from issue #9
         var success = IntelligentTimeParser.TryParseStartTime("11:20", out var result, contextTime);
-        
+
         Assert.That(success, Is.True);
         Assert.That(result.Hours, Is.EqualTo(11)); // Should be 11:20 AM (11), not 11:20 PM (23)
         Assert.That(result.Minutes, Is.EqualTo(20));
-        
+
         // Verify the proposed start time would be valid (before end time)
         var proposedStartTime = originalStart.Date.Add(result);
-        Assert.That(proposedStartTime, Is.LessThan(originalEnd), 
+        Assert.That(proposedStartTime, Is.LessThan(originalEnd),
             "New start time should be before the existing end time");
-        
+
         // Verify this matches the interpretation of "11:20 AM" (explicit)
         var successAM = IntelligentTimeParser.TryParseStartTime("11:20 AM", out var resultAM, contextTime);
         Assert.That(successAM, Is.True);
-        Assert.That(result, Is.EqualTo(resultAM), 
+        Assert.That(result, Is.EqualTo(resultAM),
             "Ambiguous '11:20' should be interpreted the same as explicit '11:20 AM'");
     }
 }

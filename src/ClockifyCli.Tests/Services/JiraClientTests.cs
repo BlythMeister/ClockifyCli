@@ -344,7 +344,7 @@ public class JiraClientTests
         {
             await jiraClient.SearchIssues(jql, 50);
         });
-        
+
         Assert.That(exception?.Message, Contains.Substring("Failed to search JIRA issues"));
     }
 }

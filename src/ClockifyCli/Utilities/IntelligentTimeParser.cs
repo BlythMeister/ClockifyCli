@@ -19,10 +19,10 @@ namespace ClockifyCli.Utilities;
 public static class IntelligentTimeParser
 {
     // Regex patterns for different time formats
-    private static readonly Regex TimeWithAmPmRegex = new(@"^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|A|P)$", 
+    private static readonly Regex TimeWithAmPmRegex = new(@"^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|A|P)$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    
-    private static readonly Regex SimpleTimeRegex = new(@"^(\d{1,2}):(\d{2})(?::(\d{2}))?$", 
+
+    private static readonly Regex SimpleTimeRegex = new(@"^(\d{1,2}):(\d{2})(?::(\d{2}))?$",
         RegexOptions.Compiled);
 
     /// <summary>
@@ -47,7 +47,7 @@ public static class IntelligentTimeParser
     public static bool TryParseTime(string input, out TimeSpan result, DateTime? contextTime = null, bool isStartTime = true)
     {
         result = default;
-        
+
         if (string.IsNullOrWhiteSpace(input))
             return false;
 
@@ -117,7 +117,7 @@ public static class IntelligentTimeParser
         }
 
         var proposedStartTime = currentTime.Date.Add(time);
-        
+
         // Use the same logic as the intelligent parser for day selection
         // Rule 7: When calculating start time, if there is no end time, assume the end time to be the current time
         if (proposedStartTime > currentTime)
@@ -145,20 +145,20 @@ public static class IntelligentTimeParser
             // Rule 6: End time must be after start time
             var startTime = contextTime.Value.TimeOfDay;
             var endTime = parsedTime;
-            
+
             // Handle next-day scenarios (e.g., start at 11 PM, end at 2 AM)
             if (endTime < startTime)
             {
                 // Check if this could be next day and if duration is reasonable
                 var nextDayDuration = (TimeSpan.FromDays(1) - startTime) + endTime;
-                
+
                 // If this would be a very long duration (like 23 hours), it's likely an error
                 if (nextDayDuration.TotalHours > 16)
                 {
                     errorMessage = "End time must be after start time. Please check your time input.";
                     return false;
                 }
-                
+
                 // Rule 4: When using starting time as context to establish an end time, timer duration should not exceed 8 hours
                 if (nextDayDuration.TotalHours > 8)
                 {
@@ -166,7 +166,7 @@ public static class IntelligentTimeParser
                                   "This suggests the wrong AM/PM interpretation. Please specify AM/PM or use 24-hour format.";
                     return false;
                 }
-                
+
                 // If duration is reasonable for next-day, allow it
                 return true;
             }
@@ -174,14 +174,14 @@ public static class IntelligentTimeParser
             {
                 // Same day - check duration
                 var duration = endTime - startTime;
-                
+
                 // If duration is very short (like 0), this might be an error
                 if (duration.TotalMinutes < 1)
                 {
                     errorMessage = "End time must be after start time. Please check your time input.";
                     return false;
                 }
-                
+
                 // Rule 4: When using starting time as context to establish an end time, timer duration should not exceed 8 hours
                 if (duration.TotalHours > 8)
                 {
@@ -234,7 +234,7 @@ public static class IntelligentTimeParser
         // Create both AM and PM versions
         var amHours = hours == 12 ? 0 : hours;
         var pmHours = hours == 12 ? 12 : hours + 12;
-        
+
         var amTime = new TimeSpan(amHours, minutes, seconds);
         var pmTime = new TimeSpan(pmHours, minutes, seconds);
 
@@ -267,28 +267,28 @@ public static class IntelligentTimeParser
     private static TimeSpan ChooseStartTimeInPast(TimeSpan amTime, TimeSpan pmTime, DateTime contextTime)
     {
         var contextTimeOfDay = contextTime.TimeOfDay;
-        
+
         // Calculate how long ago each time was
         var amMinutesAgo = CalculateMinutesAgo(contextTimeOfDay, amTime);
         var pmMinutesAgo = CalculateMinutesAgo(contextTimeOfDay, pmTime);
-        
+
         // Calculate potential durations (from start time to current context time)
         var amDuration = TimeSpan.FromMinutes(amMinutesAgo);
         var pmDuration = TimeSpan.FromMinutes(pmMinutesAgo);
-        
+
         // Rule 5: The calculated time should be in the past unless this makes the total duration over 8 hours, or under 0 minutes
         // First check if duration would be over 8 hours
         if (amDuration.TotalHours > 8 && pmDuration.TotalHours <= 8)
             return pmTime;
         if (pmDuration.TotalHours > 8 && amDuration.TotalHours <= 8)
             return amTime;
-        
+
         // Check for negative duration (shouldn't happen with "minutes ago" but safety check)
         if (amMinutesAgo < 0 && pmMinutesAgo >= 0)
             return pmTime;
         if (pmMinutesAgo < 0 && amMinutesAgo >= 0)
             return amTime;
-        
+
         // If both are reasonable, prefer the more recent one (less time ago)
         return amMinutesAgo < pmMinutesAgo ? amTime : pmTime;
     }
@@ -296,17 +296,17 @@ public static class IntelligentTimeParser
     private static TimeSpan ChooseEndTimeBasedOnDuration(TimeSpan amTime, TimeSpan pmTime, DateTime startTime)
     {
         var startTimeOfDay = startTime.TimeOfDay;
-        
+
         // Calculate durations for both options
         var amDuration = CalculateDuration(startTimeOfDay, amTime);
         var pmDuration = CalculateDuration(startTimeOfDay, pmTime);
-        
+
         // Rule 4: When using starting time as context to establish an end time, timer duration should not exceed 8 hours
         if (amDuration.TotalHours > 8 && pmDuration.TotalHours <= 8)
             return pmTime;
         if (pmDuration.TotalHours > 8 && amDuration.TotalHours <= 8)
             return amTime;
-        
+
         // If both are reasonable, prefer the shorter duration (same day if possible)
         return amDuration.TotalHours < pmDuration.TotalHours ? amTime : pmTime;
     }
@@ -323,7 +323,7 @@ public static class IntelligentTimeParser
     {
         // Simple context-based choice - prefer the time that's closest to current context
         var contextHour = contextTime.Hour;
-        
+
         // If in morning (6 AM - 11 AM), prefer AM for early hours
         if (contextHour >= 6 && contextHour <= 11)
         {

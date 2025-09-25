@@ -13,13 +13,13 @@ public class EmbeddedChangelogReader : IChangelogReader
         {
             var assembly = Assembly.GetExecutingAssembly();
             var resourceName = "ClockifyCli.CHANGELOG.md";
-            
+
             using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null)
             {
                 return null;
             }
-            
+
             using var reader = new StreamReader(stream);
             return await reader.ReadToEndAsync();
         }

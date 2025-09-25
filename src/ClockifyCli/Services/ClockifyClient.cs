@@ -248,14 +248,14 @@ public class ClockifyClient : IClockifyClient
         try
         {
             var effectiveStartTime = startTime ?? clock.UtcNow;
-            
+
             // Convert local time to UTC if startTime was provided (user input is local)
             // If no startTime provided, clock.UtcNow is already UTC
             if (startTime.HasValue && startTime.Value.Kind != DateTimeKind.Utc)
             {
                 effectiveStartTime = startTime.Value.ToUniversalTime();
             }
-            
+
             var startTimeEntry = new StartTimeEntry(
                                                     effectiveStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                                                     projectId,
@@ -344,8 +344,8 @@ public class ClockifyClient : IClockifyClient
         try
         {
             // Use the full task update endpoint instead of just updating status
-            var updateData = new 
-            { 
+            var updateData = new
+            {
                 name = task.Name,
                 status = status
             };
@@ -353,13 +353,13 @@ public class ClockifyClient : IClockifyClient
             var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
             var response = await PutWithRateLimitAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks/{task.Id}", content);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
                 throw new HttpRequestException($"Response status code does not indicate success: {response.StatusCode} ({response.ReasonPhrase}). Response: {responseContent}");
             }
-            
+
             response.EnsureSuccessStatusCode();
         }
         catch (Exception e)

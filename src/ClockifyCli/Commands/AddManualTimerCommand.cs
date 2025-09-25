@@ -57,7 +57,7 @@ public class AddManualTimerCommand : BaseCommand
 
         ProjectInfo selectedProject;
         TaskInfo selectedTask;
-        
+
         // Loop to allow going back from task selection to project selection
         while (true)
         {
@@ -181,7 +181,7 @@ public class AddManualTimerCommand : BaseCommand
             {
                 endTime = endTime.AddDays(1);
             }
-            
+
             // Validate the time makes sense in context
             if (!IntelligentTimeParser.ValidateTimeInContext(parsedEndTime, startTime, isStartTime: false, out var errorMessage))
             {
@@ -254,14 +254,14 @@ public class AddManualTimerCommand : BaseCommand
                 .Validate(timeInput =>
                 {
                     TimeSpan parsedTime;
-                    bool parseSuccess = isStartTime ? 
+                    bool parseSuccess = isStartTime ?
                         IntelligentTimeParser.TryParseStartTime(timeInput, out parsedTime, contextTime) :
                         IntelligentTimeParser.TryParseEndTime(timeInput, out parsedTime, contextTime);
 
                     if (parseSuccess)
                     {
                         var proposedDateTime = clock.Today.Add(parsedTime);
-                        
+
                         if (isStartTime)
                         {
                             if (proposedDateTime <= clock.Now)

@@ -139,7 +139,7 @@ public class StartCommandTests
                         .Respond("application/json", $"[{currentEntryJson}]");
 
         // Mock projects endpoint (empty projects to stop the selection process)
-        var projectsJson = """[]"""; 
+        var projectsJson = """[]""";
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
                         .Respond("application/json", projectsJson);
 
@@ -554,7 +554,7 @@ public class StartCommandTests
         // Use a time that would be "in the future" if interpreted as today, but within 10-hour window when interpreted as yesterday
         // With current time at 08:00, entering "23:00" should be interpreted as yesterday 23:00 (9 hours ago - within 10-hour limit)
         var futureTime = "23:00";
-        
+
         // Simulate user selections
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
@@ -643,7 +643,7 @@ public class StartCommandTests
         // Still not working. Let me try "01:30" and force user to choose yesterday somehow
         tooEarlyTime = "01:30"; // Ambiguous, but will both choices give same day?
         var validTime = "01:45"; // After error, user enters valid time
-        
+
         // Simulate user selections - first try invalid time, then valid time
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
@@ -721,7 +721,7 @@ public class StartCommandTests
         // "01:00" yesterday (Dec 31) = 25 hours ago (>24 hours, should trigger validation error)
         var tooEarlyPastTime = "01:00"; // Will be Dec 31 01:00 = 25 hours ago (should trigger validation error)
         var validTime = "01:00"; // Within 24 hours - will be interpreted as today 01:00 (1 hour ago, valid)
-        
+
         // Simulate user selections - first try invalid past time, then valid time
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first project
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
@@ -1013,7 +1013,7 @@ public class StartCommandTests
             "REGULAR"
         );
 
-        var mockTimeEntry = new TimeEntry("entry123", "Test work", "task123", "project123", "REGULAR", 
+        var mockTimeEntry = new TimeEntry("entry123", "Test work", "task123", "project123", "REGULAR",
             new TimeInterval("2024-01-01T14:00:00Z", null!));
 
         mockClockifyClient.Setup(x => x.StartTimeEntry(mockWorkspace, "project123", "task123", "Test work", It.IsAny<DateTime?>()))
@@ -1033,13 +1033,13 @@ public class StartCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         // Verify that StartTimeEntry was called with "REGULAR" type
         mockClockifyClient.Verify(x => x.StartTimeEntry(
-            mockWorkspace, 
-            "project123", 
-            "task123", 
-            "Test work", 
+            mockWorkspace,
+            "project123",
+            "task123",
+            "Test work",
             It.IsAny<DateTime?>()
         ), Times.Once);
 

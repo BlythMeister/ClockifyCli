@@ -85,13 +85,13 @@ public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
 
                 // Interactive version selection
                 var versionChoices = versionInfos.Select(v => new VersionChoice(v.Version, v.Date, v.Version.Equals(currentVersion))).ToList();
-                
+
                 var selectedVersionChoice = console.Prompt(
                     new SelectionPrompt<VersionChoice>()
                         .Title("Select a [green]version[/] to view its changelog:")
                         .PageSize(15)
                         .AddChoices(versionChoices)
-                        .UseConverter(choice => 
+                        .UseConverter(choice =>
                         {
                             var indicator = choice.IsCurrent ? " [green](current)[/]" : "";
                             var dateDisplay = !string.IsNullOrEmpty(choice.Date) ? $" [dim]({choice.Date})[/]" : "";
@@ -152,10 +152,10 @@ public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
         // Extract and display the changelog content
         var versionChangelog = match.Value;
         var lines = versionChangelog.Split('\n');
-        
+
         // Show version header
         console.MarkupLine($"[bold]Version {selectedVersion}[/]");
-        
+
         // Skip the version header line and get the date if present
         var dateMatch = Regex.Match(lines.ElementAtOrDefault(0) ?? "", @"## \[[\d.]+\] - (\d{4}-\d{2}-\d{2}|\w+)");
         if (dateMatch.Success)
@@ -163,7 +163,7 @@ public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
             console.MarkupLine($"[bold]Release Date:[/] [green]{dateMatch.Groups[1].Value}[/]");
         }
         console.WriteLine();
-        
+
         // Process the content lines (skip version header)
         var contentLines = lines.Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)).ToList();
 
@@ -188,7 +188,7 @@ public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
     {
         // Format different types of changelog lines with appropriate styling
         var trimmedLine = line.Trim();
-        
+
         if (string.IsNullOrEmpty(trimmedLine))
         {
             return string.Empty;
@@ -208,7 +208,7 @@ public class ShowChangelogCommand : BaseCommand<ShowChangelogCommand.Settings>
             {
                 var boldPart = match.Groups[1].Value; // "**Something**:"
                 var description = match.Groups[2].Value.Trim(); // Rest of the description
-                
+
                 return $"[green]•[/] [bold cyan]{Markup.Escape(boldPart)}[/] {Markup.Escape(description)}";
             }
         }

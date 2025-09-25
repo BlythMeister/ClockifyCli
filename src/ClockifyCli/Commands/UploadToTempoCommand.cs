@@ -143,7 +143,7 @@ public class UploadToTempoCommand : BaseCommand<UploadToTempoCommand.Settings>
                                                                                     }
 
                                                                                     // Find "Breaks" project to exclude it from Tempo exports
-                                                                                    var breaksProject = projects.FirstOrDefault(p => 
+                                                                                    var breaksProject = projects.FirstOrDefault(p =>
                                                                                         string.Equals(p.Name, "Breaks", StringComparison.OrdinalIgnoreCase));
 
                                                                                     // Filter out break-related time entries from export

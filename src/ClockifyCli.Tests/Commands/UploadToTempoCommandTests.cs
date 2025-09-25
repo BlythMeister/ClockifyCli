@@ -244,7 +244,7 @@ public class UploadToTempoCommandTests
 
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
-        
+
         var projects = new List<ProjectInfo>
         {
             new ProjectInfo("work-project", "Work Project"),
@@ -254,15 +254,15 @@ public class UploadToTempoCommandTests
         var timeEntries = new List<TimeEntry>
         {
             // Regular work entry - should be uploaded
-            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR", 
+            new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR",
                 new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
             
             // Break type entry - should be excluded
-            new TimeEntry("entry2", "Coffee break", "task2", "work-project", "BREAK", 
+            new TimeEntry("entry2", "Coffee break", "task2", "work-project", "BREAK",
                 new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
             
             // Breaks project entry - should be excluded
-            new TimeEntry("entry3", "Lunch break", "task3", "breaks-project", "REGULAR", 
+            new TimeEntry("entry3", "Lunch break", "task3", "breaks-project", "REGULAR",
                 new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
         };
 
@@ -276,7 +276,7 @@ public class UploadToTempoCommandTests
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(projects);
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(timeEntries);
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(tasks);
-        
+
         mockTempoClient.Setup(x => x.GetCurrentTime(It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(new List<TempoTime>());
 
         // Act
@@ -284,19 +284,19 @@ public class UploadToTempoCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         // Verify that only the regular work entry was attempted to be uploaded
         mockTempoClient.Verify(x => x.ExportTimeEntry(
-            It.Is<TimeEntry>(e => e.Id == "entry1" && e.Description == "Regular work"), 
+            It.Is<TimeEntry>(e => e.Id == "entry1" && e.Description == "Regular work"),
             It.IsAny<TaskInfo>()
         ), Times.Once);
 
         // Verify that break entries were NOT uploaded
         mockTempoClient.Verify(x => x.ExportTimeEntry(
-            It.Is<TimeEntry>(e => e.Id == "entry2" || e.Id == "entry3"), 
+            It.Is<TimeEntry>(e => e.Id == "entry2" || e.Id == "entry3"),
             It.IsAny<TaskInfo>()
         ), Times.Never);
-        
+
         var output = testConsole.Output;
         // The important thing is that break entries were filtered out from upload
         Assert.That(output, Does.Contain("Upload completed"));
@@ -311,7 +311,7 @@ public class UploadToTempoCommandTests
 
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
-        
+
         var projects = new List<ProjectInfo>
         {
             new ProjectInfo("breaks-project", "Breaks")
@@ -320,10 +320,10 @@ public class UploadToTempoCommandTests
         var timeEntries = new List<TimeEntry>
         {
             // Only break entries
-            new TimeEntry("entry1", "Coffee break", "task1", "breaks-project", "REGULAR", 
+            new TimeEntry("entry1", "Coffee break", "task1", "breaks-project", "REGULAR",
                 new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
-            
-            new TimeEntry("entry2", "Lunch break", "task2", "breaks-project", "BREAK", 
+
+            new TimeEntry("entry2", "Lunch break", "task2", "breaks-project", "BREAK",
                 new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
         };
 
@@ -332,7 +332,7 @@ public class UploadToTempoCommandTests
         mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(projects);
         mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, It.IsAny<ProjectInfo>())).ReturnsAsync(new List<TaskInfo>());
         mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(timeEntries);
-        
+
         mockTempoClient.Setup(x => x.GetCurrentTime(It.IsAny<DateTime>(), It.IsAny<DateTime>())).ReturnsAsync(new List<TempoTime>());
 
         // Act
@@ -340,10 +340,10 @@ public class UploadToTempoCommandTests
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
-        
+
         // Verify that no entries were uploaded
         mockTempoClient.Verify(x => x.ExportTimeEntry(It.IsAny<TimeEntry>(), It.IsAny<TaskInfo>()), Times.Never);
-        
+
         var output = testConsole.Output;
         Assert.That(output, Does.Contain("All time entries are already up to date"));
     }

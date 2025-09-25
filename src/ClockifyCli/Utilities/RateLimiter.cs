@@ -47,13 +47,13 @@ public class RateLimiter
     public async Task WaitIfNeededAsync(CancellationToken cancellationToken = default)
     {
         TimeSpan waitTime = TimeSpan.Zero;
-        
+
         lock (lockObject)
         {
             var now = DateTime.UtcNow;
-            
+
             // Remove old timestamps that are outside our time window
-            while (requestTimestamps.TryPeek(out var oldestTimestamp) && 
+            while (requestTimestamps.TryPeek(out var oldestTimestamp) &&
                    (now - oldestTimestamp) > timeWindow)
             {
                 requestTimestamps.TryDequeue(out _);
@@ -93,9 +93,9 @@ public class RateLimiter
             lock (lockObject)
             {
                 var now = DateTime.UtcNow;
-                
+
                 // Remove old timestamps
-                while (requestTimestamps.TryPeek(out var oldestTimestamp) && 
+                while (requestTimestamps.TryPeek(out var oldestTimestamp) &&
                        (now - oldestTimestamp) > timeWindow)
                 {
                     requestTimestamps.TryDequeue(out _);
@@ -116,9 +116,9 @@ public class RateLimiter
             lock (lockObject)
             {
                 var now = DateTime.UtcNow;
-                
+
                 // Remove old timestamps
-                while (requestTimestamps.TryPeek(out var oldestTimestamp) && 
+                while (requestTimestamps.TryPeek(out var oldestTimestamp) &&
                        (now - oldestTimestamp) > timeWindow)
                 {
                     requestTimestamps.TryDequeue(out _);

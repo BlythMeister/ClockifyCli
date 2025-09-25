@@ -109,10 +109,10 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                                                   {
                                                       var entryCount = entriesByDate.First(g => g.Date == date).Entries.Count();
                                                       var hasRunningTimer = currentRunningEntry != null && currentRunningEntry.TimeInterval.StartDate.Date == date.Date;
-                                                      
+
                                                       // Include running timer in the total count
                                                       var totalCount = hasRunningTimer ? entryCount + 1 : entryCount;
-                                                      
+
                                                       // Use proper singular/plural form
                                                       var entryText = totalCount == 1 ? "entry" : "entries";
                                                       return Markup.Escape($"{date:ddd, MMM dd, yyyy} ({totalCount} {entryText})");
@@ -268,7 +268,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             }
         }
 
-        ExitEditLoop:
+    ExitEditLoop:
 
         if (!hasChanges)
         {
@@ -305,7 +305,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                         .PageSize(15)
                         .AddChoices(projects.OrderBy(p => p.Name))
                         .UseConverter(p => Markup.Escape(p.Name)));
-                
+
                 var tempNewProjectId = selectedProject.Id;
 
                 // If project changed, also ask for task within that project
@@ -389,11 +389,11 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                 // For running timers, use current time as context. For completed timers, use the end time as context for better disambiguation.
                 // If end time is null, fallback to start time as context.
                 var contextTime = isRunning ? DateTime.Now : (newEndTime ?? newStartTime);
-                
+
                 if (IntelligentTimeParser.TryParseStartTime(newStartTimeStr, out var startTimeSpan, contextTime))
                 {
                     var proposedStartTime = newStartTime.Date.Add(startTimeSpan);
-                    
+
                     // Validate the time makes sense
                     if (IntelligentTimeParser.ValidateTimeInContext(startTimeSpan, contextTime, isStartTime: true, out var startErrorMessage))
                     {
@@ -429,7 +429,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                         {
                             proposedEndTime = proposedEndTime.AddDays(1);
                         }
-                        
+
                         // Validate the time makes sense
                         if (IntelligentTimeParser.ValidateTimeInContext(endTimeSpan, newStartTime, isStartTime: false, out var endErrorMessage))
                         {
@@ -537,7 +537,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             Markup.Escape(newProjectName));
 
         summaryTable.AddRow(
-            "Task", 
+            "Task",
             taskName,
             Markup.Escape(newTaskName));
 

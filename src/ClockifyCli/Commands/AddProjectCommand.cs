@@ -61,9 +61,9 @@ public class AddProjectCommand : BaseCommand<AddProjectCommand.Settings>
         {
             // Add the project
             await console.Status()
-                         .StartAsync("Creating project...", async ctx => 
-                         { 
-                             await clockifyClient.AddProject(workspace, projectName); 
+                         .StartAsync("Creating project...", async ctx =>
+                         {
+                             await clockifyClient.AddProject(workspace, projectName);
                          });
 
             console.MarkupLine("[green]Project created successfully![/]");

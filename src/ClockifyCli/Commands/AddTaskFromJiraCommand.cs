@@ -107,8 +107,8 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
         // Search for issues using JQL
         Models.JiraSearchResult? searchResult = null;
         await console.Status()
-                         .StartAsync("Searching Jira issues...", async ctx => 
-                         { 
+                         .StartAsync("Searching Jira issues...", async ctx =>
+                         {
                              searchResult = await jiraClient.SearchIssues(jqlQuery, 100); // Limit to 100 results
                          });
 
@@ -131,8 +131,8 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
         {
             var status = issue.Fields?.Status?.Name ?? "Unknown";
             table.AddRow(
-                Markup.Escape(issue.Key ?? "Unknown"), 
-                Markup.Escape(issue.Fields?.Summary ?? "No summary"), 
+                Markup.Escape(issue.Key ?? "Unknown"),
+                Markup.Escape(issue.Fields?.Summary ?? "No summary"),
                 Markup.Escape(status)
             );
         }
@@ -173,7 +173,7 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
                         try
                         {
                             var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
-                            
+
                             // Check if task already exists (case-insensitive comparison)
                             if (existingTasks.Any(t => t.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase)))
                             {

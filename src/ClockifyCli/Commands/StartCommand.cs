@@ -43,7 +43,7 @@ public class StartCommand : BaseCommand
         var currentEntry = await clockifyClient.GetCurrentTimeEntry(workspace, user);
         bool hasRunningTimer = currentEntry != null;
         bool shouldReplaceTimer = false;
-        
+
         if (hasRunningTimer)
         {
             console.MarkupLine("[yellow]:warning:  A timer is already running![/]");
@@ -56,7 +56,7 @@ public class StartCommand : BaseCommand
                 console.MarkupLine("[dim]Timer start cancelled. Use 'clockify-cli status' to see what's running.[/]");
                 return;
             }
-            
+
             console.MarkupLine("[dim]Collecting new timer details first...[/]");
             console.WriteLine();
         }
@@ -79,7 +79,7 @@ public class StartCommand : BaseCommand
 
         ProjectInfo selectedProject;
         TaskInfo selectedTask;
-        
+
         // Loop to allow going back from task selection to project selection
         while (true)
         {
@@ -165,13 +165,13 @@ public class StartCommand : BaseCommand
                         {
                             // Use the intelligent parser to get the actual interpreted date/time
                             var actualStartTime = IntelligentTimeParser.GetActualStartDateTime(input, clock.Now);
-                            
+
                             // Validate that the actual start time is within 24 hours of now
                             if (actualStartTime < clock.Now.AddHours(-24))
                             {
                                 return ValidationResult.Error("Start time cannot be more than 24 hours ago");
                             }
-                            
+
                             return ValidationResult.Success();
                         }
                         return ValidationResult.Error("Please enter a valid time format");
@@ -196,7 +196,7 @@ public class StartCommand : BaseCommand
         var descriptionDisplay = string.IsNullOrWhiteSpace(description)
                                      ? "[dim]No description[/]"
                                      : Markup.Escape(description);
-        
+
         var startTimeDisplay = "Now";
         if (startTime.HasValue)
         {
@@ -227,7 +227,7 @@ public class StartCommand : BaseCommand
                 console.MarkupLine("[green]:check_mark: Current timer stopped[/]");
                 console.WriteLine();
             }
-            
+
             // Start the timer (inside Status block for feedback)
             await console.Status()
                          .StartAsync("Starting timer...", async ctx =>

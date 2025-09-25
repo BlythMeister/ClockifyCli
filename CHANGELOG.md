@@ -5,6 +5,17 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<!-- markdownlint-disable MD024 -->
+
+## [1.16] - 2025-09-25
+
+### Enhancements
+
+- **Clockify API Resilience**: Added automatic retry for `429 TooManyRequests` responses
+  - Retries once after a one-second delay when Clockify enforces rate limits
+  - Applies consistently across GET, POST, PUT, PATCH, and DELETE client operations
+  - Prevents transient rate limiting from interrupting CLI commands
+
 ## [1.15] - 2025-09-23
 
 ### Bug Fixes

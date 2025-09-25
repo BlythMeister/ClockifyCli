@@ -1,6 +1,8 @@
 using ClockifyCli.Models;
 using ClockifyCli.Utilities;
 using Newtonsoft.Json;
+using System.Net;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -33,34 +35,76 @@ public class ClockifyClient : IClockifyClient
     {
     }
 
+    private async Task<HttpResponseMessage> SendWithRateLimitAndRetryAsync(Func<CancellationToken, Task<HttpResponseMessage>> sendOperation, CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 2;
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            await rateLimiter.WaitIfNeededAsync(cancellationToken);
+
+            var response = await sendOperation(cancellationToken);
+
+            if (response.StatusCode != HttpStatusCode.TooManyRequests || attempt == maxAttempts - 1)
+            {
+                return response;
+            }
+
+            response.Dispose();
+
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+        }
+
+        throw new InvalidOperationException("Failed to obtain a response from Clockify after retries.");
+    }
+
     private async Task<HttpResponseMessage> GetWithRateLimitAsync(string requestUri, CancellationToken cancellationToken = default)
     {
-        await rateLimiter.WaitIfNeededAsync(cancellationToken);
-        return await client.GetAsync(requestUri, cancellationToken);
+        return await SendWithRateLimitAndRetryAsync(ct => client.GetAsync(requestUri, ct), cancellationToken);
     }
 
-    private async Task<HttpResponseMessage> PostWithRateLimitAsync(string requestUri, HttpContent content, CancellationToken cancellationToken = default)
+    private async Task<HttpResponseMessage> PostWithRateLimitAsync(string requestUri, Func<HttpContent> contentFactory, CancellationToken cancellationToken = default)
     {
-        await rateLimiter.WaitIfNeededAsync(cancellationToken);
-        return await client.PostAsync(requestUri, content, cancellationToken);
+        return await SendWithRateLimitAndRetryAsync(async ct =>
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
+            {
+                Content = contentFactory()
+            };
+
+            return await client.SendAsync(request, ct);
+        }, cancellationToken);
     }
 
-    private async Task<HttpResponseMessage> PutWithRateLimitAsync(string requestUri, HttpContent content, CancellationToken cancellationToken = default)
+    private async Task<HttpResponseMessage> PutWithRateLimitAsync(string requestUri, Func<HttpContent> contentFactory, CancellationToken cancellationToken = default)
     {
-        await rateLimiter.WaitIfNeededAsync(cancellationToken);
-        return await client.PutAsync(requestUri, content, cancellationToken);
+        return await SendWithRateLimitAndRetryAsync(async ct =>
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Put, requestUri)
+            {
+                Content = contentFactory()
+            };
+
+            return await client.SendAsync(request, ct);
+        }, cancellationToken);
     }
 
-    private async Task<HttpResponseMessage> PatchWithRateLimitAsync(string requestUri, HttpContent content, CancellationToken cancellationToken = default)
+    private async Task<HttpResponseMessage> PatchWithRateLimitAsync(string requestUri, Func<HttpContent> contentFactory, CancellationToken cancellationToken = default)
     {
-        await rateLimiter.WaitIfNeededAsync(cancellationToken);
-        return await client.PatchAsync(requestUri, content, cancellationToken);
+        return await SendWithRateLimitAndRetryAsync(async ct =>
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Patch, requestUri)
+            {
+                Content = contentFactory()
+            };
+
+            return await client.SendAsync(request, ct);
+        }, cancellationToken);
     }
 
     private async Task<HttpResponseMessage> DeleteWithRateLimitAsync(string requestUri, CancellationToken cancellationToken = default)
     {
-        await rateLimiter.WaitIfNeededAsync(cancellationToken);
-        return await client.DeleteAsync(requestUri, cancellationToken);
+        return await SendWithRateLimitAndRetryAsync(ct => client.DeleteAsync(requestUri, ct), cancellationToken);
     }
 
     public async Task<UserInfo> GetLoggedInUser()
@@ -131,9 +175,11 @@ public class ClockifyClient : IClockifyClient
         {
             var newTask = new NewTask(taskName);
             var newTaskJson = JsonConvert.SerializeObject(newTask);
-            var content = new StringContent(newTaskJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await PostWithRateLimitAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks", content);
+            var response = await PostWithRateLimitAsync(
+                                                    $"workspaces/{workspace.Id}/projects/{project.Id}/tasks",
+                                                    () => new StringContent(newTaskJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                   );
             response.EnsureSuccessStatusCode();
         }
         catch (Exception e)
@@ -149,9 +195,11 @@ public class ClockifyClient : IClockifyClient
         {
             var newProject = new NewProject(projectName);
             var newProjectJson = JsonConvert.SerializeObject(newProject);
-            var content = new StringContent(newProjectJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
 
-            var response = await PostWithRateLimitAsync($"workspaces/{workspace.Id}/projects", content);
+            var response = await PostWithRateLimitAsync(
+                                                    $"workspaces/{workspace.Id}/projects",
+                                                    () => new StringContent(newProjectJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                   );
             response.EnsureSuccessStatusCode();
         }
         catch (Exception e)
@@ -214,9 +262,10 @@ public class ClockifyClient : IClockifyClient
         {
             var stopTimeData = new { end = clock.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") };
             var stopTimeJson = JsonConvert.SerializeObject(stopTimeData);
-            var content = new StringContent(stopTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
-
-            var response = await PatchWithRateLimitAsync($"workspaces/{workspace.Id}/user/{user.Id}/time-entries", content);
+            var response = await PatchWithRateLimitAsync(
+                                                      $"workspaces/{workspace.Id}/user/{user.Id}/time-entries",
+                                                      () => new StringContent(stopTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                     );
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -270,9 +319,10 @@ public class ClockifyClient : IClockifyClient
             };
 
             var startTimeJson = JsonConvert.SerializeObject(startTimeEntry, serializerSettings);
-            var content = new StringContent(startTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
-
-            var response = await PostWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries", content);
+            var response = await PostWithRateLimitAsync(
+                                                    $"workspaces/{workspace.Id}/time-entries",
+                                                    () => new StringContent(startTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                   );
 
             if (!response.IsSuccessStatusCode)
             {
@@ -319,9 +369,10 @@ public class ClockifyClient : IClockifyClient
             };
 
             var addTimeJson = JsonConvert.SerializeObject(addTimeEntry, serializerSettings);
-            var content = new StringContent(addTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
-
-            var response = await PostWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries", content);
+            var response = await PostWithRateLimitAsync(
+                                                    $"workspaces/{workspace.Id}/time-entries",
+                                                    () => new StringContent(addTimeJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                   );
 
             if (!response.IsSuccessStatusCode)
             {
@@ -350,9 +401,10 @@ public class ClockifyClient : IClockifyClient
                 status = status
             };
             var updateJson = JsonConvert.SerializeObject(updateData);
-            var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
-
-            var response = await PutWithRateLimitAsync($"workspaces/{workspace.Id}/projects/{project.Id}/tasks/{task.Id}", content);
+            var response = await PutWithRateLimitAsync(
+                                                    $"workspaces/{workspace.Id}/projects/{project.Id}/tasks/{task.Id}",
+                                                    () => new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                   );
 
             if (!response.IsSuccessStatusCode)
             {
@@ -388,9 +440,10 @@ public class ClockifyClient : IClockifyClient
             };
 
             var updateJson = JsonConvert.SerializeObject(updateData, serializerSettings);
-            var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
-
-            var response = await PutWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
+            var response = await PutWithRateLimitAsync(
+                                                    $"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}",
+                                                    () => new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                   );
 
             if (!response.IsSuccessStatusCode)
             {
@@ -426,9 +479,10 @@ public class ClockifyClient : IClockifyClient
             };
 
             var updateJson = JsonConvert.SerializeObject(updateData, serializerSettings);
-            var content = new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"));
-
-            var response = await PutWithRateLimitAsync($"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}", content);
+            var response = await PutWithRateLimitAsync(
+                                                    $"workspaces/{workspace.Id}/time-entries/{timeEntry.Id}",
+                                                    () => new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                   );
 
             if (!response.IsSuccessStatusCode)
             {

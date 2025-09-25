@@ -75,44 +75,40 @@ public static class ProjectListHelper
         WorkspaceInfo workspace)
     {
         // Load projects
-        List<ProjectInfo> projects = new();
+        List<ProjectInfo> allProjects = new();
+        Dictionary<string, List<TaskInfo>> projectTasksMap = new();
         await console.Status()
-            .StartAsync("Loading projects...", async ctx =>
+            .StartAsync("Loading projects and tasks...", async ctx =>
             {
                 ctx.Status("Getting projects from Clockify...");
-                projects = await clockifyClient.GetProjects(workspace);
+                allProjects = await clockifyClient.GetProjects(workspace);
+                foreach (var project in allProjects)
+                {
+                    ctx.Status($"Getting tasks for {project.Name}...");
+                    var projectTasks = await clockifyClient.GetTasks(workspace, project);
+                    var activeTasks = projectTasks
+                        .Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase))
+                        .OrderBy(t => t.Name)
+                        .ToList();
+                    if (activeTasks.Any())
+                    {
+                        projectTasksMap[project.Id] = activeTasks;
+                    }
+                }
             });
 
+        var projects = allProjects.Where(p => projectTasksMap.ContainsKey(p.Id)).ToList();
         if (!projects.Any())
         {
-            console.MarkupLine("[yellow]No projects found![/]");
-            console.MarkupLine("[dim]Create some projects in Clockify first.[/]");
+            console.MarkupLine("[yellow]No projects with active tasks found![/]");
+            console.MarkupLine("[dim]Create projects and add tasks in Clockify first.[/]");
             return null;
         }
 
         while (true)
         {
             var selectedProject = PromptForProject(console, projects);
-            // Load tasks for the selected project
-            List<TaskInfo> availableTasks = new();
-            await console.Status()
-                .StartAsync($"Loading tasks for {selectedProject.Name}...", async ctx =>
-                {
-                    ctx.Status($"Getting tasks from {selectedProject.Name}...");
-                    var projectTasks = await clockifyClient.GetTasks(workspace, selectedProject);
-                    availableTasks = projectTasks
-                        .Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase))
-                        .OrderBy(t => t.Name)
-                        .ToList();
-                });
-
-            if (!availableTasks.Any())
-            {
-                console.MarkupLine($"[yellow]No active tasks found for project '{Markup.Escape(selectedProject.Name)}'![/]");
-                console.MarkupLine("[dim]Add some tasks to this project first using 'clockify-cli add-task-from-jira'.[/]");
-                return null;
-            }
-
+            var availableTasks = projectTasksMap[selectedProject.Id];
             var allowBack = projects.Count > 1;
             var selectedTask = PromptForTaskInfo(console, availableTasks, selectedProject, allowBack);
             if (selectedTask.Id == "__BACK__")
@@ -139,13 +135,21 @@ public static class ProjectListHelper
             return null;
         }
 
+        // Only show projects that have at least one task in allTasks
+        var projectsWithTasks = projects.Where(p => allTasks.Any(t => t.ProjectId == p.Id)).ToList();
+        if (!projectsWithTasks.Any())
+        {
+            console.MarkupLine("[yellow]No projects with tasks found![/]");
+            return null;
+        }
+
         while (true)
         {
-            var selectedProject = PromptForProject(console, projects, "Select new [green]project[/]:");
+            var selectedProject = PromptForProject(console, projectsWithTasks, "Select new [green]project[/]:");
             var projectTasks = allTasks.Where(t => t.ProjectId == selectedProject.Id)
                                        .OrderBy(t => t.TaskName)
                                        .ToList();
-            var allowBack = projects.Count > 1;
+            var allowBack = projectsWithTasks.Count > 1;
             var selectedTask = PromptForTaskWithProject(console, projectTasks, selectedProject, allowBack, true);
             if (selectedTask == null && allowBack)
                 continue;

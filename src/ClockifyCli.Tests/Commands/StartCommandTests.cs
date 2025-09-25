@@ -162,7 +162,7 @@ public class StartCommandTests
         Assert.That(output, Does.Contain("A timer is already running!"), "Should display already running warning message");
         Assert.That(output, Does.Contain("Do you want to stop the current timer and start a new one?"), "Should ask for confirmation");
         Assert.That(output, Does.Contain("Collecting new timer details first..."), "Should indicate collecting new timer details first");
-        Assert.That(output, Does.Contain("No projects found!"), "Should display no projects message");
+            Assert.That(output, Does.Contain("No projects with active tasks found!"), "Should display no projects with active tasks message");
         Assert.That(output, Does.Not.Contain("Current timer stopped"), "Should NOT stop the timer when no projects are available");
 
         // Cleanup
@@ -786,8 +786,8 @@ public class StartCommandTests
         Assert.That(result, Is.EqualTo(0));
 
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("No projects found!"), "Should display no projects error message");
-        Assert.That(output, Does.Contain("Create some projects in Clockify first"), "Should display helpful message");
+        Assert.That(output, Does.Contain("No projects with active tasks found!"), "Should display no projects with active tasks message");
+        Assert.That(output, Does.Contain("Create projects and add tasks in Clockify first."), "Should display helpful message");
 
         // Cleanup
         clockifyMockHttp.Dispose();
@@ -840,9 +840,8 @@ public class StartCommandTests
         Assert.That(result, Is.EqualTo(0));
 
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("Select a project:"), "Should display project selection prompt");
-        Assert.That(output, Does.Contain("No active tasks found for project 'Empty Project'!"), "Should display no tasks error message");
-        Assert.That(output, Does.Contain("Add some tasks to this project first"), "Should display helpful message");
+        Assert.That(output, Does.Contain("No projects with active tasks found!"), "Should display no projects with active tasks message");
+        Assert.That(output, Does.Contain("Create projects and add tasks in Clockify first."), "Should display helpful message");
 
         // Cleanup
         clockifyMockHttp.Dispose();
@@ -938,15 +937,15 @@ public class StartCommandTests
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
                         .Respond("application/json", "[]");
 
-        // Mock projects response with multiple projects
-        var projectsJson = """[{"id":"project1","name":"Project Alpha"},{"id":"project2","name":"Project Beta"}]""";
-        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
-                        .Respond("application/json", projectsJson);
+    // Mock projects response with only Project Beta (since only projects with tasks are shown)
+    var projectsJson = """[{"id":"project2","name":"Project Beta"}]""";
+    clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+            .Respond("application/json", projectsJson);
 
-        // Mock tasks response for Project Beta (user will select second project)
-        var tasksJson = """[{"id":"task1","name":"Beta Task 1","status":"Active"}]""";
-        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project2/tasks")
-                        .Respond("application/json", tasksJson);
+    // Mock tasks response for Project Beta
+    var tasksJson = """[{"id":"task1","name":"Beta Task 1","status":"Active"}]""";
+    clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project2/tasks")
+            .Respond("application/json", tasksJson);
 
         // Mock start time entry response
         var startedEntryJson = """{"id":"entry456","description":"Test timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";

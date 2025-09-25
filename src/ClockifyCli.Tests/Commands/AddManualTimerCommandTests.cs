@@ -100,7 +100,7 @@ public class AddManualTimerCommandTests
         Assert.That(result, Is.EqualTo(0));
 
         var output = testConsole.Output;
-        Assert.That(output, Does.Contain("No projects found!"), "Should display no projects found message");
+            Assert.That(output, Does.Contain("No projects with active tasks found!"), "Should display no projects with active tasks message");
 
         // Cleanup
         clockifyMockHttp.Dispose();

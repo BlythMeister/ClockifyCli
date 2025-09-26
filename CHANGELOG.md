@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.18] - 2025-09-26
 
+## [1.19] - 2025-09-26
+
+### UI Improvements
+
+- **Projects Screen Shortcuts**: Added a `+ Add new task` option to the projects selection screen so you can create a Jira-linked task directly from the project picker (previously only available on recent timers). Also added a `[dim]← Back to recent tasks[/]` option on the projects screen to return to the recent timers list.
+
+
 ### UI Improvements
 
 - **Task Selection Workflow**: Added a `+ Add new task` shortcut to recent and project task pickers, wiring it to Jira-powered task creation so newly added work items are highlighted and pre-selected immediately.

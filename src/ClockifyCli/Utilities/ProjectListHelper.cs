@@ -17,14 +17,33 @@ public static class ProjectListHelper
         NewTask
     }
 
-    private static ProjectInfo PromptForProject(IAnsiConsole console, IEnumerable<ProjectInfo> projects, string title = "Select a [green]project[/]:")
+    private static ProjectInfo PromptForProject(IAnsiConsole console, IEnumerable<ProjectInfo> projects, string title = "Select a [green]project[/]:", bool allowNewTask = false, bool allowBack = false)
     {
+        var projectChoices = projects.OrderBy(p => p.Name).ToList();
+
+        if (allowNewTask)
+        {
+            // Inject a pseudo-project for adding a new task
+            projectChoices.Add(new ProjectInfo(NewTaskOptionId, "+ Add new task"));
+        }
+
+        if (allowBack)
+        {
+            // Inject a pseudo-project for going back to recent timers
+            projectChoices.Add(new ProjectInfo(BackOptionId, "← Back to recent tasks"));
+        }
+
         return console.Prompt(
             new SelectionPrompt<ProjectInfo>()
                 .Title(title)
                 .PageSize(15)
-                .AddChoices(projects.OrderBy(p => p.Name))
-                .UseConverter(p => Markup.Escape(p.Name)));
+                .AddChoices(projectChoices)
+                .UseConverter(p => p.Id switch
+                {
+                    NewTaskOptionId => "[green]+ Add new task[/]",
+                    BackOptionId => "[dim]← Back to recent tasks[/]",
+                    _ => Markup.Escape(p.Name)
+                }));
     }
 
     private static (TaskSelectionResult Result, TaskWithProject? Task) PromptForTaskWithProject(
@@ -284,93 +303,114 @@ public static class ProjectListHelper
                 initialProject);
         }
 
-        // --- Recent Timers Selection ---
-        if (config.RecentTasksCount > 0 && config.RecentTasksDays > 0)
-        {
-            while (true)
-            {
-                var recentStart = DateTime.UtcNow.AddDays(-config.RecentTasksDays);
-                var recentEnd = DateTime.UtcNow;
-                var recentEntries = await clockifyClient.GetTimeEntries(workspace, user, recentStart, recentEnd);
-
-                var recentValid = recentEntries
-                    .Where(e => !string.IsNullOrEmpty(e.ProjectId) && !string.IsNullOrEmpty(e.TaskId))
-                    .Where(e => projectTasksMap.ContainsKey(e.ProjectId) && projectTasksMap[e.ProjectId].Any(t => t.Id == e.TaskId))
-                    .GroupBy(e => (e.ProjectId, e.TaskId))
-                    .Select(g => g.OrderByDescending(e => e.TimeInterval.Start).First())
-                    .OrderByDescending(e => e.TimeInterval.Start)
-                    .Take(config.RecentTasksCount)
-                    .ToList();
-
-                if (!recentValid.Any())
-                {
-                    break;
-                }
-
-                var recentChoices = recentValid
-                    .Select(e => new
-                    {
-                        Entry = e,
-                        Project = allProjects.First(p => p.Id == e.ProjectId),
-                        Task = projectTasksMap[e.ProjectId].First(t => t.Id == e.TaskId)
-                    })
-                    .ToList();
-
-                var selectionPrompt = new SelectionPrompt<int>()
-                    .Title("Select a [green]recent task[/], [yellow]other task[/], or [green]+ add new task[/]:")
-                    .PageSize(10);
-
-                for (var i = 0; i < recentChoices.Count; i++)
-                {
-                    selectionPrompt.AddChoice(i);
-                }
-
-                var newTaskIndex = recentChoices.Count;
-                var otherIndex = recentChoices.Count + 1;
-
-                selectionPrompt.AddChoice(newTaskIndex);
-                selectionPrompt.AddChoice(otherIndex);
-
-                selectionPrompt.UseConverter(idx =>
-                {
-                    if (idx >= 0 && idx < recentChoices.Count)
-                    {
-                        var rc = recentChoices[idx];
-                        return $"[bold]{Markup.Escape(rc.Project.Name)}[/] > [green]{Markup.Escape(rc.Task.Name)}[/]";
-                    }
-
-                    return idx == newTaskIndex
-                        ? "[green]+ Add new task[/]"
-                        : "[yellow]Other task[/]";
-                });
-
-                var selectedIdx = console.Prompt(selectionPrompt);
-
-                if (selectedIdx < recentChoices.Count)
-                {
-                    var rc = recentChoices[selectedIdx];
-                    return (rc.Project, rc.Task);
-                }
-
-                if (selectedIdx == newTaskIndex)
-                {
-                    var created = await CreateTaskAsync(null);
-                    if (created != null)
-                    {
-                        return created;
-                    }
-
-                    continue;
-                }
-
-                break; // fall through to full project/task selection
-            }
-        }
-
-        // --- Full Project/Task Selection ---
+        // Wrap the selection flow so the user can return from the projects screen back to recent timers
         while (true)
         {
-            var selectedProject = PromptForProject(console, projectsWithTasks);
+            // --- Recent Timers Selection ---
+            if (config.RecentTasksCount > 0 && config.RecentTasksDays > 0)
+            {
+                while (true)
+                {
+                    var recentStart = DateTime.UtcNow.AddDays(-config.RecentTasksDays);
+                    var recentEnd = DateTime.UtcNow;
+                    var recentEntries = await clockifyClient.GetTimeEntries(workspace, user, recentStart, recentEnd);
+
+                    var recentValid = recentEntries
+                        .Where(e => !string.IsNullOrEmpty(e.ProjectId) && !string.IsNullOrEmpty(e.TaskId))
+                        .Where(e => projectTasksMap.ContainsKey(e.ProjectId) && projectTasksMap[e.ProjectId].Any(t => t.Id == e.TaskId))
+                        .GroupBy(e => (e.ProjectId, e.TaskId))
+                        .Select(g => g.OrderByDescending(e => e.TimeInterval.Start).First())
+                        .OrderByDescending(e => e.TimeInterval.Start)
+                        .Take(config.RecentTasksCount)
+                        .ToList();
+
+                    if (!recentValid.Any())
+                    {
+                        break; // no recent tasks available - go to full selection
+                    }
+
+                    var recentChoices = recentValid
+                        .Select(e => new
+                        {
+                            Entry = e,
+                            Project = allProjects.First(p => p.Id == e.ProjectId),
+                            Task = projectTasksMap[e.ProjectId].First(t => t.Id == e.TaskId)
+                        })
+                        .ToList();
+
+                    var selectionPrompt = new SelectionPrompt<int>()
+                        .Title("Select a [green]recent task[/], [yellow]other task[/], or [green]+ add new task[/]:")
+                        .PageSize(10);
+
+                    for (var i = 0; i < recentChoices.Count; i++)
+                    {
+                        selectionPrompt.AddChoice(i);
+                    }
+
+                    var newTaskIndex = recentChoices.Count;
+                    var otherIndex = recentChoices.Count + 1;
+
+                    selectionPrompt.AddChoice(newTaskIndex);
+                    selectionPrompt.AddChoice(otherIndex);
+
+                    selectionPrompt.UseConverter(idx =>
+                    {
+                        if (idx >= 0 && idx < recentChoices.Count)
+                        {
+                            var rc = recentChoices[idx];
+                            return $"[bold]{Markup.Escape(rc.Project.Name)}[/] > [green]{Markup.Escape(rc.Task.Name)}[/]";
+                        }
+
+                        return idx == newTaskIndex
+                            ? "[green]+ Add new task[/]"
+                            : "[yellow]Other task[/]";
+                    });
+
+                    var selectedIdx = console.Prompt(selectionPrompt);
+
+                    if (selectedIdx < recentChoices.Count)
+                    {
+                        var rc = recentChoices[selectedIdx];
+                        return (rc.Project, rc.Task);
+                    }
+
+                    if (selectedIdx == newTaskIndex)
+                    {
+                        var created = await CreateTaskAsync(null);
+                        if (created != null)
+                        {
+                            return created;
+                        }
+
+                        continue; // re-show recent timers
+                    }
+
+                    break; // fall through to full project/task selection
+                }
+            }
+
+            // --- Full Project/Task Selection ---
+            // allow user to add a new task from the projects screen, or go back to recent tasks
+            var selectedProject = PromptForProject(console, projectsWithTasks, "Select a [green]project[/]:", allowNewTask: true, allowBack: (config.RecentTasksCount > 0 && config.RecentTasksDays > 0) && projectsWithTasks.Count > 1);
+
+            // Handle pseudo-selections
+            if (selectedProject.Id == NewTaskOptionId)
+            {
+                var created = await CreateTaskAsync(null);
+                if (created != null)
+                {
+                    return created;
+                }
+
+                continue;
+            }
+
+            if (selectedProject.Id == BackOptionId)
+            {
+                // Return to recent timers selection
+                break; // will fall through to project selection outer loop which came from recent timers
+            }
+
             var allowBack = projectsWithTasks.Count > 1;
 
             if (!projectTasksMap.TryGetValue(selectedProject.Id, out var availableTasks))
@@ -412,6 +452,9 @@ public static class ProjectListHelper
         SelectProject:
             continue;
         }
+        
+        // If control somehow exits the selection loops, return null to indicate no selection
+        return null;
     }
 
     public static (ProjectInfo Project, TaskWithProject? Task)? PromptForProjectAndTaskFromLists(

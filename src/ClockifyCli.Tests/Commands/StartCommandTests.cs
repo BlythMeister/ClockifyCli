@@ -1064,10 +1064,15 @@ public class StartCommandTests
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
                         .Respond("application/json", "[]");
 
-        // Mock projects response with only Project Beta (since only projects with tasks are shown)
-        var projectsJson = """[{"id":"project2","name":"Project Beta"}]""";
+        // Mock projects response with multiple projects so navigation mirrors real menu behaviour
+        var projectsJson = """[{"id":"project1","name":"Project Alpha"},{"id":"project2","name":"Project Beta"}]""";
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
                 .Respond("application/json", projectsJson);
+
+        // Mock tasks response for Project Alpha (kept minimal to ensure it remains selectable)
+        var alphaTasksJson = """[{"id":"taskAlpha","name":"Alpha Task","status":"Active"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project1/tasks")
+            .Respond("application/json", alphaTasksJson);
 
         // Mock tasks response for Project Beta
         var tasksJson = """[{"id":"task1","name":"Beta Task 1","status":"Active"}]""";
@@ -1082,8 +1087,8 @@ public class StartCommandTests
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole().Interactive();
 
-        // Simulate user selections - select second project
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to second project
+        // Simulate user selections - navigate to Project Beta (second project option before + Add new task)
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move from Project Alpha to Project Beta
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select Project Beta
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first task
         testConsole.Input.PushTextWithEnter("Test description"); // Enter description

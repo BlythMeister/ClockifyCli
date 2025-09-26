@@ -452,7 +452,7 @@ public static class ProjectListHelper
         SelectProject:
             continue;
         }
-        
+
         // If control somehow exits the selection loops, return null to indicate no selection
         return null;
     }

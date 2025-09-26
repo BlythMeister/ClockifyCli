@@ -149,7 +149,7 @@ public static class ProjectListHelper
                     if (idx >= 0 && idx < recentChoices.Count)
                     {
                         var rc = recentChoices[idx];
-                        return $"[bold]{Markup.Escape(rc.Project.Name)}[/] > [green]{Markup.Escape(rc.Task.Name)}[/] [dim]({rc.Entry.TimeInterval.Start:yyyy-MM-dd HH:mm})[/]";
+                        return $"[bold]{Markup.Escape(rc.Project.Name)}[/] > [green]{Markup.Escape(rc.Task.Name)}[/]";
                     }
                     else if (idx == otherIdx)
                     {

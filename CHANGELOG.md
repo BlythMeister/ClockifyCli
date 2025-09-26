@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- markdownlint-disable MD024 -->
 
+
+## [1.17] - 2025-09-26
+
+### UI Improvements
+
+- **Recent Timer List**: Removed display of last used time from recent timer/task selection menu for a cleaner, less cluttered UI.
+
 ## [1.16] - 2025-09-25
 
 ### Enhancements

@@ -5,32 +5,45 @@ All notable changes to Clockify CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!-- markdownlint-disable MD024 -->
+---
 
+## How to Read This Changelog
 
-## [1.18] - 2025-09-26
+- **Added** for new features
+- **Changed** for changes in existing functionality  
+- **Deprecated** for soon-to-be removed features
+- **Removed** for now removed features
+- **Fixed** for any bug fixes
+- **Security** for vulnerability fixes
+
+## Contributing to the Changelog
+
+When contributing to this project, please update this changelog with your changes following the format above.
+
+---
 
 ## [1.19] - 2025-09-26
 
-### UI Improvements
+### Added
 
 - **Projects Screen Shortcuts**: Added a `+ Add new task` option to the projects selection screen so you can create a Jira-linked task directly from the project picker (previously only available on recent timers). Also added a `[dim]← Back to recent tasks[/]` option on the projects screen to return to the recent timers list.
 
+## [1.18] - 2025-09-26
 
-### UI Improvements
+### Added
 
 - **Task Selection Workflow**: Added a `+ Add new task` shortcut to recent and project task pickers, wiring it to Jira-powered task creation so newly added work items are highlighted and pre-selected immediately.
 - **Running Timer Alignment**: When backdating a new timer while one is running, the previous timer now finishes at the entered start time to keep timelines consistent.
 
 ## [1.17] - 2025-09-26
 
-### UI Improvements
+### Added
 
 - **Recent Timer List**: Removed display of last used time from recent timer/task selection menu for a cleaner, less cluttered UI.
 
 ## [1.16] - 2025-09-25
 
-### Enhancements
+### Added
 
 - **Clockify API Resilience**: Added automatic retry for `429 TooManyRequests` responses
   - Retries once after a one-second delay when Clockify enforces rate limits
@@ -39,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.15] - 2025-09-23
 
-### Bug Fixes
+### Fixed
 
 - **Time Interpretation During Editing**: Fixed ambiguous time interpretation when editing completed timers
   - When editing a completed timer (e.g., 11:08-11:39), entering "11:20" as new start time now correctly interprets as 11:20 AM instead of 11:20 PM
@@ -51,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.14] - 2025-09-23
 
-### Enhancements
+### Added
 
 - **Embedded Changelog Resource**: Improved changelog access reliability for packaged applications
   - Changelog content is now embedded as a resource in the application binary
@@ -62,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.13] - 2025-09-22
 
-### New Features
+### Added
 
 - **Show Changelog Command**: Added new `show-changelog` command to display changelog with interactive version selection
   - Shows interactive menu of all available versions with release dates when no version specified
@@ -82,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.12] - 2025-09-22
 
-### Bug Fixes
+### Fixed
 
 - **Project Filtering**: Projects marked as archived in Clockify are now filtered out from project selection lists
   - Added `archived=false` parameter to GetProjects API call for server-side filtering
@@ -96,7 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Prevents negative duration scenarios when editing running timer start times
   - Example: Entering "9:00" at 5PM now correctly interprets as 9:00 AM (past) instead of 9:00 PM (future)
 
-### Enhancements
+### Added
 
 - **IntelligentTimeParser Rules**: Updated and clarified rule documentation for better consistency
   - Rule 5: Clarified past time preference with 8-hour and negative duration exceptions
@@ -105,7 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.11] - 2025-09-08
 
-### User Experience
+### Added
 
 - **Improved Time Display**: Removed seconds from all user-facing time displays for cleaner, more readable output
   - Start timer confirmation now shows time as "HH:mm" instead of "HH:mm:ss"
@@ -115,32 +128,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.10] - 2025-01-16
 
-### Major Improvements
+### Added
 
 - **Eliminated Ambiguous Time Prompts**: Completely removed unnecessary user interruptions for time disambiguation
   - Removed `IsAmbiguousTime()` and `GetAmbiguousTimeOptions()` methods from IntelligentTimeParser
   - Removed `CheckAndConfirmAmbiguousTime()` methods from all command classes
   - Times like "1:00" after "11:30 AM" start are now automatically interpreted as "1:00 PM" without user confirmation
   - Times like "9:51" when editing with "10:00 AM" end are automatically interpreted as "9:51 AM" without user confirmation
-
-### User Experience
-
 - **Streamlined Time Entry**: No more ambiguous time confirmation dialogs interrupt the workflow
   - Context-aware parsing uses start/end relationships and 8-hour constraint to make intelligent choices
   - Eliminated confusing format selection (24-hour vs AM/PM) in favor of automatic disambiguation
   - Improved overall usability by removing unnecessary user decisions
 
-### Technical
-
-- **Code Simplification**: Removed approximately 500 lines of complex ambiguity logic
-  - Simplified command classes by removing ambiguous time handling
-  - Reduced test complexity by removing 50+ ambiguous time test cases
-  - Maintained all core intelligent parsing functionality while eliminating edge case complexity
-  - All remaining tests pass with improved reliability
-
 ## [1.9] - 2025-01-16
 
-### Major Improvements
+### Added
 
 - **Simplified Intelligent Time Parser**: Streamlined time parsing from 8 rules to 7 rules for better usability
   - Removed working hours restrictions (former Rule 6) that caused confusion and false positives
@@ -148,24 +150,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved time interpretation logic to be more intuitive and context-aware
   - Fixed critical AM/PM choice logic bug in ambiguous time confirmation dialogs
 
-### Bug Fixes
+### Fixed
 
 - **Time Parsing Logic**: Fixed incorrect AM/PM selection logic in `CheckAndConfirmAmbiguousTime` method
   - Corrected user choice interpretation where AM/PM selection was inverted
   - Fixed issue in both AddManualTimerCommand and StartCommand for consistent behavior
   - Enhanced validation logic to use intelligent parser's `GetActualStartDateTime` method
 
-### Technical
-
-- **Test Suite Optimization**: Improved test reliability and coverage
-  - Fixed console input mocking for Rule 7 ambiguous time confirmation scenarios
-  - Enhanced test scenarios to properly simulate user interactions with Spectre.Console prompts
-  - Streamlined edge case handling for better maintainability
-  - All 401 tests now pass with robust coverage of simplified intelligent time parsing
-
 ## [1.8] - 2025-09-04
 
-### Improvements
+### Added
 
 - **Comprehensive Ambiguous Time Testing**: Enhanced test coverage for intelligent time parsing and user prompting
   - Added comprehensive test coverage for all three time input commands: AddManualTimerCommand, EditTimerCommand, and StartCommand
@@ -176,17 +170,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ensured all 403 tests pass with robust coverage of intelligent time parsing functionality
   - Enhanced test scenarios covering both ambiguous ("4:37", "9:15") and non-ambiguous ("14:30", "23:59") time inputs
 
-### Technical
-
-- **Test Architecture Improvements**: Merged duplicate test files and organized ambiguous time tests into logical sections
-  - Removed redundant EditTimerCommandAmbiguityTests.cs file and integrated tests into main test files
-  - Added consistent reflection tests to verify CheckAndConfirmAmbiguousTime method existence across all commands
-  - Enhanced test assertions to match actual IntelligentTimeParser behavior and context-aware time interpretation
-  - All time input commands now have identical testing patterns for consistent quality assurance
-
 ## [1.7] - 2025-09-04
 
-### New Features
+### Added
 
 - **Interactive Time Confirmation**: Smart ambiguity detection with user confirmation for time input
   - Automatically detects when time input could be interpreted as either AM or PM (e.g., "9:30", "2:15")
@@ -198,7 +184,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.6] - 2025-09-04
 
-### New Features
+### Added
 
 - **Intelligent Time Input System**: Natural time entry without requiring seconds and with smart AM/PM detection
   - Supports multiple formats: `9:30`, `2:30 PM`, `2:30p`, `14:30`, `1:15a`, `1:15p`
@@ -225,22 +211,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ensures proper distinction between regular work time and break time
   - Maintains compatibility with existing time tracking workflows
 
-### Improvements
-
-- Enhanced user experience with seamless navigation between project and task selection
-- No more need to cancel entire operation when wrong project is selected
-- Continuous editing workflow allows multiple changes without restarting the edit process
-- Clear visual feedback shows which changes will be applied before confirmation
-
 ## [1.5] - 2025-08-28
 
-### Improvements
+### Added
 
 - **Consistent Task Selection Flow**: All commands now use the same 2-layer task selection (project first, then tasks)
 - Updated Add Manual Entry command to match the Start command's selection flow
 - Improved consistency across all task selection interfaces
 
-### Bug Fixes
+### Fixed
 
 - Task selection inconsistency between Start and Add Manual Entry commands
 - Users now have the same selection experience across all commands
@@ -263,13 +242,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Critical**: Prevents accidental loss of running timer when new timer setup fails or is cancelled
 - Users now receive confirmation when original timer is preserved during cancellation
-
-### Technical Details
-
-- Modified `StartCommand.cs` to use deferred timer stopping approach
-- Added state tracking for timer replacement workflow  
-- Enhanced error handling and user feedback messages
-- Updated and expanded test suite with new scenarios
 
 ## [1.0.0] - Initial Release
 
@@ -295,18 +267,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Monitoring**: Timer monitoring with desktop notifications
 - **Configuration**: Secure API key management
 - **User Experience**: Intuitive CLI with help and auto-completion
-
----
-
-## How to Read This Changelog
-
-- **Added** for new features
-- **Changed** for changes in existing functionality  
-- **Deprecated** for soon-to-be removed features
-- **Removed** for now removed features
-- **Fixed** for any bug fixes
-- **Security** for vulnerability fixes
-
-## Contributing to the Changelog
-
-When contributing to this project, please update this changelog with your changes following the format above.

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- markdownlint-disable MD024 -->
 
 
+## [1.18] - 2025-09-26
+
+### UI Improvements
+
+- **Task Selection Workflow**: Added a `+ Add new task` shortcut to recent and project task pickers, wiring it to Jira-powered task creation so newly added work items are highlighted and pre-selected immediately.
+- **Running Timer Alignment**: When backdating a new timer while one is running, the previous timer now finishes at the entered start time to keep timelines consistent.
+
 ## [1.17] - 2025-09-26
 
 ### UI Improvements

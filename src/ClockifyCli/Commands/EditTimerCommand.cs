@@ -11,13 +11,15 @@ namespace ClockifyCli.Commands;
 public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 {
     private readonly IClockifyClient clockifyClient;
+    private readonly IJiraClient jiraClient;
     private readonly IAnsiConsole console;
     private readonly ConfigurationService configService;
 
     // Constructor for dependency injection (now required)
-    public EditTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console, ConfigurationService configService)
+    public EditTimerCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, ConfigurationService configService)
     {
         this.clockifyClient = clockifyClient;
+        this.jiraClient = jiraClient;
         this.console = console;
         this.configService = configService;
     }
@@ -32,11 +34,11 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        await EditTimeEntry(clockifyClient, console, settings.Days);
+        await EditTimeEntry(clockifyClient, jiraClient, console, settings.Days);
         return 0;
     }
 
-    private async Task EditTimeEntry(IClockifyClient clockifyClient, IAnsiConsole console, int daysBack)
+    private async Task EditTimeEntry(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, int daysBack)
     {
         console.MarkupLine("[bold]Edit Time Entry[/]");
         console.WriteLine();
@@ -237,7 +239,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             console.WriteLine();
 
             // Use recent timers selection logic (with fallback)
-            var result = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, console, workspace, config, userInfo);
+            var result = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, jiraClient, console, workspace, config, userInfo);
             if (result == null)
             {
                 console.MarkupLine("[yellow]Project/task selection cancelled or no projects available.[/]");

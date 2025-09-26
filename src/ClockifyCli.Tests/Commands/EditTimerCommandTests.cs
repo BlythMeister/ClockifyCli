@@ -14,6 +14,7 @@ namespace ClockifyCli.Tests.Commands;
 public class EditTimerCommandTests
 {
     private Mock<IClockifyClient> mockClockifyClient;
+    private Mock<IJiraClient> mockJiraClient;
     private TestConsole testConsole;
     private EditTimerCommand command;
     private ConfigurationService configService;
@@ -22,9 +23,15 @@ public class EditTimerCommandTests
     public void Setup()
     {
         mockClockifyClient = new Mock<IClockifyClient>();
+        mockJiraClient = new Mock<IJiraClient>();
         testConsole = new TestConsole().Interactive();
         configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
-        command = new EditTimerCommand(mockClockifyClient.Object, testConsole, configService);
+        command = CreateCommand();
+    }
+
+    private EditTimerCommand CreateCommand()
+    {
+        return new EditTimerCommand(mockClockifyClient.Object, mockJiraClient.Object, testConsole, configService);
     }
 
     [TearDown]
@@ -178,7 +185,7 @@ public class EditTimerCommandTests
     {
         // Arrange & Act
         var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
-        var command = new EditTimerCommand(mockClockifyClient.Object, testConsole, configService);
+        var command = new EditTimerCommand(mockClockifyClient.Object, mockJiraClient.Object, testConsole, configService);
 
         // Assert
         Assert.That(command, Is.Not.Null);
@@ -342,7 +349,7 @@ public class EditTimerCommandTests
 
         // Act & Assert
         var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
-        Assert.DoesNotThrow(() => new EditTimerCommand(mockClockifyClient.Object, testConsole, configService));
+        Assert.DoesNotThrow(() => new EditTimerCommand(mockClockifyClient.Object, mockJiraClient.Object, testConsole, configService));
 
         // Cleanup
         testConsole.Dispose();

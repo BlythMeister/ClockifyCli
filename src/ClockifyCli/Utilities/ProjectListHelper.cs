@@ -6,8 +6,18 @@ namespace ClockifyCli.Utilities;
 
 public static class ProjectListHelper
 {
-    // Shared private method for project selection
-    private static ProjectInfo PromptForProject(IAnsiConsole console, List<ProjectInfo> projects, string title = "Select a [green]project[/]:")
+    private const string BackOptionId = "__BACK__";
+    private const string NewTaskOptionId = "__NEW__";
+
+    private enum TaskSelectionResult
+    {
+        Selected,
+        Back,
+        NoTask,
+        NewTask
+    }
+
+    private static ProjectInfo PromptForProject(IAnsiConsole console, IEnumerable<ProjectInfo> projects, string title = "Select a [green]project[/]:")
     {
         return console.Prompt(
             new SelectionPrompt<ProjectInfo>()
@@ -17,73 +27,225 @@ public static class ProjectListHelper
                 .UseConverter(p => Markup.Escape(p.Name)));
     }
 
-    // Shared private method for TaskWithProject selection (with back and no-task options)
-    private static TaskWithProject? PromptForTaskWithProject(IAnsiConsole console, List<TaskWithProject> projectTasks, ProjectInfo selectedProject, bool allowBack, bool allowNoTask)
+    private static (TaskSelectionResult Result, TaskWithProject? Task) PromptForTaskWithProject(
+        IAnsiConsole console,
+        List<TaskWithProject> projectTasks,
+        ProjectInfo selectedProject,
+        bool allowBack,
+        bool allowNoTask,
+        bool allowNewTask)
     {
         var taskChoices = new List<TaskWithProject>(projectTasks);
+
         if (allowNoTask)
         {
             var noTaskOption = new TaskWithProject(string.Empty, "(No Task)", selectedProject.Id, selectedProject.Name);
             taskChoices.Add(noTaskOption);
         }
+
+        if (allowNewTask)
+        {
+            var newTaskOption = new TaskWithProject(NewTaskOptionId, "+ Add new task", selectedProject.Id, selectedProject.Name);
+            taskChoices.Add(newTaskOption);
+        }
+
         if (allowBack)
         {
-            var backOption = new TaskWithProject("__BACK__", "← Back to project selection", selectedProject.Id, selectedProject.Name);
+            var backOption = new TaskWithProject(BackOptionId, "← Back to project selection", selectedProject.Id, selectedProject.Name);
             taskChoices.Add(backOption);
         }
-        var selectedTaskOrBack = console.Prompt(
+
+        var selectedTask = console.Prompt(
             new SelectionPrompt<TaskWithProject>()
-                .Title($"Select new [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
+                .Title($"Select a [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
                 .PageSize(15)
                 .AddChoices(taskChoices)
-                .UseConverter(t => t.TaskId == "__BACK__" ? $"[dim]{Markup.Escape(t.TaskName)}[/]" : Markup.Escape(t.TaskName)));
-        if (selectedTaskOrBack.TaskId == "__BACK__")
-            return null; // Signal to go back
-        if (string.IsNullOrEmpty(selectedTaskOrBack.TaskId))
-            return null; // No task selected
-        return selectedTaskOrBack;
+                .UseConverter(t => t.TaskId switch
+                {
+                    BackOptionId => $"[dim]{Markup.Escape(t.TaskName)}[/]",
+                    NewTaskOptionId => "[green]+ Add new task[/]",
+                    _ => Markup.Escape(t.TaskName)
+                }));
+
+        return selectedTask.TaskId switch
+        {
+            BackOptionId => (TaskSelectionResult.Back, null),
+            NewTaskOptionId => (TaskSelectionResult.NewTask, null),
+            "" => (TaskSelectionResult.NoTask, null),
+            _ => (TaskSelectionResult.Selected, selectedTask)
+        };
     }
 
-    // Shared private method for TaskInfo selection (with back option)
-    private static TaskInfo PromptForTaskInfo(IAnsiConsole console, List<TaskInfo> availableTasks, ProjectInfo selectedProject, bool allowBack)
+    private static (TaskSelectionResult Result, TaskInfo? Task) PromptForTaskInfo(
+        IAnsiConsole console,
+        List<TaskInfo> availableTasks,
+        ProjectInfo selectedProject,
+        bool allowBack,
+        bool allowNewTask)
     {
         var taskChoices = new List<TaskInfo>(availableTasks);
+
+        if (allowNewTask)
+        {
+            var newTaskOption = new TaskInfo(NewTaskOptionId, "+ Add new task", "New");
+            taskChoices.Add(newTaskOption);
+        }
+
         if (allowBack)
         {
-            var backOption = new TaskInfo("__BACK__", "← Back to project selection", "Back");
+            var backOption = new TaskInfo(BackOptionId, "← Back to project selection", "Back");
             taskChoices.Add(backOption);
         }
-        var selectedTaskOrBack = console.Prompt(
+
+        var selectedTask = console.Prompt(
             new SelectionPrompt<TaskInfo>()
                 .Title($"Select a [green]task[/] from '{Markup.Escape(selectedProject.Name)}':")
                 .PageSize(15)
                 .AddChoices(taskChoices)
-                .UseConverter(task => task.Id == "__BACK__" ? $"[dim]{Markup.Escape(task.Name)}[/]" : Markup.Escape(task.Name)));
-        return selectedTaskOrBack;
+                .UseConverter(task => task.Id switch
+                {
+                    BackOptionId => $"[dim]{Markup.Escape(task.Name)}[/]",
+                    NewTaskOptionId => "[green]+ Add new task[/]",
+                    _ => Markup.Escape(task.Name)
+                }));
+
+        return selectedTask.Id switch
+        {
+            BackOptionId => (TaskSelectionResult.Back, null),
+            NewTaskOptionId => (TaskSelectionResult.NewTask, null),
+            _ => (TaskSelectionResult.Selected, selectedTask)
+        };
     }
 
-    /// <summary>
-    /// Prompts the user to select a project and a task, supporting back navigation.
-    /// </summary>
-    /// <param name="clockifyClient">Clockify API client</param>
-    /// <param name="console">Console for user interaction</param>
-    /// <param name="workspace">WorkspaceInfo for the current workspace</param>
-    /// <returns>Tuple of selected ProjectInfo and TaskInfo, or null if cancelled</returns>
+    private static string ExtractJiraKey(string jiraRefOrUrl)
+    {
+        if (string.IsNullOrWhiteSpace(jiraRefOrUrl))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = jiraRefOrUrl.Trim();
+        return trimmed.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)
+            ? trimmed[(trimmed.LastIndexOf('/') + 1)..]
+            : trimmed;
+    }
+
+    private static async Task<(ProjectInfo Project, TaskInfo Task)?> CreateTaskFromJiraAsync(
+        IClockifyClient clockifyClient,
+        IJiraClient jiraClient,
+        IAnsiConsole console,
+        WorkspaceInfo workspace,
+        Dictionary<string, List<TaskInfo>> projectTasksMap,
+        List<ProjectInfo> selectableProjects,
+        IEnumerable<ProjectInfo> allProjects,
+        ProjectInfo? initialProject)
+    {
+        var project = initialProject ?? PromptForProject(console, allProjects, "Select [green]project[/] for new task:");
+
+        if (!projectTasksMap.TryGetValue(project.Id, out var existingTasks))
+        {
+            existingTasks = new List<TaskInfo>();
+            projectTasksMap[project.Id] = existingTasks;
+        }
+
+        var jiraRefOrUrl = console.Ask<string>("Enter [blue]Jira Ref[/] or [blue]URL[/]:");
+        var jiraKey = ExtractJiraKey(jiraRefOrUrl);
+
+        if (string.IsNullOrWhiteSpace(jiraKey))
+        {
+            console.MarkupLine("[yellow]No Jira reference provided. Operation cancelled.[/]");
+            return null;
+        }
+
+        Models.JiraIssue? issue = null;
+        await console.Status()
+                     .StartAsync($"Finding jira: {Markup.Escape(jiraKey)}...", async _ => { issue = await jiraClient.GetIssue(jiraKey); });
+
+        if (issue == null || string.IsNullOrWhiteSpace(issue.Key) || issue.Fields == null || string.IsNullOrWhiteSpace(issue.Fields.Summary))
+        {
+            console.MarkupLine($"[red]Unknown Issue '{Markup.Escape(jiraRefOrUrl)}' or issue data is incomplete[/]");
+            return null;
+        }
+
+        var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
+
+        var existingTask = existingTasks.FirstOrDefault(t => t.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
+        if (existingTask != null)
+        {
+            console.MarkupLine($"[yellow]Task '{Markup.Escape(taskName)}' already exists in project '{Markup.Escape(project.Name)}'.[/]");
+            if (console.Confirm("Use existing task?"))
+            {
+                return (project, existingTask);
+            }
+
+            console.MarkupLine("[yellow]Operation cancelled.[/]");
+            return null;
+        }
+
+        console.MarkupLine($"Will Add Task '[yellow]{Markup.Escape(taskName)}[/]' Into Project '[green]{Markup.Escape(project.Name)}[/]'");
+        if (!console.Confirm("Confirm?"))
+        {
+            console.MarkupLine("[yellow]Operation cancelled.[/]");
+            return null;
+        }
+
+        try
+        {
+            await console.Status()
+                         .StartAsync("Adding task...", async _ => { await clockifyClient.AddTask(workspace, project, taskName); });
+        }
+        catch (Exception ex)
+        {
+            console.MarkupLine($"[red]Failed to add task: {Markup.Escape(ex.Message)}[/]");
+            return null;
+        }
+
+        List<TaskInfo> refreshedTasks = new();
+        await console.Status()
+                     .StartAsync("Refreshing tasks...", async _ =>
+                     {
+                         var projectTasks = await clockifyClient.GetTasks(workspace, project);
+                         refreshedTasks = projectTasks
+                             .Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase))
+                             .OrderBy(t => t.Name)
+                             .ToList();
+                         projectTasksMap[project.Id] = refreshedTasks;
+                     });
+
+        var createdTask = refreshedTasks.FirstOrDefault(t => t.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
+        if (createdTask == null)
+        {
+            console.MarkupLine("[yellow]Task added but could not be located in refreshed list.[/]");
+            return null;
+        }
+
+        if (!selectableProjects.Any(p => p.Id == project.Id))
+        {
+            selectableProjects.Add(project);
+            selectableProjects.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        console.MarkupLine("[green]Task added successfully![/]");
+        return (project, createdTask);
+    }
+
     public static async Task<(ProjectInfo Project, TaskInfo Task)?> PromptForProjectAndTaskAsync(
         IClockifyClient clockifyClient,
+        IJiraClient jiraClient,
         IAnsiConsole console,
         WorkspaceInfo workspace,
         AppConfiguration config,
         UserInfo user)
     {
-        // Load projects and tasks
         List<ProjectInfo> allProjects = new();
         Dictionary<string, List<TaskInfo>> projectTasksMap = new();
+
         await console.Status()
             .StartAsync("Loading projects and tasks...", async ctx =>
             {
                 ctx.Status("Getting projects from Clockify...");
                 allProjects = await clockifyClient.GetProjects(workspace);
+
                 foreach (var project in allProjects)
                 {
                     ctx.Status($"Getting tasks for {project.Name}...");
@@ -92,40 +254,59 @@ public static class ProjectListHelper
                         .Where(t => !t.Status.Equals("Done", StringComparison.InvariantCultureIgnoreCase))
                         .OrderBy(t => t.Name)
                         .ToList();
-                    if (activeTasks.Any())
-                    {
-                        projectTasksMap[project.Id] = activeTasks;
-                    }
+
+                    projectTasksMap[project.Id] = activeTasks;
                 }
             });
 
-        var projects = allProjects.Where(p => projectTasksMap.ContainsKey(p.Id)).ToList();
-        if (!projects.Any())
+        List<ProjectInfo> projectsWithTasks = allProjects
+            .Where(p => projectTasksMap.TryGetValue(p.Id, out var tasks) && tasks.Any())
+            .OrderBy(p => p.Name)
+            .ToList();
+
+        if (!projectsWithTasks.Any())
         {
             console.MarkupLine("[yellow]No projects with active tasks found![/]");
             console.MarkupLine("[dim]Create projects and add tasks in Clockify first.[/]");
             return null;
         }
 
+        async Task<(ProjectInfo Project, TaskInfo Task)?> CreateTaskAsync(ProjectInfo? initialProject)
+        {
+            return await CreateTaskFromJiraAsync(
+                clockifyClient,
+                jiraClient,
+                console,
+                workspace,
+                projectTasksMap,
+                projectsWithTasks,
+                allProjects,
+                initialProject);
+        }
+
         // --- Recent Timers Selection ---
         if (config.RecentTasksCount > 0 && config.RecentTasksDays > 0)
         {
-            var recentStart = DateTime.UtcNow.AddDays(-config.RecentTasksDays);
-            var recentEnd = DateTime.UtcNow;
-            var recentEntries = await clockifyClient.GetTimeEntries(workspace, user, recentStart, recentEnd);
-            // Only consider entries with valid project and task, and that are still active
-            var recentValid = recentEntries
-                .Where(e => !string.IsNullOrEmpty(e.ProjectId) && !string.IsNullOrEmpty(e.TaskId))
-                .Where(e => projectTasksMap.ContainsKey(e.ProjectId) && projectTasksMap[e.ProjectId].Any(t => t.Id == e.TaskId))
-                .GroupBy(e => (e.ProjectId, e.TaskId))
-                .Select(g => g.OrderByDescending(e => e.TimeInterval.Start).First())
-                .OrderByDescending(e => e.TimeInterval.Start)
-                .Take(config.RecentTasksCount)
-                .ToList();
-
-            if (recentValid.Any())
+            while (true)
             {
-                // Build display list
+                var recentStart = DateTime.UtcNow.AddDays(-config.RecentTasksDays);
+                var recentEnd = DateTime.UtcNow;
+                var recentEntries = await clockifyClient.GetTimeEntries(workspace, user, recentStart, recentEnd);
+
+                var recentValid = recentEntries
+                    .Where(e => !string.IsNullOrEmpty(e.ProjectId) && !string.IsNullOrEmpty(e.TaskId))
+                    .Where(e => projectTasksMap.ContainsKey(e.ProjectId) && projectTasksMap[e.ProjectId].Any(t => t.Id == e.TaskId))
+                    .GroupBy(e => (e.ProjectId, e.TaskId))
+                    .Select(g => g.OrderByDescending(e => e.TimeInterval.Start).First())
+                    .OrderByDescending(e => e.TimeInterval.Start)
+                    .Take(config.RecentTasksCount)
+                    .ToList();
+
+                if (!recentValid.Any())
+                {
+                    break;
+                }
+
                 var recentChoices = recentValid
                     .Select(e => new
                     {
@@ -136,14 +317,20 @@ public static class ProjectListHelper
                     .ToList();
 
                 var selectionPrompt = new SelectionPrompt<int>()
-                    .Title("Select a [green]recent task[/] or [yellow]other task[/]:")
+                    .Title("Select a [green]recent task[/], [yellow]other task[/], or [green]+ add new task[/]:")
                     .PageSize(10);
-                int otherIdx = recentChoices.Count;
-                for (int i = 0; i < recentChoices.Count; i++)
+
+                for (var i = 0; i < recentChoices.Count; i++)
                 {
                     selectionPrompt.AddChoice(i);
                 }
-                selectionPrompt.AddChoice(otherIdx);
+
+                var newTaskIndex = recentChoices.Count;
+                var otherIndex = recentChoices.Count + 1;
+
+                selectionPrompt.AddChoice(newTaskIndex);
+                selectionPrompt.AddChoice(otherIndex);
+
                 selectionPrompt.UseConverter(idx =>
                 {
                     if (idx >= 0 && idx < recentChoices.Count)
@@ -151,43 +338,82 @@ public static class ProjectListHelper
                         var rc = recentChoices[idx];
                         return $"[bold]{Markup.Escape(rc.Project.Name)}[/] > [green]{Markup.Escape(rc.Task.Name)}[/]";
                     }
-                    else if (idx == otherIdx)
-                    {
-                        return "[yellow]Other task[/]";
-                    }
-                    return "[dim]Unknown[/]";
+
+                    return idx == newTaskIndex
+                        ? "[green]+ Add new task[/]"
+                        : "[yellow]Other task[/]";
                 });
 
                 var selectedIdx = console.Prompt(selectionPrompt);
+
                 if (selectedIdx < recentChoices.Count)
                 {
                     var rc = recentChoices[selectedIdx];
                     return (rc.Project, rc.Task);
                 }
-                // else fall through to full project/task selection
+
+                if (selectedIdx == newTaskIndex)
+                {
+                    var created = await CreateTaskAsync(null);
+                    if (created != null)
+                    {
+                        return created;
+                    }
+
+                    continue;
+                }
+
+                break; // fall through to full project/task selection
             }
         }
 
         // --- Full Project/Task Selection ---
         while (true)
         {
-            var selectedProject = PromptForProject(console, projects);
-            var availableTasks = projectTasksMap[selectedProject.Id];
-            var allowBack = projects.Count > 1;
-            var selectedTask = PromptForTaskInfo(console, availableTasks, selectedProject, allowBack);
-            if (selectedTask.Id == "__BACK__")
-                continue;
-            return (selectedProject, selectedTask);
+            var selectedProject = PromptForProject(console, projectsWithTasks);
+            var allowBack = projectsWithTasks.Count > 1;
+
+            if (!projectTasksMap.TryGetValue(selectedProject.Id, out var availableTasks))
+            {
+                availableTasks = new List<TaskInfo>();
+                projectTasksMap[selectedProject.Id] = availableTasks;
+            }
+
+            while (true)
+            {
+                var (result, task) = PromptForTaskInfo(console, availableTasks, selectedProject, allowBack, allowNewTask: true);
+                switch (result)
+                {
+                    case TaskSelectionResult.Selected:
+                        return (selectedProject, task!);
+                    case TaskSelectionResult.Back:
+                        goto SelectProject;
+                    case TaskSelectionResult.NewTask:
+                        {
+                            var created = await CreateTaskAsync(selectedProject);
+                            if (created != null)
+                            {
+                                if (created.Value.Project.Id == selectedProject.Id)
+                                {
+                                    availableTasks = projectTasksMap[selectedProject.Id];
+                                }
+
+                                return created;
+                            }
+
+                            availableTasks = projectTasksMap[selectedProject.Id];
+                            continue;
+                        }
+                    case TaskSelectionResult.NoTask:
+                        return (selectedProject, new TaskInfo(string.Empty, "(No Task)", "None"));
+                }
+            }
+
+        SelectProject:
+            continue;
         }
     }
 
-    /// <summary>
-    /// Prompts the user to select a project and a task from pre-fetched lists, supporting back navigation and 'no task' option.
-    /// </summary>
-    /// <param name="console">Console for user interaction</param>
-    /// <param name="projects">List of available projects</param>
-    /// <param name="allTasks">List of all tasks with project info</param>
-    /// <returns>Tuple of selected ProjectInfo and TaskWithProject (or null for no task), or null if cancelled</returns>
     public static (ProjectInfo Project, TaskWithProject? Task)? PromptForProjectAndTaskFromLists(
         IAnsiConsole console,
         List<ProjectInfo> projects,
@@ -199,7 +425,6 @@ public static class ProjectListHelper
             return null;
         }
 
-        // Only show projects that have at least one task in allTasks
         var projectsWithTasks = projects.Where(p => allTasks.Any(t => t.ProjectId == p.Id)).ToList();
         if (!projectsWithTasks.Any())
         {
@@ -214,11 +439,20 @@ public static class ProjectListHelper
                                        .OrderBy(t => t.TaskName)
                                        .ToList();
             var allowBack = projectsWithTasks.Count > 1;
-            var selectedTask = PromptForTaskWithProject(console, projectTasks, selectedProject, allowBack, true);
-            if (selectedTask == null && allowBack)
-                continue;
-            // If user selected 'no task', return null for task
-            return (selectedProject, selectedTask);
+            var (result, selectedTask) = PromptForTaskWithProject(console, projectTasks, selectedProject, allowBack, allowNoTask: true, allowNewTask: false);
+
+            switch (result)
+            {
+                case TaskSelectionResult.Selected:
+                    return (selectedProject, selectedTask);
+                case TaskSelectionResult.NoTask:
+                    return (selectedProject, null);
+                case TaskSelectionResult.Back:
+                    continue;
+                default:
+                    console.MarkupLine("[yellow]Creating new tasks is not supported in this context.[/]");
+                    continue;
+            }
         }
     }
 }

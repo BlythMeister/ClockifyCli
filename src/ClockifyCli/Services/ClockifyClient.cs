@@ -256,11 +256,17 @@ public class ClockifyClient : IClockifyClient
         }
     }
 
-    public async Task<TimeEntry> StopCurrentTimeEntry(WorkspaceInfo workspace, UserInfo user)
+    public async Task<TimeEntry> StopCurrentTimeEntry(WorkspaceInfo workspace, UserInfo user, DateTime? endTime = null)
     {
         try
         {
-            var stopTimeData = new { end = clock.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") };
+            var effectiveEndTime = endTime ?? clock.UtcNow;
+            if (effectiveEndTime.Kind != DateTimeKind.Utc)
+            {
+                effectiveEndTime = effectiveEndTime.ToUniversalTime();
+            }
+
+            var stopTimeData = new { end = effectiveEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ") };
             var stopTimeJson = JsonConvert.SerializeObject(stopTimeData);
             var response = await PatchWithRateLimitAsync(
                                                       $"workspaces/{workspace.Id}/user/{user.Id}/time-entries",

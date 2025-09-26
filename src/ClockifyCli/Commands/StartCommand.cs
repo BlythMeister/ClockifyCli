@@ -12,11 +12,13 @@ public class StartCommand : BaseCommand
     private readonly IAnsiConsole console;
     private readonly IClock clock;
     private readonly ConfigurationService configService;
+    private readonly IJiraClient jiraClient;
 
     // Constructor for dependency injection (now required)
-    public StartCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock, ConfigurationService configService)
+    public StartCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, IClock clock, ConfigurationService configService)
     {
         this.clockifyClient = clockifyClient;
+        this.jiraClient = jiraClient;
         this.console = console;
         this.clock = clock;
         this.configService = configService;
@@ -24,11 +26,11 @@ public class StartCommand : BaseCommand
 
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        await StartNewTimer(clockifyClient, console, clock);
+        await StartNewTimer(clockifyClient, jiraClient, console, clock);
         return 0;
     }
 
-    private async Task StartNewTimer(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
+    private async Task StartNewTimer(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, IClock clock)
     {
         console.MarkupLine("[bold]Start New Timer[/]");
         console.WriteLine();
@@ -65,7 +67,7 @@ public class StartCommand : BaseCommand
         }
 
         // Use ProjectListHelper to select project and task
-        var projectAndTask = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, console, workspace, config, user);
+        var projectAndTask = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, jiraClient, console, workspace, config, user);
         if (projectAndTask == null)
         {
             return;
@@ -151,14 +153,30 @@ public class StartCommand : BaseCommand
         console.MarkupLine($"  [bold]Start time:[/] {startTimeDisplay}");
         console.WriteLine();
 
+        var previousTimerEndOverride = default(DateTime?);
+        if (shouldReplaceTimer && hasRunningTimer && startTime.HasValue)
+        {
+            var runningStartLocal = currentEntry!.TimeInterval.StartDate.ToLocalTime();
+            if (startTime.Value > runningStartLocal)
+            {
+                previousTimerEndOverride = startTime;
+            }
+        }
+
         if (console.Confirm("Start this timer?"))
         {
             // If we need to replace a running timer, stop it first
             if (shouldReplaceTimer && hasRunningTimer)
             {
                 console.MarkupLine("[dim]Stopping current timer...[/]");
-                await clockifyClient.StopCurrentTimeEntry(workspace, user);
+                await clockifyClient.StopCurrentTimeEntry(workspace, user, previousTimerEndOverride);
                 console.MarkupLine("[green]:check_mark: Current timer stopped[/]");
+                if (previousTimerEndOverride.HasValue)
+                {
+                    var adjustedTime = previousTimerEndOverride.Value;
+                    var adjustedDisplay = adjustedTime.ToString(adjustedTime.Date == clock.Today ? "HH:mm" : "yyyy-MM-dd HH:mm");
+                    console.MarkupLine($"[dim]Previous timer end adjusted to {Markup.Escape(adjustedDisplay)}[/]");
+                }
                 console.WriteLine();
             }
 

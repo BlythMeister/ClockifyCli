@@ -12,11 +12,13 @@ public class AddManualTimerCommand : BaseCommand
     private readonly IAnsiConsole console;
     private readonly IClock clock;
     private readonly ConfigurationService configService;
+    private readonly IJiraClient jiraClient;
 
     // Constructor for dependency injection (now required)
-    public AddManualTimerCommand(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock, ConfigurationService configService)
+    public AddManualTimerCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, IClock clock, ConfigurationService configService)
     {
         this.clockifyClient = clockifyClient;
+        this.jiraClient = jiraClient;
         this.console = console;
         this.clock = clock;
         this.configService = configService;
@@ -24,11 +26,11 @@ public class AddManualTimerCommand : BaseCommand
 
     public override async Task<int> ExecuteAsync(CommandContext context)
     {
-        await AddManualTimeEntry(clockifyClient, console, clock);
+        await AddManualTimeEntry(clockifyClient, jiraClient, console, clock);
         return 0;
     }
 
-    private async Task AddManualTimeEntry(IClockifyClient clockifyClient, IAnsiConsole console, IClock clock)
+    private async Task AddManualTimeEntry(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, IClock clock)
     {
         console.MarkupLine("[bold]Add Manual Time Entry[/]");
         console.WriteLine();
@@ -43,7 +45,7 @@ public class AddManualTimerCommand : BaseCommand
         var config = await configService.LoadConfigurationAsync();
 
         // Use ProjectListHelper to select project and task
-        var projectAndTask = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, console, workspace, config, user);
+        var projectAndTask = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, jiraClient, console, workspace, config, user);
         if (projectAndTask == null)
         {
             return;

@@ -3,6 +3,7 @@ using ClockifyCli.Models;
 using ClockifyCli.Services;
 using ClockifyCli.Tests.Infrastructure;
 using ClockifyCli.Utilities;
+using Moq;
 using NUnit.Framework;
 using RichardSzalay.MockHttp;
 using Spectre.Console.Testing;
@@ -13,6 +14,11 @@ namespace ClockifyCli.Tests.Commands;
 [TestFixture]
 public class AddManualTimerCommandTests
 {
+    private static AddManualTimerCommand CreateCommand(IClockifyClient clockifyClient, TestConsole console, IClock clock, ConfigurationService configService, IJiraClient? jiraClient = null)
+    {
+        return new AddManualTimerCommand(clockifyClient, jiraClient ?? Mock.Of<IJiraClient>(), console, clock, configService);
+    }
+
     private static void SetupRecentTimeEntriesMock(MockHttpMessageHandler mockHandler, string? workspaceId = null, string? userId = null, string responseJson = "[]")
     {
         var workspaceSegment = workspaceId ?? "*";
@@ -37,7 +43,7 @@ public class AddManualTimerCommandTests
 
         // Act & Assert
         var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
-        Assert.DoesNotThrow(() => new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService));
+        Assert.DoesNotThrow(() => CreateCommand(clockifyClient, testConsole, mockClock, configService));
 
         // Cleanup
         clockifyMockHttp.Dispose();
@@ -65,7 +71,8 @@ public class AddManualTimerCommandTests
         var testConsole = new TestConsole();
 
         var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = CreateCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -108,7 +115,8 @@ public class AddManualTimerCommandTests
         var testConsole = new TestConsole();
 
         var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = CreateCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -170,7 +178,8 @@ public class AddManualTimerCommandTests
         testConsole.Input.PushTextWithEnter("y"); // Confirm add
 
         var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = CreateCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);
@@ -229,7 +238,8 @@ public class AddManualTimerCommandTests
         testConsole.Input.PushTextWithEnter("n"); // Decline to add
 
         var configService = new ConfigurationService(Path.Combine(Path.GetTempPath(), "ClockifyCli.Tests", Guid.NewGuid().ToString()));
-        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0)); var command = new AddManualTimerCommand(clockifyClient, testConsole, mockClock, configService);
+        var mockClock = new MockClock(new DateTime(2024, 1, 1, 14, 0, 0));
+        var command = CreateCommand(clockifyClient, testConsole, mockClock, configService);
 
         // Act
         var result = await command.ExecuteAsync(null!);

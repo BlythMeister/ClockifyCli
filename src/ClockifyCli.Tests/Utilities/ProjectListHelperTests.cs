@@ -124,11 +124,13 @@ public class ProjectListHelperTests
                     new JiraStatus("In Progress", new JiraStatusCategory("in-progress", "In Progress")),
                     "Implement feature")));
 
-        console.Input.PushKey(ConsoleKey.DownArrow); // Move to "+ Add new task"
-        console.Input.PushKey(ConsoleKey.Enter);     // Select new task option
-        console.Input.PushKey(ConsoleKey.Enter);     // Select project for new task
-        console.Input.PushTextWithEnter("PROJ-1");  // Provide Jira reference
-        console.Input.PushTextWithEnter("y");       // Confirm creation
+    console.Input.PushKey(ConsoleKey.DownArrow); // Move to "Other task"
+    console.Input.PushKey(ConsoleKey.Enter);     // Choose other task menu
+    console.Input.PushKey(ConsoleKey.Enter);     // Select existing project
+    console.Input.PushKey(ConsoleKey.DownArrow); // Move to "+ Add new task"
+    console.Input.PushKey(ConsoleKey.Enter);     // Select new task option
+    console.Input.PushTextWithEnter("PROJ-1");  // Provide Jira reference
+    console.Input.PushTextWithEnter("y");       // Confirm creation
 
         // Act
         var result = await ProjectListHelper.PromptForProjectAndTaskAsync(

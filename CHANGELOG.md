@@ -24,11 +24,15 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
-## [1.20] - 2025-10-13
+## [1.20] - 2025-10-14
 
 ### Added
 
 - **Split Time Entries**: Added a split option to the edit workflow so you can cut an existing timer at a chosen time, keep the first portion on the original project, and automatically create a new manual timer for the remainder with its own project, task, and optional description.
+
+### Changed
+
+- **Recent Task Picker**: Removed the `[green]+ Add new task[/]` action from the recent tasks menu so that quick selections stay focused on existing work. Creating new Jira-linked tasks now happens from the full project/task selection flow only.
 
 ## [1.19] - 2025-09-26
 

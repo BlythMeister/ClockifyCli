@@ -339,7 +339,7 @@ public static class ProjectListHelper
                         .ToList();
 
                     var selectionPrompt = new SelectionPrompt<int>()
-                        .Title("Select a [green]recent task[/], [yellow]other task[/], or [green]+ add new task[/]:")
+                        .Title("Select a [green]recent task[/] or choose [yellow]other task[/]:")
                         .PageSize(10);
 
                     for (var i = 0; i < recentChoices.Count; i++)
@@ -347,10 +347,8 @@ public static class ProjectListHelper
                         selectionPrompt.AddChoice(i);
                     }
 
-                    var newTaskIndex = recentChoices.Count;
-                    var otherIndex = recentChoices.Count + 1;
+                    var otherIndex = recentChoices.Count;
 
-                    selectionPrompt.AddChoice(newTaskIndex);
                     selectionPrompt.AddChoice(otherIndex);
 
                     selectionPrompt.UseConverter(idx =>
@@ -361,9 +359,7 @@ public static class ProjectListHelper
                             return $"[bold]{Markup.Escape(rc.Project.Name)}[/] > [green]{Markup.Escape(rc.Task.Name)}[/]";
                         }
 
-                        return idx == newTaskIndex
-                            ? "[green]+ Add new task[/]"
-                            : "[yellow]Other task[/]";
+                        return "[yellow]Other task[/]";
                     });
 
                     var selectedIdx = console.Prompt(selectionPrompt);
@@ -372,17 +368,6 @@ public static class ProjectListHelper
                     {
                         var rc = recentChoices[selectedIdx];
                         return (rc.Project, rc.Task);
-                    }
-
-                    if (selectedIdx == newTaskIndex)
-                    {
-                        var created = await CreateTaskAsync(null);
-                        if (created != null)
-                        {
-                            return created;
-                        }
-
-                        continue; // re-show recent timers
                     }
 
                     break; // fall through to full project/task selection

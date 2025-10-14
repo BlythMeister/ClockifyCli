@@ -17,7 +17,7 @@ Clockify CLI is a powerful command-line tool that bridges the gap between **Cloc
 - **📋 Manage tasks** directly from Jira issues in Clockify
 - **⏱️ Start/Stop timers** with an intuitive command-line interface and customizable start times
 - **🗑️ Discard/Delete timers** with safety confirmations and time restrictions
-- **✏️ Edit existing timers** with precise start/end time adjustments and menu-based editing
+- **✏️ Edit existing timers** with precise start/end time adjustments, entry splitting, and menu-based editing
 - **📊 View time reports** for current week and specific periods with optional detailed breakdown and configurable week start day
 - **☕ Break management** with separate tracking and reporting for break time vs work time
 - **🔔 Monitor timers** with desktop notifications
@@ -147,6 +147,8 @@ This command is useful for logging time you've already spent working on a task. 
 `clockify-cli edit` - Edit start/end times of existing time entries
 
 `clockify-cli edit --days 3` - Look for entries from the last 3 days
+
+While editing you can choose **Split timer** to end the original entry at a specific time and instantly create a new manual timer for the remaining duration with its own project, task, and optional description.
 
 #### Start a Timer
 
@@ -336,7 +338,7 @@ The intelligent time input works across all time entry scenarios:
 | `breaks-report` | Display break time entries and separate break tracking | `clockify-cli breaks-report --detailed --days 7` |
 | `delete` | Delete completed timers from this week | `clockify-cli delete` |
 | `discard` | Permanently delete the currently running timer | `clockify-cli discard` |
-| `edit` | Edit start/end times of existing time entries | `clockify-cli edit --days 7` |
+| `edit` | Edit, split, and retarget existing time entries | `clockify-cli edit --days 7` |
 | `start` | Start a new timer by selecting from available tasks with customizable start time | `clockify-cli start` |
 | `status` | Display current in-progress time entry | `clockify-cli status` |
 | `stop` | Stop the currently running timer | `clockify-cli stop` |

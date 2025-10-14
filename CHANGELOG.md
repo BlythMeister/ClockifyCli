@@ -1,5 +1,7 @@
 # Changelog
 
+<!-- markdownlint-disable MD024 -->
+
 All notable changes to Clockify CLI will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -21,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 When contributing to this project, please update this changelog with your changes following the format above.
 
 ---
+
+## [1.20] - 2025-10-13
+
+### Added
+
+- **Split Time Entries**: Added a split option to the edit workflow so you can cut an existing timer at a chosen time, keep the first portion on the original project, and automatically create a new manual timer for the remainder with its own project, task, and optional description.
 
 ## [1.19] - 2025-09-26
 

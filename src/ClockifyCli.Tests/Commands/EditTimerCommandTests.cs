@@ -7,6 +7,8 @@ using NUnit.Framework;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using Spectre.Console.Testing;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ClockifyCli.Tests.Commands;
 
@@ -165,6 +167,7 @@ public class EditTimerCommandTests
         // New menu-based editing system - select "Done" to exit without changes
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
 
@@ -241,6 +244,7 @@ public class EditTimerCommandTests
         // New menu-based editing system - select "Done" to exit without changes
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
 
@@ -306,6 +310,7 @@ public class EditTimerCommandTests
         // New menu-based editing system - select "Done" to exit without changes
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
 
@@ -318,6 +323,152 @@ public class EditTimerCommandTests
         // Should show both yesterday (with 1 entry) and today (with running timer)
         var output = testConsole.Output;
         Assert.That(output, Does.Not.Contain("No time entries found"));
+    }
+
+    [Test]
+    public async Task ExecuteAsync_WhenSplitTimerSelected_ShouldUpdateOriginalAndCreateNewEntry()
+    {
+        // Arrange
+        await configService.SaveConfigurationAsync(new AppConfiguration(
+            ClockifyApiKey: string.Empty,
+            JiraUsername: string.Empty,
+            JiraApiToken: string.Empty,
+            TempoApiKey: string.Empty,
+            RecentTasksCount: 0,
+            RecentTasksDays: 0));
+
+        var settings = new EditTimerCommand.Settings { Days = 7 };
+        var mockRemainingArgs = new Mock<IRemainingArguments>();
+        var context = new CommandContext([], mockRemainingArgs.Object, string.Empty, null);
+
+        var user = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var workspace = new WorkspaceInfo("workspace1", "Test Workspace");
+
+        var originalStartLocal = new DateTime(2024, 1, 1, 9, 0, 0, DateTimeKind.Local);
+        var originalEndLocal = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Local);
+        var originalStartUtc = originalStartLocal.ToUniversalTime();
+        var originalEndUtc = originalEndLocal.ToUniversalTime();
+        var splitTimeLocal = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Local);
+
+        var originalProject = new ProjectInfo("proj-original", "Development");
+        var splitProject = new ProjectInfo("proj-new", "Support");
+        var projects = new List<ProjectInfo> { originalProject, splitProject };
+
+        var originalTask = new TaskInfo("task-original", "Dev Task", "Active");
+        var splitTask = new TaskInfo("task-new", "Support Task", "Active");
+
+        var timeEntry = new TimeEntry(
+            "entry1",
+            "Original work",
+            originalTask.Id,
+            originalProject.Id,
+            "REGULAR",
+            new TimeInterval(originalStartUtc.ToString("o"), originalEndUtc.ToString("o")));
+
+        mockClockifyClient.Setup(c => c.GetLoggedInUser()).ReturnsAsync(user);
+        mockClockifyClient.Setup(c => c.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { workspace });
+        mockClockifyClient.Setup(c => c.GetProjects(It.Is<WorkspaceInfo>(w => w.Id == workspace.Id))).ReturnsAsync(projects);
+        mockClockifyClient.Setup(c => c.GetTasks(workspace, It.Is<ProjectInfo>(p => p.Id == originalProject.Id)))
+                          .ReturnsAsync(new List<TaskInfo> { originalTask });
+        mockClockifyClient.Setup(c => c.GetTasks(workspace, It.Is<ProjectInfo>(p => p.Id == splitProject.Id)))
+                          .ReturnsAsync(new List<TaskInfo> { splitTask });
+        mockClockifyClient.Setup(c => c.GetTimeEntries(workspace, user, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                          .ReturnsAsync(new List<TimeEntry> { timeEntry });
+        mockClockifyClient.Setup(c => c.GetCurrentTimeEntry(workspace, user)).ReturnsAsync((TimeEntry?)null);
+
+        DateTime capturedUpdateStart = default;
+        DateTime capturedUpdateEnd = default;
+        DateTime capturedNewStart = default;
+        DateTime capturedNewEnd = default;
+        string? capturedNewProjectId = null;
+        string? capturedNewTaskId = null;
+        string? capturedNewDescription = null;
+
+        command.SplitPromptOverride = _ => Task.FromResult<EditTimerCommand.SplitPromptResult?>(
+            new EditTimerCommand.SplitPromptResult(
+                splitTimeLocal,
+                splitProject,
+                splitTask,
+                "Split work"));
+
+        mockClockifyClient.Setup(c => c.UpdateTimeEntry(
+                workspace,
+                timeEntry,
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>()))
+            .Callback<WorkspaceInfo, TimeEntry, DateTime, DateTime, string?, string?, string?>((_, _, start, end, _, _, _) =>
+            {
+                capturedUpdateStart = start;
+                capturedUpdateEnd = end;
+            })
+            .ReturnsAsync(timeEntry);
+
+        mockClockifyClient.Setup(c => c.AddTimeEntry(
+                workspace,
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>()))
+            .Callback<WorkspaceInfo, string, string?, string?, DateTime, DateTime>((_, projectId, taskId, description, start, end) =>
+            {
+                capturedNewProjectId = projectId;
+                capturedNewTaskId = taskId;
+                capturedNewDescription = description;
+                capturedNewStart = start;
+                capturedNewEnd = end;
+            })
+            .ReturnsAsync(new TimeEntry(
+                "entry-new",
+                "Split work",
+                splitTask.Id,
+                splitProject.Id,
+                "REGULAR",
+                new TimeInterval(splitTimeLocal.ToUniversalTime().ToString("o"), originalEndUtc.ToString("o"))));
+
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select time entry
+    testConsole.Input.PushKey(ConsoleKey.DownArrow);
+    testConsole.Input.PushKey(ConsoleKey.DownArrow);
+    testConsole.Input.PushKey(ConsoleKey.DownArrow);
+    testConsole.Input.PushKey(ConsoleKey.Enter); // Choose "Split timer"
+
+    // Act
+    var result = await command.ExecuteAsync(context, settings);
+    command.SplitPromptOverride = null;
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        Assert.That(capturedUpdateStart, Is.EqualTo(originalStartUtc));
+        Assert.That(capturedUpdateEnd, Is.EqualTo(splitTimeLocal.ToUniversalTime()));
+        Assert.That(capturedNewStart, Is.EqualTo(splitTimeLocal));
+        Assert.That(capturedNewEnd, Is.EqualTo(originalEndLocal));
+        Assert.That(capturedNewProjectId, Is.EqualTo(splitProject.Id));
+        Assert.That(capturedNewTaskId, Is.EqualTo(splitTask.Id));
+        Assert.That(capturedNewDescription, Is.EqualTo("Split work"));
+
+        mockClockifyClient.Verify(c => c.UpdateTimeEntry(
+            workspace,
+            timeEntry,
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>()), Times.Once);
+
+        mockClockifyClient.Verify(c => c.AddTimeEntry(
+            workspace,
+            splitProject.Id,
+            splitTask.Id,
+            "Split work",
+            splitTimeLocal,
+            originalEndLocal), Times.Once);
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Time entry split successfully"));
     }
 
     [Test]
@@ -626,7 +777,8 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "New Project" (alphabetically first)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "New Task" (only task in new project)
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"  
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done (apply changes and exit)"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
@@ -710,6 +862,7 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "New Task" (alphabetically first)
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done (apply changes and exit)"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)" 
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
@@ -781,8 +934,9 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Change project/task"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select new project (first in alphabetical order)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select new task
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
@@ -836,8 +990,9 @@ public class EditTimerCommandTests
         // Simulate user input - select no changes (go directly to Done)
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select entry
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Change times"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Change description"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Split timer"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Navigate to "Done" option
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
 
@@ -1009,7 +1164,8 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first recent timer (project2/task2)
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
-        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done (apply changes and exit)"
+    testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
+    testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done (apply changes and exit)"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
 

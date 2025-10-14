@@ -15,6 +15,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
     private readonly IAnsiConsole console;
     private readonly ConfigurationService configService;
 
+    internal Func<SplitPromptContext, Task<SplitPromptResult?>>? SplitPromptOverride { get; set; }
+
     // Constructor for dependency injection (now required)
     public EditTimerCommand(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, ConfigurationService configService)
     {
@@ -31,6 +33,23 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         [DefaultValue(7)]
         public int Days { get; init; } = 7;
     }
+
+    internal record SplitPromptContext(
+        TimeEntry SelectedEntry,
+        DateTime CurrentStartTime,
+        DateTime OriginalEndLocal,
+        IReadOnlyList<ProjectInfo> Projects,
+        IReadOnlyList<TaskWithProject> AllTasks,
+        AppConfiguration Configuration,
+        UserInfo UserInfo,
+        WorkspaceInfo Workspace);
+
+    internal record SplitPromptResult(
+        DateTime SplitTimeLocal,
+        ProjectInfo Project,
+        TaskInfo Task,
+        string? Description,
+        bool Proceed = true);
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
@@ -264,7 +283,234 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             }
         }
 
+        async Task<bool> SplitTimeEntryAsync()
+        {
+            if (isRunning)
+            {
+                console.MarkupLine("[yellow]Cannot split a running timer.[/]");
+                return false;
+            }
+
+            if (selectedEntry.TimeInterval.IsRunning)
+            {
+                console.MarkupLine("[yellow]Cannot split a timer without an end time.[/]");
+                return false;
+            }
+
+            if (hasChanges)
+            {
+                console.WriteLine();
+                if (!console.Confirm("Splitting will discard pending edits. Continue?"))
+                {
+                    console.MarkupLine("[yellow]Split cancelled.[/]");
+                    return false;
+                }
+            }
+
+            var originalEndLocal = selectedEntry.TimeInterval.EndDate.ToLocalTime();
+            if (originalEndLocal <= currentStartTime)
+            {
+                console.MarkupLine("[red]Invalid timer duration. Unable to split.[/]");
+                return false;
+            }
+
+            console.WriteLine();
+            console.MarkupLine("[bold]Splitting Time Entry[/]");
+            console.WriteLine();
+
+            DateTime splitTimeLocal;
+            ProjectInfo splitProject;
+            TaskInfo splitTask;
+            string? splitDescription;
+            SplitPromptResult? overrideResult = null;
+
+            if (SplitPromptOverride != null)
+            {
+                overrideResult = await SplitPromptOverride(new SplitPromptContext(
+                    selectedEntry,
+                    currentStartTime,
+                    originalEndLocal,
+                    projects,
+                    allTasks,
+                    config,
+                    userInfo,
+                    workspace));
+
+                if (overrideResult == null || !overrideResult.Proceed)
+                {
+                    console.MarkupLine("[yellow]Split cancelled.[/]");
+                    return false;
+                }
+
+                splitTimeLocal = DateTime.SpecifyKind(overrideResult.SplitTimeLocal, DateTimeKind.Local);
+                if (splitTimeLocal <= currentStartTime || splitTimeLocal >= originalEndLocal)
+                {
+                    console.MarkupLine("[red]Override split time must fall within the entry duration.[/]");
+                    return false;
+                }
+
+                splitProject = overrideResult.Project;
+                splitTask = overrideResult.Task;
+                splitDescription = string.IsNullOrWhiteSpace(overrideResult.Description)
+                    ? null
+                    : overrideResult.Description!.Trim();
+            }
+            else
+            {
+                while (true)
+                {
+                    var splitInput = console.Prompt(
+                        new TextPrompt<string>($"Enter [green]split time[/] between {Markup.Escape(currentStartTime.ToString("HH:mm"))} and {Markup.Escape(originalEndLocal.ToString("HH:mm"))}:")
+                            .Validate(input =>
+                            {
+                                if (!IntelligentTimeParser.TryParseEndTime(input, out var parsedSplit, currentStartTime))
+                                {
+                                    return ValidationResult.Error("Please enter a valid time format (e.g., 10:15, 3:30 PM, 15:30).");
+                                }
+
+                                var candidate = currentStartTime.Date.Add(parsedSplit);
+                                if (candidate <= currentStartTime)
+                                {
+                                    candidate = candidate.AddDays(1);
+                                }
+
+                                if (candidate <= currentStartTime)
+                                {
+                                    return ValidationResult.Error("Split time must be after the entry start time.");
+                                }
+
+                                if (candidate >= originalEndLocal)
+                                {
+                                    return ValidationResult.Error("Split time must be before the entry end time.");
+                                }
+
+                                return ValidationResult.Success();
+                            }));
+
+                    if (IntelligentTimeParser.TryParseEndTime(splitInput, out var splitTimeSpan, currentStartTime))
+                    {
+                        var candidate = currentStartTime.Date.Add(splitTimeSpan);
+                        if (candidate <= currentStartTime)
+                        {
+                            candidate = candidate.AddDays(1);
+                        }
+
+                        if (candidate > currentStartTime && candidate < originalEndLocal)
+                        {
+                            splitTimeLocal = DateTime.SpecifyKind(candidate, DateTimeKind.Local);
+                            break;
+                        }
+                    }
+
+                    console.MarkupLine("[red]Invalid split time. Please try again.[/]");
+                }
+
+                var projectSelection = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, jiraClient, console, workspace, config, userInfo);
+                if (projectSelection == null)
+                {
+                    console.MarkupLine("[yellow]Split cancelled. No project selected.[/]");
+                    return false;
+                }
+
+                (splitProject, splitTask) = projectSelection.Value;
+
+                var splitDescriptionRaw = console.Prompt(
+                    new TextPrompt<string>("Enter [green]description[/] for new entry (optional):").AllowEmpty());
+                splitDescription = string.IsNullOrWhiteSpace(splitDescriptionRaw) ? null : splitDescriptionRaw.Trim();
+            }
+
+            var splitTaskName = string.IsNullOrEmpty(splitTask.Name) ? "No Task" : splitTask.Name;
+            var originalTask = allTasks.FirstOrDefault(t => t.TaskId == selectedEntry.TaskId);
+            var originalTaskName = originalTask?.TaskName ?? "No Task";
+            var originalDescriptionDisplay = string.IsNullOrWhiteSpace(selectedEntry.Description) ? "[dim]No description[/]" : Markup.Escape(selectedEntry.Description);
+            var newDescriptionDisplay = string.IsNullOrWhiteSpace(splitDescription) ? "[dim]No description[/]" : Markup.Escape(splitDescription);
+
+            var summary = new Table();
+            summary.AddColumn("Entry");
+            summary.AddColumn("Project");
+            summary.AddColumn("Task");
+            summary.AddColumn("Start");
+            summary.AddColumn("End");
+            summary.AddColumn("Description");
+
+            summary.AddRow(
+                "Original",
+                projectName,
+                Markup.Escape(originalTaskName),
+                currentStartTime.ToString("HH:mm"),
+                splitTimeLocal.ToString("HH:mm"),
+                originalDescriptionDisplay);
+
+            summary.AddRow(
+                "New",
+                Markup.Escape(splitProject.Name),
+                Markup.Escape(splitTaskName),
+                splitTimeLocal.ToString("HH:mm"),
+                originalEndLocal.ToString("HH:mm"),
+                newDescriptionDisplay);
+
+            console.WriteLine();
+            console.MarkupLine("[bold]Split Summary[/]");
+            console.Write(summary);
+            console.WriteLine();
+
+            if (overrideResult == null)
+            {
+                if (!console.Confirm("Split this time entry?"))
+                {
+                    console.MarkupLine("[yellow]Split cancelled.[/]");
+                    return false;
+                }
+            }
+
+            var splitTimeUtc = splitTimeLocal.ToUniversalTime();
+            var originalStartUtc = selectedEntry.TimeInterval.StartDate.Kind == DateTimeKind.Local
+                ? selectedEntry.TimeInterval.StartDate.ToUniversalTime()
+                : selectedEntry.TimeInterval.StartDate;
+            var originalEndUtc = selectedEntry.TimeInterval.EndDate.Kind == DateTimeKind.Local
+                ? selectedEntry.TimeInterval.EndDate.ToUniversalTime()
+                : selectedEntry.TimeInterval.EndDate;
+
+            await console.Status()
+                .StartAsync("Splitting time entry...", async _ =>
+                {
+                    await clockifyClient.UpdateTimeEntry(
+                        workspace,
+                        selectedEntry,
+                        originalStartUtc,
+                        splitTimeUtc,
+                        selectedEntry.Description,
+                        selectedEntry.ProjectId,
+                        selectedEntry.TaskId);
+
+                    await clockifyClient.AddTimeEntry(
+                        workspace,
+                        splitProject.Id,
+                        string.IsNullOrWhiteSpace(splitTask.Id) ? null : splitTask.Id,
+                        splitDescription,
+                        splitTimeLocal,
+                        originalEndLocal);
+                });
+
+            console.MarkupLine("[green]:check_mark: Time entry split successfully![/]");
+            return true;
+        }
+
         // Menu-based editing loop
+        var menuOptions = new List<string>
+        {
+            "Change project/task",
+            "Change times",
+            "Change description"
+        };
+
+        if (!isRunning)
+        {
+            menuOptions.Add("Split timer");
+        }
+
+        menuOptions.Add("Done (apply changes and exit)");
+
         while (true)
         {
             console.WriteLine();
@@ -272,13 +518,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                 new SelectionPrompt<string>()
                     .Title("What would you like to edit?")
                     .PageSize(10)
-                    .AddChoices(new[]
-                    {
-                        "Change project/task",
-                        "Change times",
-                        "Change description",
-                        "Done (apply changes and exit)"
-                    })
+                    .AddChoices(menuOptions)
                     .UseConverter(choice => choice switch
                     {
                         "Done (apply changes and exit)" => hasChanges ? "[green]Done (apply changes and exit)[/]" : "[dim]Done (no changes to apply)[/]",
@@ -297,6 +537,13 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
 
                 case "Change description":
                     EditDescription();
+                    break;
+
+                case "Split timer":
+                    if (await SplitTimeEntryAsync())
+                    {
+                        return;
+                    }
                     break;
 
                 case "Done (apply changes and exit)":

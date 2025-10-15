@@ -32,7 +32,7 @@ When contributing to this project, please update this changelog with your change
 
 ### Changed
 
-- **Recent Task Picker**: Removed the `[green]+ Add new task[/]` action from the recent tasks menu so that quick selections stay focused on existing work. Creating new Jira-linked tasks now happens from the full project/task selection flow only.
+- **Recent Task Picker**: Removed the `[green]+ Add new task[/]` action from the recent tasks menu so that quick selections stay focused on existing work. Creating new Jira-linked tasks now happens from the full project/task selection flow only. Also fixed the `← Back to recent tasks` option so it loops back to the recent list instead of exiting the edit workflow.
 
 ## [1.19] - 2025-09-26
 

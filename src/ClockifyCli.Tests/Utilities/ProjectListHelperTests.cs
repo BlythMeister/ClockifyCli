@@ -124,13 +124,13 @@ public class ProjectListHelperTests
                     new JiraStatus("In Progress", new JiraStatusCategory("in-progress", "In Progress")),
                     "Implement feature")));
 
-    console.Input.PushKey(ConsoleKey.DownArrow); // Move to "Other task"
-    console.Input.PushKey(ConsoleKey.Enter);     // Choose other task menu
-    console.Input.PushKey(ConsoleKey.Enter);     // Select existing project
-    console.Input.PushKey(ConsoleKey.DownArrow); // Move to "+ Add new task"
-    console.Input.PushKey(ConsoleKey.Enter);     // Select new task option
-    console.Input.PushTextWithEnter("PROJ-1");  // Provide Jira reference
-    console.Input.PushTextWithEnter("y");       // Confirm creation
+        console.Input.PushKey(ConsoleKey.DownArrow); // Move to "Other task"
+        console.Input.PushKey(ConsoleKey.Enter);     // Choose other task menu
+        console.Input.PushKey(ConsoleKey.Enter);     // Select existing project
+        console.Input.PushKey(ConsoleKey.DownArrow); // Move to "+ Add new task"
+        console.Input.PushKey(ConsoleKey.Enter);     // Select new task option
+        console.Input.PushTextWithEnter("PROJ-1");  // Provide Jira reference
+        console.Input.PushTextWithEnter("y");       // Confirm creation
 
         // Act
         var result = await ProjectListHelper.PromptForProjectAndTaskAsync(
@@ -150,5 +150,65 @@ public class ProjectListHelperTests
         clockifyClient.Verify();
         clockifyClient.Verify(c => c.GetTasks(workspace, project), Times.Exactly(2));
         jiraClient.Verify(j => j.GetIssue("PROJ-1"), Times.Once);
+    }
+
+    [Test]
+    public async Task PromptForProjectAndTaskAsync_WhenReturningFromProjectsToRecents_ReplaysRecentSelection()
+    {
+        // Arrange
+        var clockifyClient = new Mock<IClockifyClient>();
+        var jiraClient = new Mock<IJiraClient>();
+        var console = CreateInteractiveConsole();
+
+        var workspace = new WorkspaceInfo("ws-1", "Workspace One");
+        var user = new UserInfo("user-1", "Test User", "user@example.com", workspace.Id);
+        var config = CreateConfigWithRecents();
+
+        var projectAlpha = new ProjectInfo("proj-a", "Alpha");
+        var projectBeta = new ProjectInfo("proj-b", "Beta");
+        var taskAlpha = new TaskInfo("task-a", "Task Alpha", "Active");
+        var taskBeta = new TaskInfo("task-b", "Task Beta", "Active");
+
+        clockifyClient.Setup(c => c.GetProjects(workspace))
+            .ReturnsAsync(new List<ProjectInfo> { projectAlpha, projectBeta });
+
+        clockifyClient.Setup(c => c.GetTasks(workspace, projectAlpha))
+            .ReturnsAsync(new List<TaskInfo> { taskAlpha });
+        clockifyClient.Setup(c => c.GetTasks(workspace, projectBeta))
+            .ReturnsAsync(new List<TaskInfo> { taskBeta });
+
+        var recentEntry = new TimeEntry(
+            "entry-1",
+            "Recent work",
+            taskAlpha.Id,
+            projectAlpha.Id,
+            "REGULAR",
+            new TimeInterval("2024-01-02T09:00:00Z", "2024-01-02T10:00:00Z"));
+
+        clockifyClient.Setup(c => c.GetTimeEntries(workspace, user, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<TimeEntry> { recentEntry });
+
+        console.Input.PushKey(ConsoleKey.DownArrow); // Choose "Other task" from recents
+        console.Input.PushKey(ConsoleKey.Enter);
+        console.Input.PushKey(ConsoleKey.DownArrow); // Move to project Beta
+        console.Input.PushKey(ConsoleKey.DownArrow); // Move to "+ Add new task"
+        console.Input.PushKey(ConsoleKey.DownArrow); // Move to "← Back to recent tasks"
+        console.Input.PushKey(ConsoleKey.Enter);     // Go back to recent tasks
+        console.Input.PushKey(ConsoleKey.Enter);     // Select the recent entry
+
+        // Act
+        var result = await ProjectListHelper.PromptForProjectAndTaskAsync(
+            clockifyClient.Object,
+            jiraClient.Object,
+            console,
+            workspace,
+            config,
+            user);
+
+        // Assert
+        Assert.That(result, Is.Not.Null, "Returning to recents should still allow selecting an entry.");
+        Assert.That(result!.Value.Project, Is.EqualTo(projectAlpha));
+        Assert.That(result.Value.Task, Is.EqualTo(taskAlpha));
+
     }
 }

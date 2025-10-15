@@ -393,7 +393,7 @@ public static class ProjectListHelper
             if (selectedProject.Id == BackOptionId)
             {
                 // Return to recent timers selection
-                break; // will fall through to project selection outer loop which came from recent timers
+                continue;
             }
 
             var allowBack = projectsWithTasks.Count > 1;
@@ -437,9 +437,6 @@ public static class ProjectListHelper
         SelectProject:
             continue;
         }
-
-        // If control somehow exits the selection loops, return null to indicate no selection
-        return null;
     }
 
     public static (ProjectInfo Project, TaskWithProject? Task)? PromptForProjectAndTaskFromLists(

@@ -431,14 +431,14 @@ public class EditTimerCommandTests
 
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select time entry
-    testConsole.Input.PushKey(ConsoleKey.DownArrow);
-    testConsole.Input.PushKey(ConsoleKey.DownArrow);
-    testConsole.Input.PushKey(ConsoleKey.DownArrow);
-    testConsole.Input.PushKey(ConsoleKey.Enter); // Choose "Split timer"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow);
+        testConsole.Input.PushKey(ConsoleKey.DownArrow);
+        testConsole.Input.PushKey(ConsoleKey.DownArrow);
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Choose "Split timer"
 
-    // Act
-    var result = await command.ExecuteAsync(context, settings);
-    command.SplitPromptOverride = null;
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+        command.SplitPromptOverride = null;
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
@@ -1164,8 +1164,8 @@ public class EditTimerCommandTests
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select first recent timer (project2/task2)
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change times"
         testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Change description"
-    testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
-    testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done (apply changes and exit)"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Split timer"
+        testConsole.Input.PushKey(ConsoleKey.DownArrow); // Move to "Done (apply changes and exit)"
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select "Done (apply changes and exit)"
         testConsole.Input.PushTextWithEnter("y"); // Confirm changes
 

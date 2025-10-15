@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.21] - 2025-10-15
+
+### Changed
+
+- **Split Time Entries**: Enhanced the split workflow to ask users whether the new project/task should be assigned to the start portion or the end portion of the split timer. Previously, the new project/task was always assigned to the end portion by default.
+
 ## [1.20] - 2025-10-14
 
 ### Added

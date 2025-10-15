@@ -322,6 +322,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             ProjectInfo splitProject;
             TaskInfo splitTask;
             string? splitDescription;
+            bool keepNewTimerAtEnd = true; // Default: new timer at end (current behavior)
             SplitPromptResult? overrideResult = null;
 
             if (SplitPromptOverride != null)
@@ -357,6 +358,18 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             }
             else
             {
+                // Ask user which portion should get the new project/task
+                var splitDirection = console.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("Which portion should be assigned to the [green]new project/task[/]?")
+                        .AddChoices(new[]
+                        {
+                            "End portion (split time → end time)",
+                            "Start portion (start time → split time)"
+                        }));
+
+                keepNewTimerAtEnd = splitDirection.StartsWith("End");
+
                 while (true)
                 {
                     var splitInput = console.Prompt(
@@ -433,21 +446,44 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             summary.AddColumn("End");
             summary.AddColumn("Description");
 
-            summary.AddRow(
-                "Original",
-                projectName,
-                Markup.Escape(originalTaskName),
-                currentStartTime.ToString("HH:mm"),
-                splitTimeLocal.ToString("HH:mm"),
-                originalDescriptionDisplay);
+            if (keepNewTimerAtEnd)
+            {
+                // New timer at end: original keeps start→split, new gets split→end
+                summary.AddRow(
+                    "Original",
+                    projectName,
+                    Markup.Escape(originalTaskName),
+                    currentStartTime.ToString("HH:mm"),
+                    splitTimeLocal.ToString("HH:mm"),
+                    originalDescriptionDisplay);
 
-            summary.AddRow(
-                "New",
-                Markup.Escape(splitProject.Name),
-                Markup.Escape(splitTaskName),
-                splitTimeLocal.ToString("HH:mm"),
-                originalEndLocal.ToString("HH:mm"),
-                newDescriptionDisplay);
+                summary.AddRow(
+                    "New",
+                    Markup.Escape(splitProject.Name),
+                    Markup.Escape(splitTaskName),
+                    splitTimeLocal.ToString("HH:mm"),
+                    originalEndLocal.ToString("HH:mm"),
+                    newDescriptionDisplay);
+            }
+            else
+            {
+                // New timer at start: new gets start→split, original keeps split→end
+                summary.AddRow(
+                    "New",
+                    Markup.Escape(splitProject.Name),
+                    Markup.Escape(splitTaskName),
+                    currentStartTime.ToString("HH:mm"),
+                    splitTimeLocal.ToString("HH:mm"),
+                    newDescriptionDisplay);
+
+                summary.AddRow(
+                    "Original",
+                    projectName,
+                    Markup.Escape(originalTaskName),
+                    splitTimeLocal.ToString("HH:mm"),
+                    originalEndLocal.ToString("HH:mm"),
+                    originalDescriptionDisplay);
+            }
 
             console.WriteLine();
             console.MarkupLine("[bold]Split Summary[/]");
@@ -474,22 +510,46 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             await console.Status()
                 .StartAsync("Splitting time entry...", async _ =>
                 {
-                    await clockifyClient.UpdateTimeEntry(
-                        workspace,
-                        selectedEntry,
-                        originalStartUtc,
-                        splitTimeUtc,
-                        selectedEntry.Description,
-                        selectedEntry.ProjectId,
-                        selectedEntry.TaskId);
+                    if (keepNewTimerAtEnd)
+                    {
+                        // New timer at end: original keeps start→split, new gets split→end
+                        await clockifyClient.UpdateTimeEntry(
+                            workspace,
+                            selectedEntry,
+                            originalStartUtc,
+                            splitTimeUtc,
+                            selectedEntry.Description,
+                            selectedEntry.ProjectId,
+                            selectedEntry.TaskId);
 
-                    await clockifyClient.AddTimeEntry(
-                        workspace,
-                        splitProject.Id,
-                        string.IsNullOrWhiteSpace(splitTask.Id) ? null : splitTask.Id,
-                        splitDescription,
-                        splitTimeLocal,
-                        originalEndLocal);
+                        await clockifyClient.AddTimeEntry(
+                            workspace,
+                            splitProject.Id,
+                            string.IsNullOrWhiteSpace(splitTask.Id) ? null : splitTask.Id,
+                            splitDescription,
+                            splitTimeLocal,
+                            originalEndLocal);
+                    }
+                    else
+                    {
+                        // New timer at start: new gets start→split, original keeps split→end
+                        await clockifyClient.UpdateTimeEntry(
+                            workspace,
+                            selectedEntry,
+                            splitTimeUtc,
+                            originalEndUtc,
+                            selectedEntry.Description,
+                            selectedEntry.ProjectId,
+                            selectedEntry.TaskId);
+
+                        await clockifyClient.AddTimeEntry(
+                            workspace,
+                            splitProject.Id,
+                            string.IsNullOrWhiteSpace(splitTask.Id) ? null : splitTask.Id,
+                            splitDescription,
+                            currentStartTime,
+                            splitTimeLocal);
+                    }
                 });
 
             console.MarkupLine("[green]:check_mark: Time entry split successfully![/]");

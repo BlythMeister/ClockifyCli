@@ -79,6 +79,25 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
             return;
         }
 
+        // Check if this JIRA task already exists in other projects
+        var existingInOtherProjects = await FindJiraKeyInOtherProjects(clockifyClient, workspace, issue.Key, selectedProject);
+        if (existingInOtherProjects.Any())
+        {
+            console.WriteLine();
+            console.MarkupLine($"[yellow]:warning: Warning: JIRA task '{Markup.Escape(issue.Key)}' already exists in the following project(s):[/]");
+            foreach (var (project, task) in existingInOtherProjects)
+            {
+                console.MarkupLine($"  [dim]• Project:[/] [cyan]{Markup.Escape(project.Name)}[/] [dim]- Task:[/] {Markup.Escape(task.Name)}");
+            }
+            console.WriteLine();
+
+            if (!console.Confirm($"Do you still want to add this task to project '[green]{Markup.Escape(selectedProject.Name)}[/]'?"))
+            {
+                console.MarkupLine("[yellow]Operation cancelled.[/]");
+                return;
+            }
+        }
+
         // Show confirmation (outside Status block)
         var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
         console.MarkupLine($"Will Add Task '[yellow]{Markup.Escape(taskName)}[/]' Into Project '[green]{Markup.Escape(selectedProject.Name)}[/]'");
@@ -157,11 +176,49 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
 
         // Get existing tasks for the selected project to check for duplicates
         List<TaskInfo> existingTasks = new List<TaskInfo>();
+        Dictionary<string, List<(ProjectInfo Project, TaskInfo Task)>> crossProjectDuplicates = new Dictionary<string, List<(ProjectInfo Project, TaskInfo Task)>>();
+
         await console.Status()
             .StartAsync("Loading existing tasks...", async ctx =>
             {
                 existingTasks = await clockifyClient.GetTasks(workspace, selectedProject);
+
+                // Check each issue for duplicates in other projects
+                ctx.Status("Checking for duplicates in other projects...");
+                foreach (var issue in searchResult.Issues)
+                {
+                    if (!string.IsNullOrEmpty(issue.Key))
+                    {
+                        var duplicates = await FindJiraKeyInOtherProjects(clockifyClient, workspace, issue.Key, selectedProject);
+                        if (duplicates.Any())
+                        {
+                            crossProjectDuplicates[issue.Key] = duplicates;
+                        }
+                    }
+                }
             });
+
+        // If there are cross-project duplicates, display them
+        if (crossProjectDuplicates.Any())
+        {
+            console.WriteLine();
+            console.MarkupLine("[yellow]:warning: Warning: The following JIRA tasks already exist in other projects:[/]");
+            foreach (var kvp in crossProjectDuplicates)
+            {
+                console.MarkupLine($"[yellow]  • {Markup.Escape(kvp.Key)}:[/]");
+                foreach (var (project, task) in kvp.Value)
+                {
+                    console.MarkupLine($"    [dim]- Project:[/] [cyan]{Markup.Escape(project.Name)}[/] [dim]- Task:[/] {Markup.Escape(task.Name)}");
+                }
+            }
+            console.WriteLine();
+
+            if (!console.Confirm($"Do you still want to proceed adding tasks to project '[green]{Markup.Escape(selectedProject.Name)}[/]'?"))
+            {
+                console.MarkupLine("[yellow]Operation cancelled.[/]");
+                return;
+            }
+        }
 
         await console.Status()
             .StartAsync("Adding tasks...", async ctx =>
@@ -211,6 +268,75 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
         {
             console.MarkupLine($"[red]:cross_mark: Failed to add: {errorCount} tasks[/]");
         }
+    }
+
+    /// <summary>
+    /// Searches for a JIRA key across all projects except the specified one.
+    /// </summary>
+    /// <param name="clockifyClient">The Clockify client.</param>
+    /// <param name="workspace">The workspace to search in.</param>
+    /// <param name="jiraKey">The JIRA key to search for.</param>
+    /// <param name="excludeProject">The project to exclude from the search.</param>
+    /// <returns>A list of tuples containing the project and task where the JIRA key was found.</returns>
+    private async Task<List<(ProjectInfo Project, TaskInfo Task)>> FindJiraKeyInOtherProjects(
+        IClockifyClient clockifyClient,
+        WorkspaceInfo workspace,
+        string jiraKey,
+        ProjectInfo excludeProject)
+    {
+        var results = new List<(ProjectInfo Project, TaskInfo Task)>();
+
+        var allProjects = await clockifyClient.GetProjects(workspace);
+
+        foreach (var project in allProjects)
+        {
+            // Skip the project we're adding to
+            if (project.Id == excludeProject.Id)
+            {
+                continue;
+            }
+
+            var tasks = await clockifyClient.GetTasks(workspace, project);
+
+            foreach (var task in tasks)
+            {
+                var taskJiraKey = ExtractJiraKeyFromTaskName(task.Name);
+                if (!string.IsNullOrEmpty(taskJiraKey) &&
+                    taskJiraKey.Equals(jiraKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    results.Add((project, task));
+                }
+            }
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Extracts the JIRA key from a task name.
+    /// Task names typically follow the format: "JIRA-123 [Summary]".
+    /// </summary>
+    /// <param name="taskName">The task name to extract from.</param>
+    /// <returns>The JIRA key if found, otherwise null.</returns>
+    private static string? ExtractJiraKeyFromTaskName(string taskName)
+    {
+        if (string.IsNullOrWhiteSpace(taskName))
+        {
+            return null;
+        }
+
+        // Trim the input first
+        var trimmed = taskName.Trim();
+
+        // Find the first space or "[" to extract the JIRA key
+        var endIndex = trimmed.IndexOfAny(new[] { ' ', '[' });
+        if (endIndex > 0)
+        {
+            return trimmed.Substring(0, endIndex).Trim();
+        }
+
+        // If no delimiter found, the entire name might be the JIRA key
+        return trimmed;
     }
 
     public class Settings : CommandSettings

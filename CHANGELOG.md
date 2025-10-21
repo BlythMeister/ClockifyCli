@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.22] - 2025-10-21
+
+### Added
+
+- **Cross-Project Duplicate Detection**: When adding JIRA tasks to a project, the system now checks if the same JIRA task already exists in other projects and displays a warning with the project names. Users can choose to proceed with adding the duplicate or cancel the operation. This applies to both single task addition and bulk JQL filter operations.
+
 ## [1.21] - 2025-10-15
 
 ### Changed

@@ -197,6 +197,14 @@ This command allows you to create new projects directly in Clockify without need
 
 `clockify-cli add-task-from-jira` - Interactive selection to add Jira issues as Clockify tasks
 
+**Features:**
+
+- Add a single Jira issue or multiple issues using a JQL filter
+- Automatically checks for duplicate tasks within the selected project
+- **Cross-project duplicate detection**: Warns if the Jira task already exists in another project
+- Allows you to decide whether to proceed when duplicates are found in other projects
+
+
 #### Archive Tasks For Completed Jiras
 
 `clockify-cli archive-tasks-for-completed-jiras` - Archive Clockify tasks that are marked as Done in Jira

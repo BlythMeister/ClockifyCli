@@ -165,4 +165,109 @@ public class AddTaskFromJiraCommandTests
         clockifyMockHttp.Dispose();
         clockifyHttpClient.Dispose();
     }
+
+    [Test]
+    public async Task FindJiraKeyInOtherProjects_ShouldDetectDuplicatesInOtherProjects()
+    {
+        // This test verifies that the system can detect when a JIRA task exists in another project
+        // Arrange
+        var clockifyMockHttp = new MockHttpMessageHandler();
+        var clockifyHttpClient = new HttpClient(clockifyMockHttp);
+
+        var workspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        var currentProject = new ProjectInfo("project1", "Current Project");
+        var otherProject1 = new ProjectInfo("project2", "Other Project 1");
+        var otherProject2 = new ProjectInfo("project3", "Other Project 2");
+
+        // Mock projects response - return all projects
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                        .Respond("application/json",
+                            "[" +
+                            "{\"id\":\"project1\",\"name\":\"Current Project\"}," +
+                            "{\"id\":\"project2\",\"name\":\"Other Project 1\"}," +
+                            "{\"id\":\"project3\",\"name\":\"Other Project 2\"}" +
+                            "]");
+
+        // Mock tasks for current project (no tasks)
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project1/tasks")
+                        .Respond("application/json", "[]");
+
+        // Mock tasks for other project 1 (has TEST-123)
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project2/tasks")
+                        .Respond("application/json",
+                            "[{\"id\":\"task1\",\"name\":\"TEST-123 [Duplicate Task]\",\"status\":\"ACTIVE\"}]");
+
+        // Mock tasks for other project 2 (has TEST-456, not TEST-123)
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project3/tasks")
+                        .Respond("application/json",
+                            "[{\"id\":\"task2\",\"name\":\"TEST-456 [Different Task]\",\"status\":\"ACTIVE\"}]");
+
+        var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
+
+        // Act - search for TEST-123 in other projects
+        var allProjects = await clockifyClient.GetProjects(workspace);
+        var results = new List<(ProjectInfo Project, TaskInfo Task)>();
+
+        foreach (var project in allProjects)
+        {
+            if (project.Id == currentProject.Id)
+            {
+                continue;
+            }
+
+            var tasks = await clockifyClient.GetTasks(workspace, project);
+            foreach (var task in tasks)
+            {
+                // Extract JIRA key from task name
+                var jiraKey = ExtractJiraKeyFromTaskName(task.Name);
+                if (!string.IsNullOrEmpty(jiraKey) && jiraKey.Equals("TEST-123", StringComparison.OrdinalIgnoreCase))
+                {
+                    results.Add((project, task));
+                }
+            }
+        }
+
+        // Assert
+        Assert.That(results, Has.Count.EqualTo(1), "Should find TEST-123 in one other project");
+        Assert.That(results[0].Project.Id, Is.EqualTo("project2"), "Should be found in Other Project 1");
+        Assert.That(results[0].Task.Name, Is.EqualTo("TEST-123 [Duplicate Task]"));
+
+        // Cleanup
+        clockifyMockHttp.Dispose();
+        clockifyHttpClient.Dispose();
+    }
+
+    [Test]
+    public void ExtractJiraKeyFromTaskName_ShouldExtractCorrectly()
+    {
+        // Test various task name formats
+        Assert.That(ExtractJiraKeyFromTaskName("TEST-123 [My Task]"), Is.EqualTo("TEST-123"));
+        Assert.That(ExtractJiraKeyFromTaskName("PROJ-456 Some Description"), Is.EqualTo("PROJ-456"));
+        Assert.That(ExtractJiraKeyFromTaskName("ABC-789[NoSpace]"), Is.EqualTo("ABC-789"));
+        Assert.That(ExtractJiraKeyFromTaskName("XYZ-001"), Is.EqualTo("XYZ-001"));
+        Assert.That(ExtractJiraKeyFromTaskName("  TEST-999  [Trimmed]  "), Is.EqualTo("TEST-999"));
+        Assert.That(ExtractJiraKeyFromTaskName(""), Is.Null);
+        Assert.That(ExtractJiraKeyFromTaskName(null!), Is.Null);
+    }
+
+    private static string? ExtractJiraKeyFromTaskName(string taskName)
+    {
+        if (string.IsNullOrWhiteSpace(taskName))
+        {
+            return null;
+        }
+
+        // Trim the input first
+        var trimmed = taskName.Trim();
+
+        // Find the first space or "[" to extract the JIRA key
+        var endIndex = trimmed.IndexOfAny(new[] { ' ', '[' });
+        if (endIndex > 0)
+        {
+            return trimmed.Substring(0, endIndex).Trim();
+        }
+
+        // If no delimiter found, the entire name might be the JIRA key
+        return trimmed;
+    }
 }

@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.23] - 2025-11-03
+
+### Fixed
+
+- **Jira API Migration**: Migrated from deprecated `/rest/api/3/search` endpoint to the new `/rest/api/3/search/jql` endpoint. Fixed issue where JQL filter searches were returning incomplete data by using `fields: ["*all"]` parameter to ensure all issue fields (key, summary, status, etc.) are returned correctly.
+
 ## [1.22] - 2025-10-21
 
 ### Added

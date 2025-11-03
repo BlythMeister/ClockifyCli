@@ -91,13 +91,13 @@ public class JiraClient : IJiraClient
             {
                 jql = jql,
                 maxResults = maxResults,
-                startAt = 0
+                fields = new[] { "*all" }
             };
 
             var json = JsonConvert.SerializeObject(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await client.PostAsync("search", content);
+            var response = await client.PostAsync("search/jql", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)

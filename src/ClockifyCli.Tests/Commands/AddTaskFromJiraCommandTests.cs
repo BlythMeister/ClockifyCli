@@ -104,7 +104,7 @@ public class AddTaskFromJiraCommandTests
         var jiraHttpClient = new HttpClient(jiraMockHttp);
 
         // Mock JQL search response with duplicate scenario
-        jiraMockHttp.When(HttpMethod.Post, "https://15below.atlassian.net/rest/api/3/search")
+        jiraMockHttp.When(HttpMethod.Post, "https://15below.atlassian.net/rest/api/3/search/jql")
                     .Respond("application/json", "{\"startAt\":0,\"maxResults\":100,\"total\":2,\"issues\":[{\"id\":\"10001\",\"key\":\"TEST-123\",\"fields\":{\"summary\":\"Existing Task\",\"status\":{\"name\":\"In Progress\"}}},{\"id\":\"10002\",\"key\":\"TEST-456\",\"fields\":{\"summary\":\"New Task\",\"status\":{\"name\":\"To Do\"}}}]}");
 
         var jiraClient = new JiraClient(jiraHttpClient, "test-user", "test-token");

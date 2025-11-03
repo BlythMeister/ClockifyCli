@@ -283,7 +283,7 @@ public class JiraClientTests
         }
         """;
 
-        mockHttp.When("https://15below.atlassian.net/rest/api/3/search")
+        mockHttp.When("https://15below.atlassian.net/rest/api/3/search/jql")
             .Respond(HttpStatusCode.OK, "application/json", jsonResponse);
 
         var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);
@@ -315,7 +315,7 @@ public class JiraClientTests
         }
         """;
 
-        mockHttp.When("https://15below.atlassian.net/rest/api/3/search")
+        mockHttp.When("https://15below.atlassian.net/rest/api/3/search/jql")
             .Respond(HttpStatusCode.OK, "application/json", jsonResponse);
 
         var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);
@@ -334,7 +334,7 @@ public class JiraClientTests
     {
         // Arrange
         var jql = "invalid JQL syntax";
-        mockHttp.When("https://15below.atlassian.net/rest/api/3/search")
+        mockHttp.When("https://15below.atlassian.net/rest/api/3/search/jql")
             .Respond(HttpStatusCode.BadRequest, "application/json", "{\"errorMessages\":[\"Invalid JQL\"]}");
 
         var jiraClient = new JiraClient(httpClient, TestUser, TestApiKey);

@@ -3,6 +3,7 @@ using ClockifyCli.Services;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
 
 namespace ClockifyCli.Commands;
 
@@ -22,11 +23,11 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        await AddTask(clockifyClient, jiraClient, console);
+        await AddTask(clockifyClient, jiraClient, console, settings);
         return 0;
     }
 
-    private async Task AddTask(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console)
+    private async Task AddTask(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, Settings settings)
     {
         var workspace = (await clockifyClient.GetLoggedInUserWorkspaces()).FirstOrDefault();
         if (workspace == null)
@@ -37,33 +38,66 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
 
         var projects = await clockifyClient.GetProjects(workspace);
 
-        var projectChoice = console.Prompt(
-                                               new SelectionPrompt<string>()
-                                                   .Title("Select a [green]project[/]:")
-                                                   .PageSize(10)
-                                                   .AddChoices(projects.Select(p => p.Name)));
-
-        var selectedProject = projects.First(p => p.Name == projectChoice);
-
-        // Ask user whether they want to enter a single Jira issue or a JQL filter
-        var inputType = console.Prompt(
-            new SelectionPrompt<string>()
-                .Title("What would you like to add?")
-                .AddChoices(new[] { "Single Jira Issue", "JQL Filter (Multiple Issues)" }));
-
-        if (inputType == "Single Jira Issue")
+        // Select project: use parameter if provided, otherwise prompt
+        ProjectInfo? selectedProject;
+        if (!string.IsNullOrWhiteSpace(settings.Project))
         {
-            await AddSingleJiraTask(clockifyClient, jiraClient, console, workspace, selectedProject);
+            selectedProject = projects.FirstOrDefault(p => p.Name.Equals(settings.Project, StringComparison.OrdinalIgnoreCase));
+            if (selectedProject == null)
+            {
+                console.MarkupLine($"[red]Project '{Markup.Escape(settings.Project)}' not found![/]");
+                console.MarkupLine("[yellow]Available projects:[/]");
+                foreach (var p in projects.OrderBy(p => p.Name))
+                {
+                    console.MarkupLine($"  - {Markup.Escape(p.Name)}");
+                }
+                return;
+            }
+            console.MarkupLine($"Using project: [green]{Markup.Escape(selectedProject.Name)}[/]");
         }
         else
         {
-            await AddTasksFromJqlFilter(clockifyClient, jiraClient, console, workspace, selectedProject);
+            var projectChoice = console.Prompt(
+                                                   new SelectionPrompt<string>()
+                                                       .Title("Select a [green]project[/]:")
+                                                       .PageSize(10)
+                                                       .AddChoices(projects.Select(p => p.Name)));
+            selectedProject = projects.First(p => p.Name == projectChoice);
+        }
+
+        // Determine mode: single issue, JQL filter, or prompt
+        if (!string.IsNullOrWhiteSpace(settings.Issue))
+        {
+            // Single issue specified via parameter
+            await AddSingleJiraTask(clockifyClient, jiraClient, console, workspace, selectedProject, settings.Issue);
+        }
+        else if (!string.IsNullOrWhiteSpace(settings.Jql))
+        {
+            // JQL specified via parameter
+            await AddTasksFromJqlFilter(clockifyClient, jiraClient, console, workspace, selectedProject, settings.Jql);
+        }
+        else
+        {
+            // No parameters, use interactive mode
+            var inputType = console.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("What would you like to add?")
+                    .AddChoices(new[] { "Single Jira Issue", "JQL Filter (Multiple Issues)" }));
+
+            if (inputType == "Single Jira Issue")
+            {
+                await AddSingleJiraTask(clockifyClient, jiraClient, console, workspace, selectedProject);
+            }
+            else
+            {
+                await AddTasksFromJqlFilter(clockifyClient, jiraClient, console, workspace, selectedProject);
+            }
         }
     }
 
-    private async Task AddSingleJiraTask(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, WorkspaceInfo workspace, ProjectInfo selectedProject)
+    private async Task AddSingleJiraTask(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, WorkspaceInfo workspace, ProjectInfo selectedProject, string? jiraRefOrUrl = null)
     {
-        var jiraRefOrUrl = console.Ask<string>("Enter [blue]Jira Ref[/] or [blue]URL[/]:");
+        jiraRefOrUrl ??= console.Ask<string>("Enter [blue]Jira Ref[/] or [blue]URL[/]:");
         var jiraRef = jiraRefOrUrl.StartsWith("http", StringComparison.InvariantCultureIgnoreCase)
                           ? jiraRefOrUrl.Substring(jiraRefOrUrl.LastIndexOf("/") + 1)
                           : jiraRefOrUrl;
@@ -117,9 +151,9 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
         }
     }
 
-    private async Task AddTasksFromJqlFilter(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, WorkspaceInfo workspace, ProjectInfo selectedProject)
+    private async Task AddTasksFromJqlFilter(IClockifyClient clockifyClient, IJiraClient jiraClient, IAnsiConsole console, WorkspaceInfo workspace, ProjectInfo selectedProject, string? jqlQuery = null)
     {
-        var jqlQuery = console.Ask<string>("Enter [blue]JQL Filter[/] (e.g., 'project = ABC AND status = \"In Progress\"'):");
+        jqlQuery ??= console.Ask<string>("Enter [blue]JQL Filter[/] (e.g., 'project = ABC AND status = \"In Progress\"'):");
 
         console.MarkupLine($"[dim]Searching with JQL: {Markup.Escape(jqlQuery)}[/]");
         console.WriteLine();
@@ -342,6 +376,25 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
 
     public class Settings : CommandSettings
     {
-        // No settings for this command currently
+        [CommandOption("-p|--project <PROJECT>")]
+        [Description("Project name to add tasks to (optional, will prompt if not provided)")]
+        public string? Project { get; set; }
+
+        [CommandOption("-j|--jql <JQL>")]
+        [Description("JQL query to find multiple Jira issues (optional, cannot be used with --issue)")]
+        public string? Jql { get; set; }
+
+        [CommandOption("-i|--issue <ISSUE>")]
+        [Description("Single Jira issue key or URL to add (optional, cannot be used with --jql)")]
+        public string? Issue { get; set; }
+
+        public override ValidationResult Validate()
+        {
+            if (!string.IsNullOrWhiteSpace(Jql) && !string.IsNullOrWhiteSpace(Issue))
+            {
+                return ValidationResult.Error("Cannot specify both --jql and --issue parameters. Use one or the other.");
+            }
+            return ValidationResult.Success();
+        }
     }
 }

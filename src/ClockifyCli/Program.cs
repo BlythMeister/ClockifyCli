@@ -104,8 +104,10 @@ app.Configure(config =>
 
                   // Add the add-task-from-jira command
                   config.AddCommand<AddTaskFromJiraCommand>("add-task-from-jira")
-                        .WithDescription("Add Task From Jira")
-                        .WithExample(new[] { "add-task-from-jira" });
+                        .WithDescription("Add tasks from Jira to a Clockify project (interactive or via parameters)")
+                        .WithExample(new[] { "add-task-from-jira" })
+                        .WithExample(new[] { "add-task-from-jira", "--project", "MyProject", "--issue", "PROJ-123" })
+                        .WithExample(new[] { "add-task-from-jira", "-p", "MyProject", "-j", "project = PROJ AND status = 'In Progress'" });
 
                   // Add the add-project command
                   config.AddCommand<AddProjectCommand>("add-project")

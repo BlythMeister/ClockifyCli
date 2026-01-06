@@ -195,7 +195,7 @@ This command allows you to create new projects directly in Clockify without need
 
 #### Add Task From Jira
 
-`clockify-cli add-task-from-jira` - Interactive selection to add Jira issues as Clockify tasks
+`clockify-cli add-task-from-jira` - Add Jira issues as Clockify tasks (interactive or via parameters)
 
 **Features:**
 
@@ -203,6 +203,28 @@ This command allows you to create new projects directly in Clockify without need
 - Automatically checks for duplicate tasks within the selected project
 - **Cross-project duplicate detection**: Warns if the Jira task already exists in another project
 - Allows you to decide whether to proceed when duplicates are found in other projects
+- **Quick mode**: Use command line parameters to skip interactive prompts
+
+**Optional Parameters:**
+
+- `--project` / `-p` - Specify project name directly
+- `--issue` / `-i` - Specify a single Jira issue key or URL
+- `--jql` / `-j` - Specify a JQL query to add multiple issues
+
+**Examples:**
+
+```bash
+# Interactive mode (prompts for all inputs)
+clockify-cli add-task-from-jira
+
+# Quick add single issue
+clockify-cli add-task-from-jira --project "MyProject" --issue "PROJ-123"
+clockify-cli add-task-from-jira -p "MyProject" -i "https://jira.company.com/browse/PROJ-123"
+
+# Quick add multiple issues via JQL
+clockify-cli add-task-from-jira --project "MyProject" --jql "project = PROJ AND status = 'In Progress'"
+clockify-cli add-task-from-jira -p "MyProject" -j "assignee = currentUser() AND status != Done"
+```
 
 
 #### Archive Tasks For Completed Jiras
@@ -376,7 +398,7 @@ The intelligent time input works across all time entry scenarios:
 | Command | Description | Examples |
 |---------|-------------|----------|
 | `add-project` | Add a new project to Clockify | `clockify-cli add-project` |
-| `add-task-from-jira` | Add Task From Jira | `clockify-cli add-task-from-jira` |
+| `add-task-from-jira` | Add Jira issues as Clockify tasks | `clockify-cli add-task-from-jira`<br>`clockify-cli add-task-from-jira -p "MyProject" -i "PROJ-123"`<br>`clockify-cli add-task-from-jira -p "MyProject" -j "status = 'In Progress'"` |
 | `archive-tasks-for-completed-jiras` | Archive Tasks For Completed Jiras | `clockify-cli archive-tasks-for-completed-jiras` |
 | `update-task-names-for-jiras` | Update task names with Jira hierarchy | `clockify-cli update-task-names-for-jiras` |
 

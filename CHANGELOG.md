@@ -26,6 +26,14 @@ When contributing to this project, please update this changelog with your change
 
 ## [1.25] - 2026-01-06
 
+### Added
+
+- Added optional command line parameters to `add-task-from-jira` command for quick task addition
+  - `--project` / `-p`: Specify project name directly
+  - `--issue` / `-i`: Specify a single Jira issue key or URL
+  - `--jql` / `-j`: Specify a JQL query to add multiple issues
+  - Falls back to interactive prompts when parameters are not provided
+
 ### Fixed
 
 - Trimmed whitespace from project, parent, and task names when formatting Jira tasks to ensure clean display

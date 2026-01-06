@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.24] - 2026-01-06
+
+### Fixed
+
+- **Edit Timer Task Selection**: Fixed bug where editing a timer and choosing to add a new task would result in the task details not being included in the edit. The project might be updated correctly, but the task field would become empty. The system now properly stores and displays newly created task information.
+
 ## [1.23] - 2025-11-03
 
 ### Fixed

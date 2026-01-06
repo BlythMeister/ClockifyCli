@@ -249,6 +249,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         var newProjectId = selectedEntry.ProjectId;
         var newTaskId = selectedEntry.TaskId;
         var hasChanges = false;
+        ProjectInfo? newProject = null;
+        TaskInfo? newTask = null;
 
         // Local method to edit project and task
         async Task EditProjectAndTaskAsync()
@@ -273,6 +275,8 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             {
                 newProjectId = tempNewProjectId;
                 newTaskId = tempNewTaskId;
+                newProject = selectedProject;
+                newTask = selectedTask;
                 hasChanges = true;
                 var taskName = selectedTask.Name ?? "(No Task)";
                 console.MarkupLine($"[green]✓[/] Project/Task will be changed to: [cyan]{Markup.Escape(selectedProject.Name)}[/] - [yellow]{Markup.Escape(taskName)}[/]");
@@ -779,10 +783,21 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         summaryTable.AddColumn("New");
 
         // Get new project and task names for display
-        var newProject = projects.FirstOrDefault(p => p.Id == newProjectId);
-        var newTask = allTasks.FirstOrDefault(t => t.TaskId == newTaskId);
+        // Use stored objects if available (from EditProjectAndTaskAsync), otherwise fall back to lookups
+        if (newProject == null)
+        {
+            newProject = projects.FirstOrDefault(p => p.Id == newProjectId);
+        }
+        if (newTask == null)
+        {
+            var taskWithProject = allTasks.FirstOrDefault(t => t.TaskId == newTaskId);
+            if (taskWithProject != null)
+            {
+                newTask = new TaskInfo(taskWithProject.TaskId, taskWithProject.TaskName, "Active");
+            }
+        }
         var newProjectName = newProject?.Name ?? "Unknown Project";
-        var newTaskName = newTask?.TaskName ?? "No Task";
+        var newTaskName = newTask?.Name ?? "No Task";
 
         summaryTable.AddRow(
             "Project",

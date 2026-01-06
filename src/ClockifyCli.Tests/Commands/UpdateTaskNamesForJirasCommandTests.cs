@@ -81,7 +81,7 @@ public class UpdateTaskNamesForJirasCommandTests
         var mockProjects = new List<ProjectInfo> { mockProject };
 
         // Task name already matches the expected format
-        var mockTask = new TaskInfo("task1", "TEST-123 [Project / Parent / Summary]", "Active");
+        var mockTask = new TaskInfo("task1", "TEST-123 [Project] - [Parent / Summary]", "Active");
         var mockTasks = new List<TaskInfo> { mockTask };
 
         var mockJiraProject = new JiraProject(1, "PROJ", "Project");

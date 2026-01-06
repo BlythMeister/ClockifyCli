@@ -2,6 +2,7 @@ using ClockifyCli.Models;
 using ClockifyCli.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
 
 namespace ClockifyCli.Commands;
 
@@ -19,11 +20,11 @@ public class AddProjectCommand : BaseCommand<AddProjectCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        await AddProject(clockifyClient, console);
+        await AddProject(clockifyClient, console, settings);
         return 0;
     }
 
-    private async Task AddProject(IClockifyClient clockifyClient, IAnsiConsole console)
+    private async Task AddProject(IClockifyClient clockifyClient, IAnsiConsole console, Settings settings)
     {
         console.MarkupLine("[bold]Add New Project[/]");
         console.WriteLine();
@@ -35,8 +36,10 @@ public class AddProjectCommand : BaseCommand<AddProjectCommand.Settings>
             return;
         }
 
-        // Get project name from user
-        var projectName = console.Ask<string>("Enter [blue]project name[/]:");
+        // Get project name from parameter or user input
+        var projectName = !string.IsNullOrWhiteSpace(settings.Name)
+            ? settings.Name
+            : console.Ask<string>("Enter [blue]project name[/]:");
 
         // Check if project already exists
         List<ProjectInfo> existingProjects = new();
@@ -76,6 +79,8 @@ public class AddProjectCommand : BaseCommand<AddProjectCommand.Settings>
 
     public class Settings : CommandSettings
     {
-        // No settings for this command currently
+        [CommandOption("-n|--name <NAME>")]
+        [Description("Project name (optional, will prompt if not provided)")]
+        public string? Name { get; set; }
     }
 }

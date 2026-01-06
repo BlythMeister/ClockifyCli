@@ -154,6 +154,8 @@ While editing you can choose **Split timer** to end the original entry at a spec
 
 `clockify-cli stop` - Stop the currently running timer
 
+`clockify-cli stop --force` - Stop timer immediately without confirmation prompt
+
 #### View This Week's Time Entries
 
 `clockify-cli week-view` - Display current week's logged time
@@ -180,14 +182,29 @@ While editing you can choose **Split timer** to end the original entry at a spec
 
 #### Add Project
 
-`clockify-cli add-project` - Add a new project to Clockify
+`clockify-cli add-project` - Add a new project to Clockify (interactive or via parameter)
 
 This command allows you to create new projects directly in Clockify without needing to use the web interface. It includes:
 
-- Interactive prompt for project name
+- Interactive prompt for project name (or use `--name` parameter)
 - Duplicate detection (prevents creating projects with the same name)
 - Workspace validation
 - Confirmation before creation
+
+**Optional Parameters:**
+
+- `--name` / `-n` - Specify project name directly
+
+**Examples:**
+
+```bash
+# Interactive mode (prompts for project name)
+clockify-cli add-project
+
+# Quick mode with parameter
+clockify-cli add-project --name "MyNewProject"
+clockify-cli add-project -n "Client Project 2024"
+```
 
 #### Add Task From Jira
 
@@ -385,14 +402,14 @@ The intelligent time input works across all time entry scenarios:
 | `edit` | Edit, split, and retarget existing time entries | `clockify-cli edit --days 7` |
 | `start` | Start a new timer by selecting from available tasks with customizable start time | `clockify-cli start` |
 | `status` | Display current in-progress time entry | `clockify-cli status` |
-| `stop` | Stop the currently running timer | `clockify-cli stop` |
+| `stop` | Stop the currently running timer | `clockify-cli stop`<br>`clockify-cli stop --force` |
 | `week-view` | Display current week's time entries | `clockify-cli week-view --include-current --detailed --week-start Sunday` |
 
 ### Task Management Commands
 
 | Command | Description | Examples |
 |---------|-------------|----------|
-| `add-project` | Add a new project to Clockify | `clockify-cli add-project` |
+| `add-project` | Add a new project to Clockify | `clockify-cli add-project`<br>`clockify-cli add-project --name "MyProject"` |
 | `add-task-from-jira` | Add Jira issues as Clockify tasks | `clockify-cli add-task-from-jira`<br>`clockify-cli add-task-from-jira -p "MyProject" -i "PROJ-123"`<br>`clockify-cli add-task-from-jira -p "MyProject" -j "status = 'In Progress'"` |
 | `archive-tasks-for-completed-jiras` | Archive Tasks For Completed Jiras | `clockify-cli archive-tasks-for-completed-jiras` |
 | `update-task-names-for-jiras` | Update task names with Jira hierarchy | `clockify-cli update-task-names-for-jiras` |

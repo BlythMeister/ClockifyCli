@@ -111,8 +111,9 @@ app.Configure(config =>
 
                   // Add the add-project command
                   config.AddCommand<AddProjectCommand>("add-project")
-                        .WithDescription("Add a new project to Clockify")
-                        .WithExample(new[] { "add-project" });
+                        .WithDescription("Add a new project to Clockify (interactive or via parameter)")
+                        .WithExample(new[] { "add-project" })
+                        .WithExample(new[] { "add-project", "--name", "MyNewProject" });
 
                   // Add the archive-tasks-for-completed-jiras command
                   config.AddCommand<ArchiveTasksForCompletedJirasCommand>("archive-tasks-for-completed-jiras")
@@ -192,7 +193,8 @@ app.Configure(config =>
                   // Add the stop command
                   config.AddCommand<StopCommand>("stop")
                         .WithDescription("Stop the currently running time entry in Clockify")
-                        .WithExample(new[] { "stop" });
+                        .WithExample(new[] { "stop" })
+                        .WithExample(new[] { "stop", "--force" });
 
                   // Add the timer-monitor command
                   config.AddCommand<TimerMonitorCommand>("timer-monitor")

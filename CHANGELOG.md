@@ -33,6 +33,8 @@ When contributing to this project, please update this changelog with your change
   - `--issue` / `-i`: Specify a single Jira issue key or URL
   - `--jql` / `-j`: Specify a JQL query to add multiple issues
   - Falls back to interactive prompts when parameters are not provided
+- Added `--force` / `-f` flag to `stop` command to skip confirmation prompt
+- Added `--name` / `-n` parameter to `add-project` command to specify project name directly
 
 ### Fixed
 

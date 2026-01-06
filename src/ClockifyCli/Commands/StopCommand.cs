@@ -2,10 +2,11 @@ using ClockifyCli.Services;
 using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
 
 namespace ClockifyCli.Commands;
 
-public class StopCommand : BaseCommand
+public class StopCommand : BaseCommand<StopCommand.Settings>
 {
     private readonly IClockifyClient clockifyClient;
     private readonly IAnsiConsole console;
@@ -17,13 +18,13 @@ public class StopCommand : BaseCommand
         this.console = console;
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context)
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        await StopCurrentTimer(clockifyClient, console);
+        await StopCurrentTimer(clockifyClient, console, settings.Force);
         return 0;
     }
 
-    private async Task StopCurrentTimer(IClockifyClient clockifyClient, IAnsiConsole console)
+    private async Task StopCurrentTimer(IClockifyClient clockifyClient, IAnsiConsole console, bool force)
     {
         console.MarkupLine("[bold]Stop Current Timer[/]");
         console.WriteLine();
@@ -83,8 +84,8 @@ public class StopCommand : BaseCommand
         console.MarkupLine($"  [bold]Elapsed:[/] {TimeFormatter.FormatDuration(elapsed)}");
         console.WriteLine();
 
-        // User confirmation (outside Status block)
-        if (console.Confirm("Stop this timer?"))
+        // User confirmation (outside Status block) - skip if force flag is set
+        if (force || console.Confirm("Stop this timer?"))
         {
             // Stop the timer (inside Status block for feedback)
             await console.Status()
@@ -101,4 +102,9 @@ public class StopCommand : BaseCommand
             console.MarkupLine("[yellow]Timer stop cancelled.[/]");
         }
     }
-}
+    public class Settings : CommandSettings
+    {
+        [CommandOption("-f|--force")]
+        [Description("Skip confirmation prompt and stop timer immediately")]
+        public bool Force { get; set; }
+    }}

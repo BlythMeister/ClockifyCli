@@ -48,9 +48,10 @@ public class StopCommandTests
         var testConsole = new TestConsole();
 
         var command = new StopCommand(clockifyClient, testConsole);
+        var settings = new StopCommand.Settings { Force = true };
 
         // Act
-        var result = await command.ExecuteAsync(null!);
+        var result = await command.ExecuteAsync(null!, settings);
 
         // Assert
         Assert.That(result, Is.EqualTo(0));
@@ -89,9 +90,10 @@ public class StopCommandTests
         var testConsole = new TestConsole();
 
         var command = new StopCommand(clockifyClient, testConsole);
+        var settings = new StopCommand.Settings { Force = true };
 
         // Act
-        var result = await command.ExecuteAsync(null!);
+        var result = await command.ExecuteAsync(null!, settings);
 
         // Assert
         Assert.That(result, Is.EqualTo(0));

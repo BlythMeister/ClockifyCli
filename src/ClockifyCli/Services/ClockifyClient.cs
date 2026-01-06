@@ -427,6 +427,37 @@ public class ClockifyClient : IClockifyClient
         }
     }
 
+    public async Task UpdateTaskName(WorkspaceInfo workspace, ProjectInfo project, TaskInfo task, string newName)
+    {
+        try
+        {
+            // Use the full task update endpoint to update the name
+            var updateData = new
+            {
+                name = newName,
+                status = task.Status
+            };
+            var updateJson = JsonConvert.SerializeObject(updateData);
+            var response = await PutWithRateLimitAsync(
+                                                    $"workspaces/{workspace.Id}/projects/{project.Id}/tasks/{task.Id}",
+                                                    () => new StringContent(updateJson, Encoding.UTF8, new MediaTypeHeaderValue("application/json"))
+                                                   );
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Response status code does not indicate success: {response.StatusCode} ({response.ReasonPhrase}). Response: {responseContent}");
+            }
+
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+            throw;
+        }
+    }
+
     public async Task<TimeEntry> UpdateTimeEntry(WorkspaceInfo workspace, TimeEntry timeEntry, DateTime newStartTime, DateTime newEndTime, string? description = null, string? newProjectId = null, string? newTaskId = null)
     {
         try

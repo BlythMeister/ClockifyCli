@@ -61,7 +61,7 @@ Register-ArgumentCompleter -Native -CommandName clockify-cli -ScriptBlock {
     }
     
     # Get available commands and options
-    $commands = @('add', 'add-project', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'show-changelog', 'start', 'status', 'stop', 'timer-monitor', 'upload-to-tempo', 'week-view')
+    $commands = @('add', 'add-project', 'add-task-from-jira', 'archive-tasks-for-completed-jiras', 'breaks-report', 'config', 'delete', 'discard', 'edit', 'full-view', 'show-changelog', 'start', 'status', 'stop', 'timer-monitor', 'update-task-names-for-jiras', 'upload-to-tempo', 'week-view')
     $options = @('--help', '--version')
     
     # Filter suggestions based on what user has typed
@@ -208,6 +208,25 @@ This command allows you to create new projects directly in Clockify without need
 #### Archive Tasks For Completed Jiras
 
 `clockify-cli archive-tasks-for-completed-jiras` - Archive Clockify tasks that are marked as Done in Jira
+
+#### Update Task Names For Jiras
+
+`clockify-cli update-task-names-for-jiras` - Sync Clockify task names with current Jira data
+
+**Purpose:**
+
+- Synchronizes task names in Clockify with the latest information from Jira
+- Updates task summaries that have changed in Jira
+- Ensures task names include current project and parent task hierarchy
+- Format: `REF [PROJECT] - [PARENT / SUMMARY]`
+- Only updates tasks where the Jira data differs from Clockify
+
+**Features:**
+
+- Scans all active tasks across all projects
+- Fetches current Jira data (project name, parent task summary)
+- Shows preview of proposed changes before updating
+- Reports success/failure for each task
 
 ### Data Synchronization
 
@@ -359,6 +378,7 @@ The intelligent time input works across all time entry scenarios:
 | `add-project` | Add a new project to Clockify | `clockify-cli add-project` |
 | `add-task-from-jira` | Add Task From Jira | `clockify-cli add-task-from-jira` |
 | `archive-tasks-for-completed-jiras` | Archive Tasks For Completed Jiras | `clockify-cli archive-tasks-for-completed-jiras` |
+| `update-task-names-for-jiras` | Update task names with Jira hierarchy | `clockify-cli update-task-names-for-jiras` |
 
 ### Integration Commands
 

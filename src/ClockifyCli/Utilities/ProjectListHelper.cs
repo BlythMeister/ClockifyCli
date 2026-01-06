@@ -186,7 +186,7 @@ public static class ProjectListHelper
             return null;
         }
 
-        var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
+        var taskName = TaskNameFormatter.FormatTaskName(issue);
 
         var existingTask = existingTasks.FirstOrDefault(t => t.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
         if (existingTask != null)
@@ -374,6 +374,7 @@ public static class ProjectListHelper
                 }
             }
 
+        SelectProject:
             // --- Full Project/Task Selection ---
             // allow user to add a new task from the projects screen, or go back to recent tasks
             var selectedProject = PromptForProject(console, projectsWithTasks, "Select a [green]project[/]:", allowNewTask: true, allowBack: (config.RecentTasksCount > 0 && config.RecentTasksDays > 0) && projectsWithTasks.Count > 1);
@@ -433,9 +434,6 @@ public static class ProjectListHelper
                         return (selectedProject, new TaskInfo(string.Empty, "(No Task)", "None"));
                 }
             }
-
-        SelectProject:
-            continue;
         }
     }
 

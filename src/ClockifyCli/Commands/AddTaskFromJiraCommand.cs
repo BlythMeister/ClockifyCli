@@ -1,5 +1,6 @@
 using ClockifyCli.Models;
 using ClockifyCli.Services;
+using ClockifyCli.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -99,7 +100,7 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
         }
 
         // Show confirmation (outside Status block)
-        var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
+        var taskName = TaskNameFormatter.FormatTaskName(issue);
         console.MarkupLine($"Will Add Task '[yellow]{Markup.Escape(taskName)}[/]' Into Project '[green]{Markup.Escape(selectedProject.Name)}[/]'");
 
         if (console.Confirm("Confirm?"))
@@ -229,7 +230,7 @@ public class AddTaskFromJiraCommand : BaseCommand<AddTaskFromJiraCommand.Setting
                     {
                         try
                         {
-                            var taskName = $"{issue.Key} [{issue.Fields.Summary}]";
+                            var taskName = TaskNameFormatter.FormatTaskName(issue);
 
                             // Check if task already exists (case-insensitive comparison)
                             if (existingTasks.Any(t => t.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase)))

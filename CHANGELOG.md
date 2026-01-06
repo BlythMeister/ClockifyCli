@@ -26,9 +26,15 @@ When contributing to this project, please update this changelog with your change
 
 ## [1.24] - 2026-01-06
 
+### Added
+
+- **Enhanced Jira Task Names**: Task names created from Jira now include the full hierarchy: "REF [PROJECT_NAME] - [PARENT_TASK_NAME / TASK_NAME]" instead of just "REF [TASK_NAME]". This provides better context and organization for sub-tasks.
+- **Sync Task Names Command**: New `update-task-names-for-jiras` command to sync Clockify task names with current Jira data (including updated summaries, project names, and parent task information).
+
 ### Fixed
 
 - **Edit Timer Task Selection**: Fixed bug where editing a timer and choosing to add a new task would result in the task details not being included in the edit. The project might be updated correctly, but the task field would become empty. The system now properly stores and displays newly created task information.
+- **Task Selection Navigation**: Fixed "← Back to project selection" option in task picker to correctly return to project selection screen instead of jumping back to recent tasks screen.
 
 ## [1.23] - 2025-11-03
 

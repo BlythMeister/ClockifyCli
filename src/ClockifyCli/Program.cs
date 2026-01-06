@@ -117,6 +117,11 @@ app.Configure(config =>
                         .WithDescription("Archive Tasks For Completed Jiras")
                         .WithExample(new[] { "archive-tasks-for-completed-jiras" });
 
+                  // Add the update-task-names-for-jiras command
+                  config.AddCommand<UpdateTaskNamesForJirasCommand>("update-task-names-for-jiras")
+                        .WithDescription("Sync Clockify task names with current Jira data")
+                        .WithExample(new[] { "update-task-names-for-jiras" });
+
                   // Add the breaks-report command
                   config.AddCommand<BreaksReportCommand>("breaks-report")
                         .WithDescription("Display breaks and break-type time entries")

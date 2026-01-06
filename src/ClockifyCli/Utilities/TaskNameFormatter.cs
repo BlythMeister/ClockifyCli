@@ -22,7 +22,7 @@ public static class TaskNameFormatter
         // Add project name if available
         if (issue.Fields.Project != null && !string.IsNullOrWhiteSpace(issue.Fields.Project.Name))
         {
-            projectPart = $"[{issue.Fields.Project.Name}]";
+            projectPart = $"[{issue.Fields.Project.Name.Trim()}]";
         }
 
         // Add parent summary if available
@@ -30,13 +30,13 @@ public static class TaskNameFormatter
             issue.Fields.Parent.Fields != null && 
             !string.IsNullOrWhiteSpace(issue.Fields.Parent.Fields.Summary))
         {
-            hierarchyParts.Add(issue.Fields.Parent.Fields.Summary);
+            hierarchyParts.Add(issue.Fields.Parent.Fields.Summary.Trim());
         }
 
         // Add issue summary
         if (!string.IsNullOrWhiteSpace(issue.Fields.Summary))
         {
-            hierarchyParts.Add(issue.Fields.Summary);
+            hierarchyParts.Add(issue.Fields.Summary.Trim());
         }
 
         var hierarchyString = string.Join(" / ", hierarchyParts);

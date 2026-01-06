@@ -24,6 +24,14 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.25] - 2026-01-06
+
+### Fixed
+
+- Trimmed whitespace from project, parent, and task names when formatting Jira tasks to ensure clean display
+
+---
+
 ## [1.24] - 2026-01-06
 
 ### Added

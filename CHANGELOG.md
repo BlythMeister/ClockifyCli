@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.26] - 2026-01-08
+
+### Fixed
+
+- Display current timer details (project, task, description) when starting a timer while one is already running
+
 ## [1.25] - 2026-01-06
 
 ### Added

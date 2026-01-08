@@ -94,7 +94,7 @@ var app = new CommandApp(registrar);
 app.Configure(config =>
               {
                   config.SetApplicationName("clockify-cli");
-                  config.SetApplicationVersion("1.25");
+                  config.SetApplicationVersion("1.26");
                   config.UseAssemblyInformationalVersion();
 
                   // Add the add manual timer command

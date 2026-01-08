@@ -52,7 +52,21 @@ public class StartCommand : BaseCommand
         if (hasRunningTimer)
         {
             console.MarkupLine("[yellow]:warning:  A timer is already running![/]");
-            console.MarkupLine($"[dim]Current timer: {currentEntry!.Description}[/]");
+            
+            // Get project and task details for the current timer
+            var projects = await clockifyClient.GetProjects(workspace);
+            var project = projects.FirstOrDefault(p => p.Id == currentEntry?.ProjectId);
+            var task = project != null && currentEntry?.TaskId != null 
+                ? (await clockifyClient.GetTasks(workspace, project)).FirstOrDefault(t => t.Id == currentEntry.TaskId) 
+                : null;
+            
+            // Display current timer details
+            console.MarkupLine($"[dim]Project: {(project != null ? Markup.Escape(project.Name) : "Unknown Project")}[/]");
+            console.MarkupLine($"[dim]Task: {(task != null ? Markup.Escape(task.Name) : "No Task")}[/]");
+            if (!string.IsNullOrWhiteSpace(currentEntry?.Description))
+            {
+                console.MarkupLine($"[dim]Description: {Markup.Escape(currentEntry.Description)}[/]");
+            }
             console.WriteLine();
 
             shouldReplaceTimer = console.Confirm("Do you want to stop the current timer and start a new one?", false);

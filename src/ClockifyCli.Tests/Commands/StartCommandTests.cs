@@ -110,9 +110,19 @@ public class StartCommandTests
                         .Respond("application/json", workspacesJson);
 
         // Mock current time entry (running timer)
-        var currentEntryJson = """{"id":"entry123","description":"Running timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
+        var currentEntryJson = """{"id":"entry123","description":"Running timer","taskId":"task1","projectId":"project1","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
                         .Respond("application/json", $"[{currentEntryJson}]");
+
+        // Mock projects endpoint to display current timer
+        var projectsJson = """[{"id":"project1","name":"Test Project","workspaceId":"workspace1"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects")
+                        .Respond("application/json", projectsJson);
+
+        // Mock tasks endpoint to display current timer
+        var tasksJson = """[{"id":"task1","name":"Test Task","projectId":"project1"}]""";
+        clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/projects/project1/tasks")
+                        .Respond("application/json", tasksJson);
 
         var clockifyClient = new ClockifyClient(clockifyHttpClient, "test-key");
         var testConsole = new TestConsole();
@@ -160,7 +170,7 @@ public class StartCommandTests
                         .Respond("application/json", workspacesJson);
 
         // Mock current time entry (running timer)
-        var currentEntryJson = """{"id":"entry123","description":"Running timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
+        var currentEntryJson = """{"id":"entry123","description":"Running timer","taskId":"task1","projectId":"project1","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
                         .Respond("application/json", $"[{currentEntryJson}]");
 
@@ -217,7 +227,7 @@ public class StartCommandTests
                         .Respond("application/json", workspacesJson);
 
         // Mock current time entry (running timer)
-        var currentEntryJson = """{"id":"entry123","description":"Running timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
+        var currentEntryJson = """{"id":"entry123","description":"Running timer","taskId":"task1","projectId":"project1","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
                         .Respond("application/json", $"[{currentEntryJson}]");
 
@@ -366,7 +376,7 @@ public class StartCommandTests
                         .Respond("application/json", workspacesJson);
 
         // Mock current time entry (running timer)
-        var currentEntryJson = """{"id":"entry123","description":"Running timer","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
+        var currentEntryJson = """{"id":"entry123","description":"Running timer","taskId":"task1","projectId":"project1","timeInterval":{"start":"2024-01-01T09:00:00Z"}}""";
         clockifyMockHttp.When(HttpMethod.Get, "https://api.clockify.me/api/v1/workspaces/workspace1/user/user123/time-entries?in-progress=true")
                         .Respond("application/json", $"[{currentEntryJson}]");
 

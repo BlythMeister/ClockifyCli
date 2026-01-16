@@ -24,6 +24,14 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.27] - 2026-01-16
+
+### Fixed
+
+- Fixed whitespace inconsistency in task name formatting that caused unnecessary update prompts
+- Task names with different whitespace (trailing spaces, multiple spaces) are now properly normalized
+- Comparison logic now ignores whitespace-only differences when checking if tasks need updating
+
 ## [1.26] - 2026-01-08
 
 ### Fixed

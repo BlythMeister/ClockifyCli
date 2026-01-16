@@ -283,4 +283,54 @@ public class UpdateTaskNamesForJirasCommandTests
         Assert.Throws<ArgumentNullException>(() =>
             new UpdateTaskNamesForJirasCommand(mockClockifyClient.Object, mockJiraClient.Object, null!));
     }
+
+    [Test]
+    public async Task ExecuteAsync_WithWhitespaceOnlyDifferences_DoesNotUpdate()
+    {
+        // Arrange - This test verifies the fix for the whitespace bug
+        var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
+
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        var mockProject = new ProjectInfo("project1", "Internal");
+        var mockProjects = new List<ProjectInfo> { mockProject };
+
+        // Task name with extra space before closing bracket (simulating the bug)
+        var mockTask = new TaskInfo("task1", "DTT-4 [Delivery Team Training] - [Company / Compliance Training ]", "Active");
+        var mockTasks = new List<TaskInfo> { mockTask };
+
+        var mockJiraProject = new JiraProject(1, "PROJ", "Delivery Team Training");
+
+        // Jira returns data with different whitespace (extra trailing space)
+        var mockJiraIssue = new JiraIssue(
+            12345,
+            "DTT-4",
+            new JiraIssueFields(
+                new JiraTimeTracking("0h"),
+                new JiraStatus("In Progress", new JiraStatusCategory("indeterminate", "In Progress")),
+                "Company / Compliance Training  ",  // Two trailing spaces
+                mockJiraProject,
+                null
+            )
+        );
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        mockClockifyClient.Setup(x => x.GetTasks(mockWorkspace, mockProject)).ReturnsAsync(mockTasks);
+        mockJiraClient.Setup(x => x.GetIssue(mockTask)).ReturnsAsync(mockJiraIssue);
+
+        // Act
+        var result = await command.ExecuteAsync(context);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        var output = testConsole.Output;
+        // Should show "no tasks need to be updated" because whitespace differences should be ignored
+        Assert.That(output, Does.Contain("No tasks need to be updated"));
+        
+        // Should NOT ask to update tasks
+        Assert.That(output, Does.Not.Contain("Update"));
+        
+        // Verify UpdateTaskName was never called
+        mockClockifyClient.Verify(x => x.UpdateTaskName(It.IsAny<WorkspaceInfo>(), It.IsAny<ProjectInfo>(), It.IsAny<TaskInfo>(), It.IsAny<string>()), Times.Never);
+    }
 }

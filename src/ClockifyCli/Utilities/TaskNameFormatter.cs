@@ -22,7 +22,7 @@ public static class TaskNameFormatter
         // Add project name if available
         if (issue.Fields.Project != null && !string.IsNullOrWhiteSpace(issue.Fields.Project.Name))
         {
-            projectPart = $"[{issue.Fields.Project.Name.Trim()}]";
+            projectPart = $"[{NormalizeWhitespace(issue.Fields.Project.Name)}]";
         }
 
         // Add parent summary if available
@@ -30,13 +30,13 @@ public static class TaskNameFormatter
             issue.Fields.Parent.Fields != null && 
             !string.IsNullOrWhiteSpace(issue.Fields.Parent.Fields.Summary))
         {
-            hierarchyParts.Add(issue.Fields.Parent.Fields.Summary.Trim());
+            hierarchyParts.Add(NormalizeWhitespace(issue.Fields.Parent.Fields.Summary));
         }
 
         // Add issue summary
         if (!string.IsNullOrWhiteSpace(issue.Fields.Summary))
         {
-            hierarchyParts.Add(issue.Fields.Summary.Trim());
+            hierarchyParts.Add(NormalizeWhitespace(issue.Fields.Summary));
         }
 
         var hierarchyString = string.Join(" / ", hierarchyParts);
@@ -61,5 +61,19 @@ public static class TaskNameFormatter
             // Fallback (shouldn't happen with valid data)
             return issue.Key;
         }
+    }
+
+    /// <summary>
+    /// Normalizes whitespace in a string by trimming and collapsing multiple spaces into single spaces
+    /// </summary>
+    private static string NormalizeWhitespace(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return string.Empty;
+        }
+
+        // Trim and collapse multiple spaces into single spaces
+        return System.Text.RegularExpressions.Regex.Replace(input.Trim(), @"\s+", " ");
     }
 }

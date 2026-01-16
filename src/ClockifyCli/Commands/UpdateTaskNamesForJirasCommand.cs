@@ -55,8 +55,12 @@ public class UpdateTaskNamesForJirasCommand : BaseCommand
                                                                                       {
                                                                                           var newTaskName = TaskNameFormatter.FormatTaskName(issue);
                                                                                           
-                                                                                          // Only include if the name would actually change
-                                                                                          if (!projectTask.Name.Equals(newTaskName, StringComparison.Ordinal))
+                                                                                          // Normalize both names for comparison to avoid whitespace-only differences
+                                                                                          var normalizedCurrentName = NormalizeWhitespace(projectTask.Name);
+                                                                                          var normalizedNewName = NormalizeWhitespace(newTaskName);
+                                                                                          
+                                                                                          // Only include if the name would actually change (ignoring whitespace differences)
+                                                                                          if (!normalizedCurrentName.Equals(normalizedNewName, StringComparison.Ordinal))
                                                                                           {
                                                                                               tasksToUpdate.Add((project, projectTask, issue, newTaskName));
                                                                                           }
@@ -148,5 +152,24 @@ public class UpdateTaskNamesForJirasCommand : BaseCommand
         {
             console.MarkupLine($"[red]:cross_mark: Failed to update: {failureCount} task(s)[/]");
         }
+    }
+
+    /// <summary>
+    /// Normalizes whitespace in a string by trimming and collapsing multiple spaces into single spaces
+    /// </summary>
+    private static string NormalizeWhitespace(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return string.Empty;
+        }
+
+        // Trim and collapse multiple spaces into single spaces
+        var normalized = System.Text.RegularExpressions.Regex.Replace(input.Trim(), @"\s+", " ");
+        
+        // Also remove spaces before closing brackets (common formatting inconsistency)
+        normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\s+\]", "]");
+        
+        return normalized;
     }
 }

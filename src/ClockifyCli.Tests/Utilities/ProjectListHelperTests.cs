@@ -211,4 +211,63 @@ public class ProjectListHelperTests
         Assert.That(result.Value.Task, Is.EqualTo(taskAlpha));
 
     }
+
+    [Test]
+    public async Task PromptForProjectAndTaskAsync_WhenTaskExistsAndUserChoosesToUseIt_ReturnsExistingTaskWithValidId()
+    {
+        // Arrange
+        var clockifyClient = new Mock<IClockifyClient>();
+        var jiraClient = new Mock<IJiraClient>();
+        var console = CreateInteractiveConsole();
+
+        var workspace = new WorkspaceInfo("ws-1", "Workspace One");
+        var user = new UserInfo("user-1", "Test User", "user@example.com", workspace.Id);
+        var config = CreateConfigWithRecents(0, 0); // Disable recent tasks for this test
+
+        var project = new ProjectInfo("proj-1", "Project Alpha");
+        var existingTaskName = "PROJ-123 [Existing feature]";
+        var existingTask = new TaskInfo("task-existing-123", existingTaskName, "Active");
+
+        clockifyClient.Setup(c => c.GetProjects(workspace))
+            .ReturnsAsync(new List<ProjectInfo> { project });
+
+        clockifyClient.Setup(c => c.GetTasks(workspace, project))
+            .ReturnsAsync(new List<TaskInfo> { existingTask });
+
+        jiraClient.Setup(j => j.GetIssue("PROJ-123"))
+            .ReturnsAsync(new JiraIssue(
+                123,
+                "PROJ-123",
+                new JiraIssueFields(
+                    new JiraTimeTracking(""),
+                    new JiraStatus("In Progress", new JiraStatusCategory("in-progress", "In Progress")),
+                    "Existing feature")));
+
+        console.Input.PushKey(ConsoleKey.Enter);     // Select project
+        console.Input.PushKey(ConsoleKey.DownArrow); // Move to "+ Add new task"
+        console.Input.PushKey(ConsoleKey.Enter);     // Select new task option
+        console.Input.PushTextWithEnter("PROJ-123"); // Provide Jira reference
+        console.Input.PushTextWithEnter("y");        // Confirm to use existing task
+
+        // Act
+        var result = await ProjectListHelper.PromptForProjectAndTaskAsync(
+            clockifyClient.Object,
+            jiraClient.Object,
+            console,
+            workspace,
+            config,
+            user);
+
+        // Assert
+        Assert.That(result, Is.Not.Null, "Result should be returned when choosing to use existing task.");
+        Assert.That(result!.Value.Project, Is.EqualTo(project), "Returned project should match selected project.");
+        Assert.That(result.Value.Task.Id, Is.EqualTo(existingTask.Id), "Returned task ID should match existing task ID.");
+        Assert.That(result.Value.Task.Name, Is.EqualTo(existingTask.Name), "Returned task name should match existing task name.");
+        Assert.That(result.Value.Task.Id, Is.Not.Empty, "Task ID should not be empty.");
+        Assert.That(result.Value.Task.Id, Is.Not.Null, "Task ID should not be null.");
+
+        // Verify that AddTask was NOT called since task already exists
+        clockifyClient.Verify(c => c.AddTask(It.IsAny<WorkspaceInfo>(), It.IsAny<ProjectInfo>(), It.IsAny<string>()), Times.Never);
+        jiraClient.Verify(j => j.GetIssue("PROJ-123"), Times.Once);
+    }
 }

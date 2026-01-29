@@ -194,6 +194,23 @@ public static class ProjectListHelper
             console.MarkupLine($"[yellow]Task '{Markup.Escape(taskName)}' already exists in project '{Markup.Escape(project.Name)}'.[/]");
             if (console.Confirm("Use existing task?"))
             {
+                // Ensure the existing task has a valid ID by refreshing if needed
+                if (string.IsNullOrEmpty(existingTask.Id))
+                {
+                    console.MarkupLine("[dim]Refreshing task details...[/]");
+                    var latestTasks = await clockifyClient.GetTasks(workspace, project);
+                    var refreshedTask = latestTasks.FirstOrDefault(t => t.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
+                    if (refreshedTask != null && !string.IsNullOrEmpty(refreshedTask.Id))
+                    {
+                        projectTasksMap[project.Id] = latestTasks
+                            .Where(t => !t.Status.Equals("Done", StringComparison.OrdinalIgnoreCase))
+                            .OrderBy(t => t.Name)
+                            .ToList();
+                        return (project, refreshedTask);
+                    }
+                    console.MarkupLine("[red]Could not retrieve task details.[/]");
+                    return null;
+                }
                 return (project, existingTask);
             }
 

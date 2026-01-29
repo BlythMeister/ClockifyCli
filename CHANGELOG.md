@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.28] - 2026-01-29
+
+### Fixed
+
+- **Task Assignment Bug**: Fixed issue where selecting an existing task when starting a timer would not properly assign the task to the timer. The system now validates that existing tasks have valid IDs and refreshes task data if needed to ensure proper assignment.
+
 ## [1.27] - 2026-01-16
 
 ### Fixed

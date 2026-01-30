@@ -41,7 +41,7 @@ public class TimerMonitorCommandTests
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockTimeInterval = new TimeInterval(DateTime.UtcNow.AddHours(-1).ToString("O"), "");
-        var mockCurrentEntry = new TimeEntry("entry1", "Test Description", "task1", "project1", "REGULAR", mockTimeInterval);
+        var mockCurrentEntry = new TimeEntry("entry1", "Test Description", "task1", "project1", "REGULAR", mockTimeInterval, true);
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
@@ -116,7 +116,7 @@ public class TimerMonitorCommandTests
         var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
         var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
         var mockTimeInterval = new TimeInterval(DateTime.UtcNow.AddHours(-1).ToString("O"), "");
-        var mockCurrentEntry = new TimeEntry("entry1", "Test Description", "task1", "project1", "REGULAR", mockTimeInterval);
+        var mockCurrentEntry = new TimeEntry("entry1", "Test Description", "task1", "project1", "REGULAR", mockTimeInterval, true);
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
         mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });

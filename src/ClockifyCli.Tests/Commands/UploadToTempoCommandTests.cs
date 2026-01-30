@@ -166,7 +166,8 @@ public class UploadToTempoCommandTests
             new TimeInterval(
                 DateTime.UtcNow.AddHours(-2).ToString("o"),
                 DateTime.UtcNow.AddHours(-1).ToString("o")
-            )
+            ),
+            true
         );
         var mockTimeEntries = new List<TimeEntry> { mockTimeEntry };
         var mockProjects = new List<ProjectInfo>();
@@ -255,15 +256,15 @@ public class UploadToTempoCommandTests
         {
             // Regular work entry - should be uploaded
             new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR",
-                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
+                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z"), true),
             
             // Break type entry - should be excluded
             new TimeEntry("entry2", "Coffee break", "task2", "work-project", "BREAK",
-                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
+                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z"), false),
             
             // Breaks project entry - should be excluded
             new TimeEntry("entry3", "Lunch break", "task3", "breaks-project", "REGULAR",
-                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
+                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"), false)
         };
 
         var tasks = new List<TaskInfo>
@@ -321,10 +322,10 @@ public class UploadToTempoCommandTests
         {
             // Only break entries
             new TimeEntry("entry1", "Coffee break", "task1", "breaks-project", "REGULAR",
-                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
+                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z"), false),
 
             new TimeEntry("entry2", "Lunch break", "task2", "breaks-project", "BREAK",
-                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
+                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"), false)
         };
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);

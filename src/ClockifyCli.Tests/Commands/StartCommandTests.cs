@@ -293,7 +293,7 @@ public class StartCommandTests
         var project = new ProjectInfo("project1", "Test Project");
         var task = new TaskInfo("task1", "Test Task", "Active");
         var runningInterval = new TimeInterval("2024-01-01T08:00:00Z", string.Empty);
-        var runningEntry = new TimeEntry("entry123", "Running timer", task.Id, project.Id, "REGULAR", runningInterval);
+        var runningEntry = new TimeEntry("entry123", "Running timer", task.Id, project.Id, "REGULAR", runningInterval, true);
 
         var clockifyClientMock = new Mock<IClockifyClient>(MockBehavior.Strict);
         clockifyClientMock.Setup(c => c.GetLoggedInUser()).ReturnsAsync(user);
@@ -321,7 +321,8 @@ public class StartCommandTests
                               task.Id,
                               project.Id,
                               "REGULAR",
-                              new TimeInterval("2024-01-01T09:00:00Z", string.Empty)));
+                              new TimeInterval("2024-01-01T09:00:00Z", string.Empty),
+                              true));
 
         var testConsole = new TestConsole().Interactive();
         testConsole.Input.PushTextWithEnter("y");
@@ -1163,7 +1164,8 @@ public class StartCommandTests
             "task123",
             "project123",
             "REGULAR",
-            new TimeInterval("2024-01-01T14:00:00Z", null!));
+            new TimeInterval("2024-01-01T14:00:00Z", null!),
+            true);
 
         mockClockifyClient.Setup(x => x.StartTimeEntry(mockWorkspace, "project123", "task123", "Test work", It.IsAny<DateTime?>()))
                          .ReturnsAsync(mockTimeEntry);

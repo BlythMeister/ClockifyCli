@@ -86,7 +86,8 @@ public class TempoClientTests
             "task123",
             "project123",
             "regular",
-            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T11:30:00Z")
+            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T11:30:00Z"),
+            true
         );
         var taskInfo = new TaskInfo("task123", "TEST-456 Some task description", "ACTIVE");
 
@@ -139,7 +140,8 @@ public class TempoClientTests
             "task124",
             "project123",
             "regular",
-            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T10:00:00Z")
+            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T10:00:00Z"),
+            true
         );
         var taskInfo = new TaskInfo("task124", "TEST-457 Bug fix task", "ACTIVE");
 
@@ -191,7 +193,8 @@ public class TempoClientTests
             "task125",
             "project123",
             "regular",
-            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T10:30:00Z") // 1.5 hours
+            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T10:30:00Z"), // 1.5 hours
+            true
         );
         var taskInfo = new TaskInfo("task125", "TEST-458 Enhancement task", "ACTIVE");
 
@@ -243,7 +246,8 @@ public class TempoClientTests
             "task126",
             "project123",
             "regular",
-            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T10:00:00Z")
+            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T10:00:00Z"),
+            true
         );
         var taskInfo = new TaskInfo("task126", "INVALID-999 Non-existent task", "ACTIVE");
 
@@ -268,7 +272,8 @@ public class TempoClientTests
             "task127",
             "project123",
             "regular",
-            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T10:00:00Z")
+            new TimeInterval("2024-01-15T09:00:00Z", "2024-01-15T10:00:00Z"),
+            true
         );
         var taskInfo = new TaskInfo("task127", "TEST-459 Valid task", "ACTIVE");
 

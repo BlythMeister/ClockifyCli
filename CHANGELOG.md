@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.29] - 2026-01-30
+
+### Fixed
+
+- Fixed HTTP 400 error code 501 "You don't have permission to update time entry billability" when editing time entries in workspaces with `onlyAdminsCanChangeBillableStatus` enabled. Added `Billable` property to `TimeEntry` model and updated `UpdateTimeEntry` and `UpdateRunningTimeEntry` methods to preserve the existing billable status, preventing permission errors for non-admin users
+
 ## [1.28] - 2026-01-29
 
 ### Fixed

@@ -145,7 +145,8 @@ public class EditTimerCommandTests
             "task1",
             "project1",
             "regular",
-            new TimeInterval(DateTime.UtcNow.AddHours(-2).ToString("o"), null!)
+            new TimeInterval(DateTime.UtcNow.AddHours(-2).ToString("o"), null!),
+            true
         );
 
         var mockTimeEntries = new List<TimeEntry>(); // No completed entries
@@ -215,7 +216,8 @@ public class EditTimerCommandTests
             "task1",
             "project1",
             "regular",
-            new TimeInterval(today.AddHours(9).ToString("o"), today.AddHours(10).ToString("o"))
+            new TimeInterval(today.AddHours(9).ToString("o"), today.AddHours(10).ToString("o")),
+            true
         );
 
         var runningEntry = new TimeEntry(
@@ -224,7 +226,8 @@ public class EditTimerCommandTests
             "task2",
             "project1",
             "regular",
-            new TimeInterval(today.AddHours(11).ToString("o"), null!)
+            new TimeInterval(today.AddHours(11).ToString("o"), null!),
+            true
         );
 
         var mockTimeEntries = new List<TimeEntry> { completedEntry };
@@ -281,7 +284,8 @@ public class EditTimerCommandTests
             "task1",
             "project1",
             "regular",
-            new TimeInterval(yesterday.AddHours(9).ToString("o"), yesterday.AddHours(10).ToString("o"))
+            new TimeInterval(yesterday.AddHours(9).ToString("o"), yesterday.AddHours(10).ToString("o")),
+            true
         );
 
         var runningEntry = new TimeEntry(
@@ -290,7 +294,8 @@ public class EditTimerCommandTests
             "task2",
             "project1",
             "regular",
-            new TimeInterval(today.AddHours(11).ToString("o"), null!)
+            new TimeInterval(today.AddHours(11).ToString("o"), null!),
+            true
         );
 
         var mockTimeEntries = new List<TimeEntry> { yesterdayEntry };
@@ -363,7 +368,8 @@ public class EditTimerCommandTests
             originalTask.Id,
             originalProject.Id,
             "REGULAR",
-            new TimeInterval(originalStartUtc.ToString("o"), originalEndUtc.ToString("o")));
+            new TimeInterval(originalStartUtc.ToString("o"), originalEndUtc.ToString("o")),
+            true);
 
         mockClockifyClient.Setup(c => c.GetLoggedInUser()).ReturnsAsync(user);
         mockClockifyClient.Setup(c => c.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { workspace });
@@ -427,7 +433,8 @@ public class EditTimerCommandTests
                 splitTask.Id,
                 splitProject.Id,
                 "REGULAR",
-                new TimeInterval(splitTimeLocal.ToUniversalTime().ToString("o"), originalEndUtc.ToString("o"))));
+                new TimeInterval(splitTimeLocal.ToUniversalTime().ToString("o"), originalEndUtc.ToString("o")),
+                true));
 
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
         testConsole.Input.PushKey(ConsoleKey.Enter); // Select time entry
@@ -740,7 +747,8 @@ public class EditTimerCommandTests
             "task1",
             "project1",
             "regular",
-            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o"))
+            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o")),
+            true
         );
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -825,7 +833,8 @@ public class EditTimerCommandTests
             "task1",
             "project1",
             "regular",
-            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o"))
+            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o")),
+            true
         );
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -910,7 +919,8 @@ public class EditTimerCommandTests
             "task1",
             "project1",
             "regular",
-            new TimeInterval(DateTime.UtcNow.AddHours(-2).ToString("o"), "")
+            new TimeInterval(DateTime.UtcNow.AddHours(-2).ToString("o"), ""),
+            true
         );
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -976,7 +986,8 @@ public class EditTimerCommandTests
             "task1",
             "project1",
             "regular",
-            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o"))
+            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o")),
+            true
         );
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -1124,7 +1135,8 @@ public class EditTimerCommandTests
             "task1",
             "project1",
             "regular",
-            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o"))
+            new TimeInterval(DateTime.Today.AddHours(9).ToString("o"), DateTime.Today.AddHours(10).ToString("o")),
+            true
         );
 
         // Recent timer for project2/task2 (different from original)
@@ -1134,7 +1146,8 @@ public class EditTimerCommandTests
             "task2",
             "project2",
             "regular",
-            new TimeInterval(DateTime.Today.AddHours(8).ToString("o"), DateTime.Today.AddHours(9).ToString("o"))
+            new TimeInterval(DateTime.Today.AddHours(8).ToString("o"), DateTime.Today.AddHours(9).ToString("o")),
+            true
         );
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);

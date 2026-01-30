@@ -50,7 +50,8 @@ public class ProjectListHelperTests
             task.Id,
             project.Id,
             "REGULAR",
-            new TimeInterval("2024-01-02T09:00:00Z", "2024-01-02T10:00:00Z"));
+            new TimeInterval("2024-01-02T09:00:00Z", "2024-01-02T10:00:00Z"),
+            true);
 
         clockifyClient.Setup(c => c.GetTimeEntries(workspace, user, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(new List<TimeEntry> { recentEntry });
@@ -106,7 +107,8 @@ public class ProjectListHelperTests
             existingTask.Id,
             project.Id,
             "REGULAR",
-            new TimeInterval("2024-01-02T09:00:00Z", "2024-01-02T10:00:00Z"));
+            new TimeInterval("2024-01-02T09:00:00Z", "2024-01-02T10:00:00Z"),
+            true);
 
         clockifyClient.Setup(c => c.GetTimeEntries(workspace, user, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(new List<TimeEntry> { recentEntry });
@@ -183,7 +185,8 @@ public class ProjectListHelperTests
             taskAlpha.Id,
             projectAlpha.Id,
             "REGULAR",
-            new TimeInterval("2024-01-02T09:00:00Z", "2024-01-02T10:00:00Z"));
+            new TimeInterval("2024-01-02T09:00:00Z", "2024-01-02T10:00:00Z"),
+            true);
 
         clockifyClient.Setup(c => c.GetTimeEntries(workspace, user, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(new List<TimeEntry> { recentEntry });

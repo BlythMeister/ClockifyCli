@@ -468,7 +468,8 @@ public class ClockifyClient : IClockifyClient
                 end = newEndTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 projectId = newProjectId ?? timeEntry.ProjectId,
                 taskId = string.IsNullOrEmpty(newTaskId ?? timeEntry.TaskId) ? (string?)null : (newTaskId ?? timeEntry.TaskId),
-                description = description ?? timeEntry.Description
+                description = description ?? timeEntry.Description,
+                billable = timeEntry.Billable
             };
 
             var serializerSettings = new JsonSerializerSettings
@@ -507,7 +508,8 @@ public class ClockifyClient : IClockifyClient
                 start = newStartTime.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 projectId = newProjectId ?? timeEntry.ProjectId,
                 taskId = string.IsNullOrEmpty(newTaskId ?? timeEntry.TaskId) ? (string?)null : (newTaskId ?? timeEntry.TaskId),
-                description = description ?? timeEntry.Description
+                description = description ?? timeEntry.Description,
+                billable = timeEntry.Billable
             };
 
             var serializerSettings = new JsonSerializerSettings

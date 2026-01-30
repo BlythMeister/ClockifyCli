@@ -376,15 +376,15 @@ public class WeekViewCommandTests
         {
             // Regular work entry - should be included
             new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR",
-                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
+                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z"), true),
             
             // Break type entry - should be excluded
             new TimeEntry("entry2", "Coffee break", "task2", "work-project", "BREAK",
-                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z")),
+                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z"), false),
             
             // Breaks project entry - should be excluded
             new TimeEntry("entry3", "Lunch break", "task3", "breaks-project", "REGULAR",
-                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"))
+                new TimeInterval("2024-01-01T12:00:00Z", "2024-01-01T13:00:00Z"), false)
         };
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
@@ -431,10 +431,10 @@ public class WeekViewCommandTests
         var timeEntries = new List<TimeEntry>
         {
             new TimeEntry("entry1", "Regular work", "task1", "work-project", "REGULAR",
-                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")),
+                new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z"), true),
 
             new TimeEntry("entry2", "Break from uppercase project", "task2", "breaks-project", "REGULAR",
-                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z"))
+                new TimeInterval("2024-01-01T10:15:00Z", "2024-01-01T10:30:00Z"), false)
         };
 
         mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);

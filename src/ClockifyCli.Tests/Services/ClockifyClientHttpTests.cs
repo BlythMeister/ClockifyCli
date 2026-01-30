@@ -145,7 +145,8 @@ public class ClockifyClientHttpTests
             "task123",
             "project123",
             "regular",
-            new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")
+            new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z"),
+            true
         );
         var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
         var newEndTime = new DateTime(2024, 1, 1, 11, 0, 0, DateTimeKind.Utc);
@@ -154,7 +155,7 @@ public class ClockifyClientHttpTests
         var expectedJsonResponse = """{"id":"entry123","description":"Updated description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":"2024-01-01T11:00:00Z"}}""";
 
         mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{timeEntry.Id}")
-                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""end"":""2024-01-01T11:00:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Updated description""}")
+                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""end"":""2024-01-01T11:00:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Updated description"",""billable"":true}")
                  .Respond("application/json", expectedJsonResponse);
 
         var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
@@ -179,7 +180,8 @@ public class ClockifyClientHttpTests
             "task123",
             "project123",
             "regular",
-            new TimeInterval("2024-01-01T09:00:00Z", null!)
+            new TimeInterval("2024-01-01T09:00:00Z", null!),
+            true
         );
         var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
         var newDescription = "Updated running description";
@@ -187,7 +189,7 @@ public class ClockifyClientHttpTests
         var expectedJsonResponse = """{"id":"entry123","description":"Updated running description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":null}}""";
 
         mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{runningTimeEntry.Id}")
-                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Updated running description""}")
+                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Updated running description"",""billable"":true}")
                  .Respond("application/json", expectedJsonResponse);
 
         var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
@@ -212,14 +214,15 @@ public class ClockifyClientHttpTests
             "task123",
             "project123",
             "regular",
-            new TimeInterval("2024-01-01T09:00:00Z", null!)
+            new TimeInterval("2024-01-01T09:00:00Z", null!),
+            true
         );
         var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
 
         var expectedJsonResponse = """{"id":"entry123","description":"Original description","timeInterval":{"start":"2024-01-01T08:30:00Z","end":null}}""";
 
         mockHttp.When(HttpMethod.Put, $"https://api.clockify.me/api/v1/workspaces/{workspace.Id}/time-entries/{runningTimeEntry.Id}")
-                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Original description""}")
+                 .WithContent(@"{""start"":""2024-01-01T08:30:00Z"",""projectId"":""project123"",""taskId"":""task123"",""description"":""Original description"",""billable"":true}")
                  .Respond("application/json", expectedJsonResponse);
 
         var clockifyClient = new ClockifyClient(httpClient, TestApiKey);
@@ -244,7 +247,8 @@ public class ClockifyClientHttpTests
             "task123",
             "project123",
             "regular",
-            new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z")
+            new TimeInterval("2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z"),
+            true
         );
         var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
         var newEndTime = new DateTime(2024, 1, 1, 11, 0, 0, DateTimeKind.Utc);
@@ -270,7 +274,8 @@ public class ClockifyClientHttpTests
             "task123",
             "project123",
             "regular",
-            new TimeInterval("2024-01-01T09:00:00Z", null!)
+            new TimeInterval("2024-01-01T09:00:00Z", null!),
+            true
         );
         var newStartTime = new DateTime(2024, 1, 1, 8, 30, 0, DateTimeKind.Utc);
 

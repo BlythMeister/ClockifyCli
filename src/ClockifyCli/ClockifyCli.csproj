@@ -16,7 +16,7 @@
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <ToolCommandName>clockify-cli</ToolCommandName>
     <PackageId>ClockifyCli</PackageId>
-  <Version>1.28</Version>
+  <Version>1.29</Version>
     <Authors>Chris Blyth</Authors>
     <Description>A command-line tool for managing time entries between Clockify, Jira, and Tempo</Description>
     <PackageTags>clockify;jira;tempo;time-tracking;cli</PackageTags>

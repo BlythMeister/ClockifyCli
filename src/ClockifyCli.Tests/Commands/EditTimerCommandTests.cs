@@ -479,6 +479,161 @@ public class EditTimerCommandTests
     }
 
     [Test]
+    public async Task ExecuteAsync_WhenMidSplitSelected_ShouldUpdateOriginalAndCreateMidAndEndEntries()
+    {
+        // Arrange
+        await configService.SaveConfigurationAsync(new AppConfiguration(
+            ClockifyApiKey: string.Empty,
+            JiraUsername: string.Empty,
+            JiraApiToken: string.Empty,
+            TempoApiKey: string.Empty,
+            RecentTasksCount: 0,
+            RecentTasksDays: 0));
+
+        var settings = new EditTimerCommand.Settings { Days = 7 };
+        var mockRemainingArgs = new Mock<IRemainingArguments>();
+        var context = new CommandContext([], mockRemainingArgs.Object, string.Empty, null);
+
+        var user = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var workspace = new WorkspaceInfo("workspace1", "Test Workspace");
+
+        var originalStartLocal = new DateTime(2024, 1, 1, 9, 0, 0, DateTimeKind.Local);
+        var originalEndLocal = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Local);
+        var originalStartUtc = originalStartLocal.ToUniversalTime();
+        var originalEndUtc = originalEndLocal.ToUniversalTime();
+        var midStartLocal = new DateTime(2024, 1, 1, 10, 0, 0, DateTimeKind.Local);
+        var midEndLocal = new DateTime(2024, 1, 1, 11, 0, 0, DateTimeKind.Local);
+
+        var originalProject = new ProjectInfo("proj-original", "Development");
+        var midProject = new ProjectInfo("proj-mid", "Support");
+        var projects = new List<ProjectInfo> { originalProject, midProject };
+
+        var originalTask = new TaskInfo("task-original", "Dev Task", "Active");
+        var midTask = new TaskInfo("task-mid", "Support Task", "Active");
+
+        var timeEntry = new TimeEntry(
+            "entry1",
+            "Original work",
+            originalTask.Id,
+            originalProject.Id,
+            "REGULAR",
+            new TimeInterval(originalStartUtc.ToString("o"), originalEndUtc.ToString("o")),
+            true);
+
+        mockClockifyClient.Setup(c => c.GetLoggedInUser()).ReturnsAsync(user);
+        mockClockifyClient.Setup(c => c.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { workspace });
+        mockClockifyClient.Setup(c => c.GetProjects(It.Is<WorkspaceInfo>(w => w.Id == workspace.Id))).ReturnsAsync(projects);
+        mockClockifyClient.Setup(c => c.GetTasks(workspace, It.Is<ProjectInfo>(p => p.Id == originalProject.Id)))
+            .ReturnsAsync(new List<TaskInfo> { originalTask });
+        mockClockifyClient.Setup(c => c.GetTasks(workspace, It.Is<ProjectInfo>(p => p.Id == midProject.Id)))
+            .ReturnsAsync(new List<TaskInfo> { midTask });
+        mockClockifyClient.Setup(c => c.GetTimeEntries(workspace, user, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<TimeEntry> { timeEntry });
+        mockClockifyClient.Setup(c => c.GetCurrentTimeEntry(workspace, user)).ReturnsAsync((TimeEntry?)null);
+
+        DateTime capturedUpdateStart = default;
+        DateTime capturedUpdateEnd = default;
+
+        var capturedAddedEntries = new List<(string ProjectId, string? TaskId, string? Description, DateTime Start, DateTime End)>();
+
+        command.SplitPromptOverride = _ => Task.FromResult<EditTimerCommand.SplitPromptResult?>(
+            new EditTimerCommand.SplitPromptResult(
+                midStartLocal,
+                midProject,
+                midTask,
+                "Mid work",
+                EditTimerCommand.SplitPortionMode.Mid,
+                midEndLocal));
+
+        mockClockifyClient.Setup(c => c.UpdateTimeEntry(
+                workspace,
+                timeEntry,
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>()))
+            .Callback<WorkspaceInfo, TimeEntry, DateTime, DateTime, string?, string?, string?>((_, _, start, end, _, _, _) =>
+            {
+                capturedUpdateStart = start;
+                capturedUpdateEnd = end;
+            })
+            .ReturnsAsync(timeEntry);
+
+        mockClockifyClient.Setup(c => c.AddTimeEntry(
+                workspace,
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>()))
+            .Callback<WorkspaceInfo, string, string?, string?, DateTime, DateTime>((_, projectId, taskId, description, start, end) =>
+            {
+                capturedAddedEntries.Add((projectId, taskId, description, start, end));
+            })
+            .ReturnsAsync(new TimeEntry(
+                "entry-new",
+                "Generated",
+                midTask.Id,
+                midProject.Id,
+                "REGULAR",
+                new TimeInterval(midStartLocal.ToUniversalTime().ToString("o"), midEndLocal.ToUniversalTime().ToString("o")),
+                true));
+
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select date
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Select time entry
+        testConsole.Input.PushKey(ConsoleKey.DownArrow);
+        testConsole.Input.PushKey(ConsoleKey.DownArrow);
+        testConsole.Input.PushKey(ConsoleKey.DownArrow);
+        testConsole.Input.PushKey(ConsoleKey.Enter); // Choose "Split timer"
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+        command.SplitPromptOverride = null;
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        Assert.That(capturedUpdateStart, Is.EqualTo(originalStartUtc));
+        Assert.That(capturedUpdateEnd, Is.EqualTo(midStartLocal.ToUniversalTime()));
+
+        Assert.That(capturedAddedEntries, Has.Count.EqualTo(2));
+
+        var midEntry = capturedAddedEntries[0];
+        Assert.That(midEntry.ProjectId, Is.EqualTo(midProject.Id));
+        Assert.That(midEntry.TaskId, Is.EqualTo(midTask.Id));
+        Assert.That(midEntry.Description, Is.EqualTo("Mid work"));
+        Assert.That(midEntry.Start, Is.EqualTo(midStartLocal));
+        Assert.That(midEntry.End, Is.EqualTo(midEndLocal));
+
+        var trailingEntry = capturedAddedEntries[1];
+        Assert.That(trailingEntry.ProjectId, Is.EqualTo(originalProject.Id));
+        Assert.That(trailingEntry.TaskId, Is.EqualTo(originalTask.Id));
+        Assert.That(trailingEntry.Description, Is.EqualTo("Original work"));
+        Assert.That(trailingEntry.Start, Is.EqualTo(midEndLocal));
+        Assert.That(trailingEntry.End, Is.EqualTo(originalEndLocal));
+
+        mockClockifyClient.Verify(c => c.UpdateTimeEntry(
+            workspace,
+            timeEntry,
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>()), Times.Once);
+
+        mockClockifyClient.Verify(c => c.AddTimeEntry(
+            workspace,
+            It.IsAny<string>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>()), Times.Exactly(2));
+
+        var output = testConsole.Output;
+        Assert.That(output, Does.Contain("Time entry split successfully"));
+    }
+
+    [Test]
     public void Settings_DefaultValues_AreCorrect()
     {
         // Arrange & Act

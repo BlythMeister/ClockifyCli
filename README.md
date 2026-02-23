@@ -148,7 +148,7 @@ This command is useful for logging time you've already spent working on a task. 
 
 `clockify-cli edit --days 3` - Look for entries from the last 3 days
 
-While editing you can choose **Split timer** to end the original entry at a specific time and instantly create a new manual timer for the remaining duration with its own project, task, and optional description.
+While editing you can choose **Split timer** and assign the new project/task to the start portion, end portion, or a new **mid portion**. Mid split asks for both start and end times, updates the original entry to finish at the mid start, creates the mid entry with your selected project/task, and creates a trailing entry using the original project/task for the remaining duration.
 
 #### Start a Timer
 

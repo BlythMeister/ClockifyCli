@@ -49,7 +49,16 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
         ProjectInfo Project,
         TaskInfo Task,
         string? Description,
+        SplitPortionMode PortionMode = SplitPortionMode.End,
+        DateTime? SplitEndTimeLocal = null,
         bool Proceed = true);
+
+    internal enum SplitPortionMode
+    {
+        End,
+        Start,
+        Mid,
+    }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
@@ -323,10 +332,11 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             console.WriteLine();
 
             DateTime splitTimeLocal;
+            DateTime? splitEndTimeLocal = null;
             ProjectInfo splitProject;
             TaskInfo splitTask;
             string? splitDescription;
-            bool keepNewTimerAtEnd = true; // Default: new timer at end (current behavior)
+            var splitPortionMode = SplitPortionMode.End;
             SplitPromptResult? overrideResult = null;
 
             if (SplitPromptOverride != null)
@@ -359,6 +369,23 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                 splitDescription = string.IsNullOrWhiteSpace(overrideResult.Description)
                     ? null
                     : overrideResult.Description!.Trim();
+                splitPortionMode = overrideResult.PortionMode;
+
+                if (splitPortionMode == SplitPortionMode.Mid)
+                {
+                    if (overrideResult.SplitEndTimeLocal == null)
+                    {
+                        console.MarkupLine("[red]Override mid split requires an end time.[/]");
+                        return false;
+                    }
+
+                    splitEndTimeLocal = DateTime.SpecifyKind(overrideResult.SplitEndTimeLocal.Value, DateTimeKind.Local);
+                    if (splitEndTimeLocal <= splitTimeLocal || splitEndTimeLocal >= originalEndLocal)
+                    {
+                        console.MarkupLine("[red]Override mid split end time must be after start and before original end.[/]");
+                        return false;
+                    }
+                }
             }
             else
             {
@@ -369,15 +396,22 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                         .AddChoices(new[]
                         {
                             "End portion (split time → end time)",
-                            "Start portion (start time → split time)"
+                            "Start portion (start time → split time)",
+                            "Mid portion (start/end within timer)"
                         }));
 
-                keepNewTimerAtEnd = splitDirection.StartsWith("End");
+                splitPortionMode = splitDirection.StartsWith("End")
+                    ? SplitPortionMode.End
+                    : splitDirection.StartsWith("Start")
+                        ? SplitPortionMode.Start
+                        : SplitPortionMode.Mid;
 
                 while (true)
                 {
                     var splitInput = console.Prompt(
-                        new TextPrompt<string>($"Enter [green]split time[/] between {Markup.Escape(currentStartTime.ToString("HH:mm"))} and {Markup.Escape(originalEndLocal.ToString("HH:mm"))}:")
+                        new TextPrompt<string>(splitPortionMode == SplitPortionMode.Mid
+                            ? $"Enter [green]mid start time[/] between {Markup.Escape(currentStartTime.ToString("HH:mm"))} and {Markup.Escape(originalEndLocal.ToString("HH:mm"))}:"
+                            : $"Enter [green]split time[/] between {Markup.Escape(currentStartTime.ToString("HH:mm"))} and {Markup.Escape(originalEndLocal.ToString("HH:mm"))}:")
                             .Validate(input =>
                             {
                                 if (!IntelligentTimeParser.TryParseEndTime(input, out var parsedSplit, currentStartTime))
@@ -422,6 +456,57 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                     console.MarkupLine("[red]Invalid split time. Please try again.[/]");
                 }
 
+                if (splitPortionMode == SplitPortionMode.Mid)
+                {
+                    while (true)
+                    {
+                        var splitEndInput = console.Prompt(
+                            new TextPrompt<string>($"Enter [green]mid end time[/] between {Markup.Escape(splitTimeLocal.ToString("HH:mm"))} and {Markup.Escape(originalEndLocal.ToString("HH:mm"))}:")
+                                .Validate(input =>
+                                {
+                                    if (!IntelligentTimeParser.TryParseEndTime(input, out var parsedSplitEnd, splitTimeLocal))
+                                    {
+                                        return ValidationResult.Error("Please enter a valid time format (e.g., 10:15, 3:30 PM, 15:30).");
+                                    }
+
+                                    var candidate = splitTimeLocal.Date.Add(parsedSplitEnd);
+                                    if (candidate <= splitTimeLocal)
+                                    {
+                                        candidate = candidate.AddDays(1);
+                                    }
+
+                                    if (candidate <= splitTimeLocal)
+                                    {
+                                        return ValidationResult.Error("Mid end time must be after the mid start time.");
+                                    }
+
+                                    if (candidate >= originalEndLocal)
+                                    {
+                                        return ValidationResult.Error("Mid end time must be before the entry end time.");
+                                    }
+
+                                    return ValidationResult.Success();
+                                }));
+
+                        if (IntelligentTimeParser.TryParseEndTime(splitEndInput, out var splitEndTimeSpan, splitTimeLocal))
+                        {
+                            var candidate = splitTimeLocal.Date.Add(splitEndTimeSpan);
+                            if (candidate <= splitTimeLocal)
+                            {
+                                candidate = candidate.AddDays(1);
+                            }
+
+                            if (candidate > splitTimeLocal && candidate < originalEndLocal)
+                            {
+                                splitEndTimeLocal = DateTime.SpecifyKind(candidate, DateTimeKind.Local);
+                                break;
+                            }
+                        }
+
+                        console.MarkupLine("[red]Invalid mid end time. Please try again.[/]");
+                    }
+                }
+
                 var projectSelection = await ProjectListHelper.PromptForProjectAndTaskAsync(clockifyClient, jiraClient, console, workspace, config, userInfo);
                 if (projectSelection == null)
                 {
@@ -450,7 +535,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             summary.AddColumn("End");
             summary.AddColumn("Description");
 
-            if (keepNewTimerAtEnd)
+            if (splitPortionMode == SplitPortionMode.End)
             {
                 // New timer at end: original keeps start→split, new gets split→end
                 summary.AddRow(
@@ -469,7 +554,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                     originalEndLocal.ToString("HH:mm"),
                     newDescriptionDisplay);
             }
-            else
+            else if (splitPortionMode == SplitPortionMode.Start)
             {
                 // New timer at start: new gets start→split, original keeps split→end
                 summary.AddRow(
@@ -485,6 +570,40 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                     projectName,
                     Markup.Escape(originalTaskName),
                     splitTimeLocal.ToString("HH:mm"),
+                    originalEndLocal.ToString("HH:mm"),
+                    originalDescriptionDisplay);
+            }
+            else
+            {
+                if (splitEndTimeLocal == null)
+                {
+                    console.MarkupLine("[red]Mid split end time is missing.[/]");
+                    return false;
+                }
+
+                var splitEndLocal = splitEndTimeLocal.Value;
+
+                summary.AddRow(
+                    "Original",
+                    projectName,
+                    Markup.Escape(originalTaskName),
+                    currentStartTime.ToString("HH:mm"),
+                    splitTimeLocal.ToString("HH:mm"),
+                    originalDescriptionDisplay);
+
+                summary.AddRow(
+                    "Mid",
+                    Markup.Escape(splitProject.Name),
+                    Markup.Escape(splitTaskName),
+                    splitTimeLocal.ToString("HH:mm"),
+                    splitEndLocal.ToString("HH:mm"),
+                    newDescriptionDisplay);
+
+                summary.AddRow(
+                    "End",
+                    projectName,
+                    Markup.Escape(originalTaskName),
+                    splitEndLocal.ToString("HH:mm"),
                     originalEndLocal.ToString("HH:mm"),
                     originalDescriptionDisplay);
             }
@@ -514,7 +633,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
             await console.Status()
                 .StartAsync("Splitting time entry...", async _ =>
                 {
-                    if (keepNewTimerAtEnd)
+                    if (splitPortionMode == SplitPortionMode.End)
                     {
                         // New timer at end: original keeps start→split, new gets split→end
                         await clockifyClient.UpdateTimeEntry(
@@ -534,7 +653,7 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                             splitTimeLocal,
                             originalEndLocal);
                     }
-                    else
+                    else if (splitPortionMode == SplitPortionMode.Start)
                     {
                         // New timer at start: new gets start→split, original keeps split→end
                         await clockifyClient.UpdateTimeEntry(
@@ -553,6 +672,42 @@ public class EditTimerCommand : BaseCommand<EditTimerCommand.Settings>
                             splitDescription,
                             currentStartTime,
                             splitTimeLocal);
+                    }
+                    else
+                    {
+                        if (splitEndTimeLocal == null)
+                        {
+                            throw new InvalidOperationException("Mid split end time is required.");
+                        }
+
+                        var splitEndLocal = splitEndTimeLocal.Value;
+                        var splitEndUtc = splitEndLocal.ToUniversalTime();
+
+                        // Mid split: original keeps start→mid-start, create mid task, then create trailing original task.
+                        await clockifyClient.UpdateTimeEntry(
+                            workspace,
+                            selectedEntry,
+                            originalStartUtc,
+                            splitTimeUtc,
+                            selectedEntry.Description,
+                            selectedEntry.ProjectId,
+                            selectedEntry.TaskId);
+
+                        await clockifyClient.AddTimeEntry(
+                            workspace,
+                            splitProject.Id,
+                            string.IsNullOrWhiteSpace(splitTask.Id) ? null : splitTask.Id,
+                            splitDescription,
+                            splitTimeLocal,
+                            splitEndLocal);
+
+                        await clockifyClient.AddTimeEntry(
+                            workspace,
+                            selectedEntry.ProjectId,
+                            string.IsNullOrWhiteSpace(selectedEntry.TaskId) ? null : selectedEntry.TaskId,
+                            selectedEntry.Description,
+                            splitEndLocal,
+                            originalEndLocal);
                     }
                 });
 

@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.30] - 2026-02-23
+
+### Added
+
+- **Split Time Entries**: Added a `mid` split option in the edit workflow. You can now provide a mid start and end time to insert a new task inside an existing timer. The original entry is shortened to the mid start, the selected mid task is created for the chosen interval, and a trailing entry is created with the original project/task for the remaining duration.
+
 ## [1.29] - 2026-01-30
 
 ### Fixed

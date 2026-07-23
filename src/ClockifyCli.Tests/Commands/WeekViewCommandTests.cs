@@ -137,6 +137,32 @@ public class WeekViewCommandTests
     }
 
     [Test]
+    public async Task ExecuteAsync_WithTimeOnlyFlag_CallsCorrectMethods()
+    {
+        // Arrange
+        var settings = new WeekViewCommand.Settings { TimeOnly = true };
+        var context = new CommandContext([], new Mock<IRemainingArguments>().Object, "", null);
+
+        var mockUser = new UserInfo("user1", "Test User", "test@example.com", "workspace1");
+        var mockWorkspace = new WorkspaceInfo("workspace1", "Test Workspace");
+        var mockProjects = new List<ProjectInfo>();
+        var mockTimeEntries = new List<TimeEntry>();
+
+        mockClockifyClient.Setup(x => x.GetLoggedInUser()).ReturnsAsync(mockUser);
+        mockClockifyClient.Setup(x => x.GetLoggedInUserWorkspaces()).ReturnsAsync(new List<WorkspaceInfo> { mockWorkspace });
+        mockClockifyClient.Setup(x => x.GetProjects(mockWorkspace)).ReturnsAsync(mockProjects);
+        mockClockifyClient.Setup(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                         .ReturnsAsync(mockTimeEntries);
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(0));
+        mockClockifyClient.Verify(x => x.GetTimeEntries(mockWorkspace, mockUser, It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Test]
     public async Task ExecuteAsync_WithNoTimeEntries_ShowsEmptyWeekMessage()
     {
         // Arrange
@@ -172,6 +198,7 @@ public class WeekViewCommandTests
         // Assert
         Assert.That(settings.IncludeCurrent, Is.False);
         Assert.That(settings.Detailed, Is.False);
+        Assert.That(settings.TimeOnly, Is.False);
         Assert.That(settings.WeekStartDay, Is.EqualTo(DayOfWeek.Monday));
     }
 
@@ -179,11 +206,12 @@ public class WeekViewCommandTests
     public void Settings_CanSetCustomFlags()
     {
         // Arrange & Act
-        var settings = new WeekViewCommand.Settings { IncludeCurrent = true, Detailed = true, WeekStartDay = DayOfWeek.Sunday };
+        var settings = new WeekViewCommand.Settings { IncludeCurrent = true, Detailed = true, TimeOnly = true, WeekStartDay = DayOfWeek.Sunday };
 
         // Assert
         Assert.That(settings.IncludeCurrent, Is.True);
         Assert.That(settings.Detailed, Is.True);
+        Assert.That(settings.TimeOnly, Is.True);
         Assert.That(settings.WeekStartDay, Is.EqualTo(DayOfWeek.Sunday));
     }
 

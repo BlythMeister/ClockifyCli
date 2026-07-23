@@ -34,6 +34,11 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
         [DefaultValue(false)]
         public bool Detailed { get; init; } = false;
 
+        [Description("Show a report with only date, start time, end time, duration and status (hides project, task and description columns)")]
+        [CommandOption("--time-only")]
+        [DefaultValue(false)]
+        public bool TimeOnly { get; init; } = false;
+
         [Description("Day of the week to start the week view (Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)")]
         [CommandOption("--week-start")]
         [DefaultValue(DayOfWeek.Monday)]
@@ -42,19 +47,26 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        await ShowCurrentWeekTimeEntries(clockifyClient, console, settings.IncludeCurrent, settings.Detailed, settings.WeekStartDay);
+        await ShowCurrentWeekTimeEntries(clockifyClient, console, settings.IncludeCurrent, settings.Detailed, settings.TimeOnly, settings.WeekStartDay);
         return 0;
     }
 
-    private async Task ShowCurrentWeekTimeEntries(IClockifyClient clockifyClient, IAnsiConsole console, bool includeCurrent, bool detailed, DayOfWeek weekStartDay)
+    private async Task ShowCurrentWeekTimeEntries(IClockifyClient clockifyClient, IAnsiConsole console, bool includeCurrent, bool detailed, bool timeOnly, DayOfWeek weekStartDay)
     {
+        // Time-only view always needs start/end times, so treat it as detailed for data purposes.
+        var showTimes = detailed || timeOnly;
+
         console.MarkupLine("[bold]Current Week Time Entries[/]");
         if (includeCurrent)
         {
             console.MarkupLine("[dim]Including in-progress time entry[/]");
         }
 
-        if (detailed)
+        if (timeOnly)
+        {
+            console.MarkupLine("[dim]Time-only view with date, start/end times, duration and status only[/]");
+        }
+        else if (detailed)
         {
             console.MarkupLine("[dim]Detailed view with start/end times[/]");
         }
@@ -187,14 +199,18 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                         return;
                                                                     }
 
-                                                                    // Create table with appropriate columns based on detailed flag
+                                                                    // Create table with appropriate columns based on detailed/time-only flags
                                                                     var table = new Table();
                                                                     table.AddColumn("Date");
-                                                                    table.AddColumn("Project");
-                                                                    table.AddColumn("Task");
-                                                                    table.AddColumn("Description");
 
-                                                                    if (detailed)
+                                                                    if (!timeOnly)
+                                                                    {
+                                                                        table.AddColumn("Project");
+                                                                        table.AddColumn("Task");
+                                                                        table.AddColumn("Description");
+                                                                    }
+
+                                                                    if (showTimes)
                                                                     {
                                                                         table.AddColumn("Start Time", c => c.RightAligned());
                                                                         table.AddColumn("End Time", c => c.RightAligned());
@@ -251,60 +267,54 @@ public class WeekViewCommand : BaseCommand<WeekViewCommand.Settings>
                                                                             var taskName = task?.Name != null ? Markup.Escape(task.Name) : "[dim]No Task[/]";
                                                                             var description = string.IsNullOrWhiteSpace(entry.Description) ? "[dim]No description[/]" : Markup.Escape(entry.Description);
 
-                                                                            // Add row with appropriate number of columns based on detailed flag
-                                                                            if (detailed)
+                                                                            // Build row cells based on which columns are enabled (time-only hides project/task/description)
+                                                                            var cells = new List<string> { dateDisplay };
+
+                                                                            if (!timeOnly)
                                                                             {
-                                                                                table.AddRow(
-                                                                                             dateDisplay,
-                                                                                             projectName,
-                                                                                             taskName,
-                                                                                             description,
-                                                                                             startTime,
-                                                                                             endTime,
-                                                                                             TimeFormatter.FormatDurationCompact(duration),
-                                                                                             status
-                                                                                            );
+                                                                                cells.Add(projectName);
+                                                                                cells.Add(taskName);
+                                                                                cells.Add(description);
                                                                             }
-                                                                            else
+
+                                                                            if (showTimes)
                                                                             {
-                                                                                table.AddRow(
-                                                                                             dateDisplay,
-                                                                                             projectName,
-                                                                                             taskName,
-                                                                                             description,
-                                                                                             TimeFormatter.FormatDurationCompact(duration),
-                                                                                             status
-                                                                                            );
+                                                                                cells.Add(startTime);
+                                                                                cells.Add(endTime);
                                                                             }
+
+                                                                            cells.Add(TimeFormatter.FormatDurationCompact(duration));
+                                                                            cells.Add(status);
+
+                                                                            table.AddRow(cells.ToArray());
                                                                         }
 
                                                                         // Add day total row
                                                                         if (dayEntries.Count > 1)
                                                                         {
-                                                                            if (detailed)
+                                                                            var totalCells = new List<string> { "" };
+
+                                                                            if (!timeOnly)
                                                                             {
-                                                                                table.AddRow(
-                                                                                             "",
-                                                                                             "",
-                                                                                             "",
-                                                                                             $"[bold dim]Day Total[/]",
-                                                                                             "",
-                                                                                             "",
-                                                                                             $"[bold]{TimeFormatter.FormatDurationCompact(dayTotal)}[/]",
-                                                                                             ""
-                                                                                            );
+                                                                                totalCells.Add("");
+                                                                                totalCells.Add("");
+                                                                                totalCells.Add("[bold dim]Day Total[/]");
                                                                             }
                                                                             else
                                                                             {
-                                                                                table.AddRow(
-                                                                                             "",
-                                                                                             "",
-                                                                                             "",
-                                                                                             $"[bold dim]Day Total[/]",
-                                                                                             $"[bold]{TimeFormatter.FormatDurationCompact(dayTotal)}[/]",
-                                                                                             ""
-                                                                                            );
+                                                                                totalCells[0] = "[bold dim]Day Total[/]";
                                                                             }
+
+                                                                            if (showTimes)
+                                                                            {
+                                                                                totalCells.Add("");
+                                                                                totalCells.Add("");
+                                                                            }
+
+                                                                            totalCells.Add($"[bold]{TimeFormatter.FormatDurationCompact(dayTotal)}[/]");
+                                                                            totalCells.Add("");
+
+                                                                            table.AddRow(totalCells.ToArray());
                                                                         }
 
                                                                         // Add separator between days (except for last day)

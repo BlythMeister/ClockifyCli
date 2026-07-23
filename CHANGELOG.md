@@ -24,6 +24,12 @@ When contributing to this project, please update this changelog with your change
 
 ---
 
+## [1.31] - 2026-07-23
+
+### Added
+
+- **Week View Time-Only Report**: Added a `--time-only` flag to `week-view` that displays a report with only date, start time, end time, duration and status, hiding the project, task and description columns.
+
 ## [1.30] - 2026-02-23
 
 ### Added

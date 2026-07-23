@@ -168,6 +168,8 @@ While editing you can choose **Split timer** and assign the new project/task to 
 
 `clockify-cli week-view --detailed` - Show detailed view with start time, end time, and duration
 
+`clockify-cli week-view --time-only` - Show a report with only date, start time, end time, duration and status (hides project, task and description columns)
+
 `clockify-cli week-view --week-start Sunday` - Start the week on Sunday instead of Monday
 
 `clockify-cli week-view --include-current --detailed --week-start Wednesday` - Detailed view with custom week start day
